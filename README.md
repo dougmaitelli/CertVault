@@ -9,7 +9,7 @@ CertVault is a self-hosted ACME certificate controller for homelabs. It obtains 
 - Every DNS provider supported by [`go-acme/lego`](https://go-acme.github.io/lego/dns/)
 - Let's Encrypt staging/production or another ACME v2 directory
 - Encrypted ACME account keys and certificate private keys (AES-256-GCM)
-- Immutable, atomic certificate versions with SQLite metadata
+- Immutable, atomic certificate versions with GORM-managed SQLite metadata
 - Six-hour renewal reconciliation with per-certificate locking
 - Hashed, revocable API keys scoped by operation and certificate
 - Optional OIDC Authorization Code + PKCE login and group allowlisting
@@ -87,6 +87,9 @@ Global values can be overridden with:
 
 DNS provider environment entries may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.
 
+`server.log_level` and `CERTVAULT_LOG_LEVEL` accept `debug`, `info`, `warn`
+(`warning` is also accepted), `error`, and slog offsets such as `DEBUG+2`.
+
 Certificate key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `rsa4096`. `renew_before` uses Go duration syntax; `720h` is 30 days.
 
 ## OIDC
@@ -143,5 +146,9 @@ make check         # run every non-mutating verification above
 Frontend commands can also be run independently from `web/` with `npm run
 format`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, or
 `npm run check`.
+
+The backend's `database` package owns the SQLite connection and GORM schema
+migrations. The `store` package contains repository operations and does not own
+connection setup or handwritten SQL.
 
 The API outline is in [`docs/openapi.yaml`](docs/openapi.yaml).

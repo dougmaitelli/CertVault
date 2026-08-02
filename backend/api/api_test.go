@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/certvault/certvault/config"
+	"github.com/certvault/certvault/database"
 	"github.com/certvault/certvault/service"
 	"github.com/certvault/certvault/store"
 )
@@ -31,20 +32,21 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 			},
 		},
 	}
-	db, err := store.Open(filepath.Join(dir, "test.db"))
+	db, err := database.Open(filepath.Join(dir, "test.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = db.Close() }()
-	if err = db.Reconcile(context.Background(), cfg); err != nil {
+	repository := store.New(db)
+	if err = repository.Reconcile(context.Background(), cfg); err != nil {
 		t.Fatal(err)
 	}
 	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	manager, err := service.NewManager(cfg, db, testLogger)
+	manager, err := service.NewManager(cfg, repository, testLogger)
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler, err := New(cfg, db, manager, slog.Default())
+	handler, err := New(cfg, repository, manager, slog.Default())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +63,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		t.Fatalf("health returned %d", health.Code)
 	}
 
-	_, token, err := db.CreateAPIKey(context.Background(), "node", []string{"certificates:read"}, []string{"home"}, nil)
+	_, token, err := repository.CreateAPIKey(context.Background(), "node", []string{"certificates:read"}, []string{"home"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

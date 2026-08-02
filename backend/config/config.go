@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -119,6 +120,9 @@ func applyEnv(c *Config) {
 	if v := os.Getenv("CERTVAULT_LOG_LEVEL"); v != "" {
 		c.Server.LogLevel = v
 	}
+	if c.Server.LogLevel == "" {
+		c.Server.LogLevel = slog.LevelInfo.String()
+	}
 	if v := os.Getenv("CERTVAULT_ACME_EMAIL"); v != "" {
 		c.ACME.Email = v
 	}
@@ -134,6 +138,9 @@ func applyEnv(c *Config) {
 }
 
 func (c *Config) Validate() error {
+	if _, err := ParseLogLevel(c.Server.LogLevel); err != nil {
+		return err
+	}
 	if c.ACME.Email == "" {
 		return errors.New("acme.email is required")
 	}
@@ -180,6 +187,19 @@ func (c *Config) Validate() error {
 		}
 	}
 	return nil
+}
+
+// ParseLogLevel converts a configured slog level name or offset into a level.
+func ParseLogLevel(value string) (slog.Level, error) {
+	normalized := strings.ToUpper(strings.TrimSpace(value))
+	if normalized == "WARNING" {
+		normalized = "WARN"
+	}
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(normalized)); err != nil {
+		return 0, fmt.Errorf("invalid server.log_level %q: %w", value, err)
+	}
+	return level, nil
 }
 
 func (c *Config) Certificate(name string) (Certificate, bool) {

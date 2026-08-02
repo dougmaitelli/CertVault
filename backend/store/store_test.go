@@ -6,14 +6,16 @@ import (
 	"testing"
 
 	"github.com/certvault/certvault/config"
+	"github.com/certvault/certvault/database"
 )
 
 func TestAPIKeyAuthenticationAndRevocation(t *testing.T) {
-	s, e := Open(filepath.Join(t.TempDir(), "test.db"))
+	db, e := database.Open(filepath.Join(t.TempDir(), "test.db"))
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer func() { _ = s.Close() }()
+	defer func() { _ = db.Close() }()
+	s := New(db)
 	ctx := context.Background()
 	_, token, e := s.CreateAPIKey(ctx, "node", []string{"private_keys:read"}, []string{"home"}, nil)
 	if e != nil {
@@ -39,11 +41,12 @@ func TestAPIKeyAuthenticationAndRevocation(t *testing.T) {
 }
 
 func TestReconcile(t *testing.T) {
-	s, e := Open(filepath.Join(t.TempDir(), "test.db"))
+	db, e := database.Open(filepath.Join(t.TempDir(), "test.db"))
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer func() { _ = s.Close() }()
+	defer func() { _ = db.Close() }()
+	s := New(db)
 	c := &config.Config{
 		Certificates: []config.Certificate{
 			{

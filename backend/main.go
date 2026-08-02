@@ -15,6 +15,7 @@ import (
 
 	"github.com/certvault/certvault/api"
 	"github.com/certvault/certvault/config"
+	"github.com/certvault/certvault/database"
 	"github.com/certvault/certvault/service"
 	"github.com/certvault/certvault/store"
 )
@@ -33,25 +34,26 @@ func main() {
 		return
 	}
 
-	level := slog.LevelInfo
-	if cfg.Server.LogLevel == "debug" {
-		level = slog.LevelDebug
+	level, err := config.ParseLogLevel(cfg.Server.LogLevel)
+	if err != nil {
+		fatal("parse log level", err)
 	}
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 	if err := os.MkdirAll(cfg.DataDir, 0700); err != nil {
 		fatal("create data directory", err)
 	}
 
-	db, err := store.Open(filepath.Join(cfg.DataDir, "certvault.db"))
+	db, err := database.Open(filepath.Join(cfg.DataDir, "certvault.db"))
 	if err != nil {
 		fatal("open database", err)
 	}
 	defer func() { _ = db.Close() }()
-	if err := db.Reconcile(context.Background(), cfg); err != nil {
+	repository := store.New(db)
+	if err := repository.Reconcile(context.Background(), cfg); err != nil {
 		fatal("reconcile configuration", err)
 	}
 
-	manager, err := service.NewManager(cfg, db, log)
+	manager, err := service.NewManager(cfg, repository, log)
 	if err != nil {
 		fatal("initialize manager", err)
 	}
@@ -59,7 +61,7 @@ func main() {
 	defer cancel()
 	go manager.Run(ctx)
 
-	handler, err := api.New(cfg, db, manager, log)
+	handler, err := api.New(cfg, repository, manager, log)
 	if err != nil {
 		fatal("initialize API", err)
 	}
