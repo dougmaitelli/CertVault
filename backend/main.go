@@ -34,14 +34,7 @@ func main() {
 		return
 	}
 
-	level, err := config.ParseLogLevel(cfg.Server.LogLevel)
-	if err != nil {
-		fatal("parse log level", err)
-	}
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
-	if err := os.MkdirAll(cfg.DataDir, 0700); err != nil {
-		fatal("create data directory", err)
-	}
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.Server.LogLevel.Level()}))
 
 	db, err := database.Open(filepath.Join(cfg.DataDir, "certvault.db"))
 	if err != nil {

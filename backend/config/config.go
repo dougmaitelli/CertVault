@@ -26,9 +26,9 @@ type Config struct {
 	MasterKey      []byte                   `yaml:"-"`
 }
 type Server struct {
-	Listen    string `yaml:"listen"`
-	PublicURL string `yaml:"public_url"`
-	LogLevel  string `yaml:"log_level"`
+	Listen    string   `yaml:"listen"`
+	PublicURL string   `yaml:"public_url"`
+	LogLevel  LogLevel `yaml:"log_level"`
 }
 type ACME struct {
 	Email        string `yaml:"email"`
@@ -74,10 +74,32 @@ type Hook struct {
 }
 type Duration struct{ time.Duration }
 
+// LogLevel is a validated slog logging threshold.
+type LogLevel slog.Level
+
 func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 	v, err := time.ParseDuration(n.Value)
 	d.Duration = v
 	return err
+}
+
+func (l *LogLevel) UnmarshalYAML(n *yaml.Node) error {
+	return l.UnmarshalText([]byte(n.Value))
+}
+
+// UnmarshalText parses a standard slog level name or offset.
+func (l *LogLevel) UnmarshalText(text []byte) error {
+	level, err := ParseLogLevel(string(text))
+	if err != nil {
+		return err
+	}
+	*l = LogLevel(level)
+	return nil
+}
+
+// Level returns the configured threshold as a slog level.
+func (l LogLevel) Level() slog.Level {
+	return slog.Level(l)
 }
 
 func Load(path string) (*Config, error) {
@@ -89,7 +111,9 @@ func Load(path string) (*Config, error) {
 	if err := yaml.Unmarshal(b, &c); err != nil {
 		return nil, err
 	}
-	applyEnv(&c)
+	if err := applyEnv(&c); err != nil {
+		return nil, err
+	}
 	keyFile := os.Getenv("CERTVAULT_MASTER_KEY_FILE")
 	if keyFile == "" {
 		keyFile = filepath.Join(c.DataDir, "master.key")
@@ -101,7 +125,7 @@ func Load(path string) (*Config, error) {
 	return &c, c.Validate()
 }
 
-func applyEnv(c *Config) {
+func applyEnv(c *Config) error {
 	if v := os.Getenv("CERTVAULT_DATA_DIR"); v != "" {
 		c.DataDir = v
 	}
@@ -118,10 +142,9 @@ func applyEnv(c *Config) {
 		c.Server.PublicURL = v
 	}
 	if v := os.Getenv("CERTVAULT_LOG_LEVEL"); v != "" {
-		c.Server.LogLevel = v
-	}
-	if c.Server.LogLevel == "" {
-		c.Server.LogLevel = slog.LevelInfo.String()
+		if err := c.Server.LogLevel.UnmarshalText([]byte(v)); err != nil {
+			return fmt.Errorf("CERTVAULT_LOG_LEVEL: %w", err)
+		}
 	}
 	if v := os.Getenv("CERTVAULT_ACME_EMAIL"); v != "" {
 		c.ACME.Email = v
@@ -135,12 +158,10 @@ func applyEnv(c *Config) {
 	if v := os.Getenv("CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE"); v != "" {
 		c.Auth.BootstrapTokenFile = v
 	}
+	return nil
 }
 
 func (c *Config) Validate() error {
-	if _, err := ParseLogLevel(c.Server.LogLevel); err != nil {
-		return err
-	}
 	if c.ACME.Email == "" {
 		return errors.New("acme.email is required")
 	}

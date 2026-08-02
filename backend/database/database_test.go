@@ -6,7 +6,8 @@ import (
 )
 
 func TestOpenMigratesSchema(t *testing.T) {
-	db, err := Open(filepath.Join(t.TempDir(), "test.db"))
+	databasePath := filepath.Join(t.TempDir(), "nested", "data", "test.db")
+	db, err := Open(databasePath)
 	if err != nil {
 		t.Fatal(err)
 	}
