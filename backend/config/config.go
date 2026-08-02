@@ -114,7 +114,7 @@ func Load(path string) (*Config, error) {
 	if err := applyEnv(&c); err != nil {
 		return nil, err
 	}
-	keyFile := os.Getenv("CERTVAULT_MASTER_KEY_FILE")
+	keyFile := os.Getenv(EnvMasterKeyFile)
 	if keyFile == "" {
 		keyFile = filepath.Join(c.DataDir, "master.key")
 	}
@@ -126,36 +126,36 @@ func Load(path string) (*Config, error) {
 }
 
 func applyEnv(c *Config) error {
-	if v := os.Getenv("CERTVAULT_DATA_DIR"); v != "" {
+	if v := os.Getenv(EnvDataDir); v != "" {
 		c.DataDir = v
 	}
 	if c.DataDir == "" {
 		c.DataDir = "/data"
 	}
-	if v := os.Getenv("CERTVAULT_LISTEN"); v != "" {
+	if v := os.Getenv(EnvListen); v != "" {
 		c.Server.Listen = v
 	}
 	if c.Server.Listen == "" {
 		c.Server.Listen = "0.0.0.0:8080"
 	}
-	if v := os.Getenv("CERTVAULT_PUBLIC_URL"); v != "" {
+	if v := os.Getenv(EnvPublicURL); v != "" {
 		c.Server.PublicURL = v
 	}
-	if v := os.Getenv("CERTVAULT_LOG_LEVEL"); v != "" {
+	if v := os.Getenv(EnvLogLevel); v != "" {
 		if err := c.Server.LogLevel.UnmarshalText([]byte(v)); err != nil {
-			return fmt.Errorf("CERTVAULT_LOG_LEVEL: %w", err)
+			return fmt.Errorf("%s: %w", EnvLogLevel, err)
 		}
 	}
-	if v := os.Getenv("CERTVAULT_ACME_EMAIL"); v != "" {
+	if v := os.Getenv(EnvACMEEmail); v != "" {
 		c.ACME.Email = v
 	}
-	if v := os.Getenv("CERTVAULT_ACME_DIRECTORY_URL"); v != "" {
+	if v := os.Getenv(EnvACMEDirectoryURL); v != "" {
 		c.ACME.DirectoryURL = v
 	}
 	if c.ACME.DirectoryURL == "" {
 		c.ACME.DirectoryURL = "https://acme-v02.api.letsencrypt.org/directory"
 	}
-	if v := os.Getenv("CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE"); v != "" {
+	if v := os.Getenv(EnvBootstrapAdminTokenFile); v != "" {
 		c.Auth.BootstrapTokenFile = v
 	}
 	return nil

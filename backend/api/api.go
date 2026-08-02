@@ -443,7 +443,7 @@ func (a *API) frontend(w http.ResponseWriter, r *http.Request) {
 	if path == "." || path == "" {
 		path = "index.html"
 	}
-	root := os.Getenv("CERTVAULT_UI_DIR")
+	root := os.Getenv(config.EnvUIDir)
 	if root == "" {
 		root = "/app/ui"
 	}

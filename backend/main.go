@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", envOr("CERTVAULT_CONFIG", "/config/config.yaml"), "configuration file")
+	configPath := flag.String("config", envOr(config.EnvConfigFile, "/config/config.yaml"), "configuration file")
 	check := flag.Bool("check-config", false, "validate configuration and exit")
 	flag.Parse()
 

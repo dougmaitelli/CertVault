@@ -260,12 +260,12 @@ func (m *muxProvider) forDomain(domain string) (challenge.Provider, error) {
 		} else {
 			restore[k] = nil
 		}
-		if strings.HasSuffix(k, "_FILE") {
+		if strings.HasSuffix(k, config.EnvFileSuffix) {
 			b, e := os.ReadFile(v)
 			if e != nil {
 				return nil, e
 			}
-			if err := os.Setenv(strings.TrimSuffix(k, "_FILE"), strings.TrimSpace(string(b))); err != nil {
+			if err := os.Setenv(strings.TrimSuffix(k, config.EnvFileSuffix), strings.TrimSpace(string(b))); err != nil {
 				return nil, err
 			}
 		} else {
@@ -471,7 +471,10 @@ func (m *Manager) runHook(ctx context.Context, h config.Hook, body []byte) {
 		}
 	case "exec":
 		cmd := exec.CommandContext(ctx, h.Command, h.Args...)
-		cmd.Env = []string{"PATH=/usr/local/bin:/usr/bin:/bin", "CERTVAULT_EVENT_JSON=" + string(body)}
+		cmd.Env = []string{
+			config.EnvPath + "=/usr/local/bin:/usr/bin:/bin",
+			config.EnvEventJSON + "=" + string(body),
+		}
 		_, hookErr = cmd.CombinedOutput()
 	default:
 		hookErr = errors.New("unknown hook type")
