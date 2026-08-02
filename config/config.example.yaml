@@ -1,0 +1,47 @@
+data_dir: /data
+
+server:
+  listen: 0.0.0.0:8080
+  public_url: https://certvault.home.example.com
+  log_level: info
+
+acme:
+  email: admin@example.com
+  # Start with staging. Change this only after staging issuance succeeds.
+  directory_url: https://acme-staging-v02.api.letsencrypt.org/directory
+  accept_terms: true
+
+auth:
+  bootstrap_token_file: /run/secrets/admin_token
+  # oidc:
+  #   issuer_url: https://auth.example.com
+  #   client_id: certvault
+  #   client_secret_file: /run/secrets/oidc_client_secret
+  #   redirect_url: https://certvault.home.example.com/auth/callback
+  #   allowed_groups: [cert-admins]
+
+dns_credentials:
+  cloudflare_main:
+    provider: cloudflare
+    environment:
+      CLOUDFLARE_DNS_API_TOKEN_FILE: /run/secrets/cloudflare_token
+
+zones:
+  - name: example.com
+    credential: cloudflare_main
+
+certificates:
+  - name: homelab-wildcard
+    domains:
+      - example.com
+      - "*.example.com"
+    key_type: ec256
+    renew_before: 720h
+
+hooks: []
+  # - name: deploy-notification
+  #   type: webhook
+  #   events: [certificate.issued, certificate.renewed, certificate.failed]
+  #   url: https://automation.example.com/hooks/certvault
+  #   secret_file: /run/secrets/webhook_secret
+  #   timeout: 15s

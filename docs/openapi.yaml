@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info:
+  title: CertVault API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+  schemas:
+    Problem:
+      type: object
+      properties:
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+security: [{apiKey: []}]
+paths:
+  /health:
+    get:
+      security: []
+      responses: {"200": {description: Healthy}}
+  /certificates:
+    get:
+      summary: List certificates visible to the caller
+      responses: {"200": {description: Certificate list}, "401": {description: Unauthorized}}
+  /certificates/{name}:
+    get:
+      summary: Inspect a certificate
+      parameters: [{name: name, in: path, required: true, schema: {type: string}}]
+      responses: {"200": {description: Certificate metadata}, "404": {description: Not found}}
+  /certificates/{name}/fullchain.pem:
+    get:
+      summary: Download the current full chain
+      parameters: [{name: name, in: path, required: true, schema: {type: string}}]
+      responses: {"200": {description: PEM full chain}}
+  /certificates/{name}/private-key.pem:
+    get:
+      summary: Download the decrypted current private key
+      parameters: [{name: name, in: path, required: true, schema: {type: string}}]
+      responses: {"200": {description: PEM private key}, "403": {description: Missing private_keys:read}}
+  /certificates/{name}/renew:
+    post:
+      summary: Queue a renewal
+      parameters: [{name: name, in: path, required: true, schema: {type: string}}]
+      responses: {"202": {description: Queued}}

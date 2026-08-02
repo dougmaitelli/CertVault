@@ -1,0 +1,12 @@
+/web/node_modules/
+/web/dist/
+/web/*.tsbuildinfo
+/secrets/
+/data/
+/config/config.yaml
+*.db
+*.db-shm
+*.db-wal
+certvault
+/.bin/
+/.cache/
