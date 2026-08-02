@@ -14,6 +14,8 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+const DefaultRenewBefore = 30 * 24 * time.Hour
+
 type Config struct {
 	DataDir        string                   `yaml:"data_dir"`
 	Server         Server                   `yaml:"server"`
@@ -196,7 +198,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("certificate %q has no domains", cert.Name)
 		}
 		if cert.RenewBefore.Duration == 0 {
-			cert.RenewBefore.Duration = 30 * 24 * time.Hour
+			cert.RenewBefore.Duration = DefaultRenewBefore
 		}
 		if cert.Credential != "" && !credentials[cert.Credential] {
 			return fmt.Errorf("certificate %q references unknown credential", cert.Name)
@@ -230,7 +232,7 @@ func (c *Config) Certificate(name string) (Certificate, bool) {
 				v.KeyType = "ec256"
 			}
 			if v.RenewBefore.Duration == 0 {
-				v.RenewBefore.Duration = 30 * 24 * time.Hour
+				v.RenewBefore.Duration = DefaultRenewBefore
 			}
 			return v, true
 		}

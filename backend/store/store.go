@@ -94,7 +94,7 @@ func (s *Store) Reconcile(ctx context.Context, cfg *config.Config) error {
 			enabled := definition.Enabled == nil || *definition.Enabled
 			renewBefore := definition.RenewBefore.Duration
 			if renewBefore == 0 {
-				renewBefore = 30 * 24 * time.Hour
+				renewBefore = config.DefaultRenewBefore
 			}
 			keyType := definition.KeyType
 			if keyType == "" {
