@@ -20,6 +20,14 @@ import (
 	"github.com/certvault/certvault/store"
 )
 
+const (
+	httpReadHeaderTimeout = 10 * time.Second
+	httpReadTimeout       = 30 * time.Second
+	httpWriteTimeout      = 2 * time.Minute
+	httpIdleTimeout       = 2 * time.Minute
+	httpShutdownTimeout   = 15 * time.Second
+)
+
 func main() {
 	configPath := flag.String("config", envOr(config.EnvConfigFile, "/config/config.yaml"), "configuration file")
 	check := flag.Bool("check-config", false, "validate configuration and exit")
@@ -61,10 +69,10 @@ func main() {
 	server := &http.Server{
 		Addr:              cfg.Server.Listen,
 		Handler:           handler,
-		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      2 * time.Minute,
-		IdleTimeout:       2 * time.Minute,
+		ReadHeaderTimeout: httpReadHeaderTimeout,
+		ReadTimeout:       httpReadTimeout,
+		WriteTimeout:      httpWriteTimeout,
+		IdleTimeout:       httpIdleTimeout,
 	}
 	go func() {
 		log.Info("server listening", "address", cfg.Server.Listen)
@@ -73,7 +81,7 @@ func main() {
 		}
 	}()
 	<-ctx.Done()
-	shutdown, stop := context.WithTimeout(context.Background(), 15*time.Second)
+	shutdown, stop := context.WithTimeout(context.Background(), httpShutdownTimeout)
 	defer stop()
 	_ = server.Shutdown(shutdown)
 }
