@@ -27,10 +27,10 @@ func (a *API) listCertificates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	certificates, err := a.repos.Certificates.List(r.Context())
-	if !id.admin {
+	if !id.Admin {
 		filtered := certificates[:0]
 		for _, certificate := range certificates {
-			if id.principal.Allows(scopeCertificatesRead, certificate.Name) {
+			if id.Principal.Allows(scopeCertificatesRead, certificate.Name) {
 				filtered = append(filtered, certificate)
 			}
 		}
@@ -58,7 +58,7 @@ func (a *API) renewCertificate(w http.ResponseWriter, r *http.Request) {
 	}
 	name := r.PathValue("name")
 	go func() { _ = a.manager.Issue(context.Background(), name, "manual") }()
-	a.repos.Audits.Record(r.Context(), id.name, "renewal.trigger", name, "", remoteIP(r))
+	a.repos.Audits.Record(r.Context(), id.Name, "renewal.trigger", name, "", remoteIP(r))
 	jsonResponse(w, http.StatusAccepted, map[string]string{"status": "queued"})
 }
 
@@ -89,6 +89,6 @@ func (a *API) downloadCertificate(file string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name+"-"+file))
 		_, _ = w.Write(contents)
-		a.repos.Audits.Record(r.Context(), id.name, "certificate.download", name, file, remoteIP(r))
+		a.repos.Audits.Record(r.Context(), id.Name, "certificate.download", name, file, remoteIP(r))
 	}
 }

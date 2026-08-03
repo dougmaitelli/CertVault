@@ -1,6 +1,10 @@
 package api
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/certvault/certvault/auth"
+)
 
 const (
 	scopeCertificatesRead = "certificates:read"
@@ -18,7 +22,7 @@ func (a *API) requireScope(scope, resourcePathValue string, next http.HandlerFun
 		if resourcePathValue != "" {
 			resource = r.PathValue(resourcePathValue)
 		}
-		if !id.admin && !id.principal.Allows(scope, resource) {
+		if !id.Admin && !id.Principal.Allows(scope, resource) {
 			problem(w, http.StatusForbidden, "forbidden", "Missing scope")
 			return
 		}
@@ -32,7 +36,7 @@ func requireAdministrator(next http.HandlerFunc) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		if !id.admin {
+		if !id.Admin {
 			problem(w, http.StatusForbidden, "forbidden", "Administrator access required")
 			return
 		}
@@ -40,8 +44,8 @@ func requireAdministrator(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func requestIdentity(w http.ResponseWriter, r *http.Request) (identity, bool) {
-	id, ok := r.Context().Value(principalKey).(identity)
+func requestIdentity(w http.ResponseWriter, r *http.Request) (auth.Identity, bool) {
+	id, ok := auth.IdentityFromContext(r.Context())
 	if !ok {
 		problem(
 			w,

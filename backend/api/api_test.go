@@ -46,7 +46,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler, err := New(cfg, repositories, manager, slog.Default())
+	handler, err := New(cfg, repositories, manager)
 	if err != nil {
 		t.Fatal(err)
 	}

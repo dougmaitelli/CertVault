@@ -10,7 +10,7 @@ func (a *API) session(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]any{"name": id.name, "admin": id.admin})
+	jsonResponse(w, http.StatusOK, map[string]any{"name": id.Name, "admin": id.Admin})
 }
 
 func (a *API) listJobs(w http.ResponseWriter, r *http.Request) {

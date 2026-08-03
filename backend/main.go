@@ -62,7 +62,7 @@ func main() {
 	defer cancel()
 	go manager.Run(ctx)
 
-	handler, err := api.New(cfg, repositories, manager, log)
+	handler, err := api.New(cfg, repositories, manager)
 	if err != nil {
 		fatal("initialize API", err)
 	}

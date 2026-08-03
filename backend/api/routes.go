@@ -1,9 +1,7 @@
 package api
 
 import (
-	"context"
 	"net/http"
-	"strings"
 )
 
 func (a *API) routes() http.Handler {
@@ -14,10 +12,10 @@ func (a *API) routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/ready", func(w http.ResponseWriter, _ *http.Request) {
 		jsonResponse(w, http.StatusOK, map[string]string{"status": "ready"})
 	})
-	mux.HandleFunc("GET /auth/login", a.login)
-	mux.HandleFunc("GET /auth/callback", a.callback)
-	mux.HandleFunc("POST /auth/bootstrap", a.bootstrapLogin)
-	mux.HandleFunc("POST /auth/logout", a.logout)
+	mux.HandleFunc("GET /auth/login", a.authenticator.Login)
+	mux.HandleFunc("GET /auth/callback", a.authenticator.Callback)
+	mux.HandleFunc("POST /auth/bootstrap", a.authenticator.BootstrapLogin)
+	mux.HandleFunc("POST /auth/logout", a.authenticator.Logout)
 
 	apiMux := http.NewServeMux()
 	apiMux.HandleFunc("GET /api/v1/session", a.session)
@@ -48,7 +46,7 @@ func (a *API) routes() http.Handler {
 	apiMux.HandleFunc("POST /api/v1/api-keys", requireAdministrator(a.createAPIKey))
 	apiMux.HandleFunc("DELETE /api/v1/api-keys/{id}", requireAdministrator(a.revokeAPIKey))
 	apiMux.HandleFunc("GET /api/v1/audit", requireAdministrator(a.listAudits))
-	mux.Handle("/api/", a.auth(apiMux))
+	mux.Handle("/api/", a.authenticator.Middleware(apiMux))
 
 	mux.HandleFunc("/", a.frontend)
 	return a.security(mux)
@@ -61,35 +59,5 @@ func (a *API) security(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("Content-Security-Policy", contentSecurityPolicy)
 		next.ServeHTTP(w, r)
-	})
-}
-
-func (a *API) auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if cookie, err := r.Cookie("cv_session"); err == nil {
-			if name, ok := a.verifySession(cookie.Value); ok {
-				next.ServeHTTP(
-					w,
-					r.WithContext(context.WithValue(r.Context(), principalKey, identity{admin: true, name: name})),
-				)
-				return
-			}
-		}
-		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if token != "" {
-			principal, err := a.repos.APIKeys.Authenticate(r.Context(), token, remoteIP(r))
-			if err == nil {
-				next.ServeHTTP(
-					w,
-					r.WithContext(context.WithValue(
-						r.Context(),
-						principalKey,
-						identity{name: principal.Name, principal: principal},
-					)),
-				)
-				return
-			}
-		}
-		problem(w, http.StatusUnauthorized, "unauthorized", "Authentication is required")
 	})
 }
