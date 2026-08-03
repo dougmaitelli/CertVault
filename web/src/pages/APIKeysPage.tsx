@@ -45,6 +45,13 @@ export function APIKeysPage({
 
   async function revoke(id: number) {
     if (confirm("Revoke this API key?")) {
+      await api(`api-keys/${id}/revoke`, { method: "POST" });
+      await reload();
+    }
+  }
+
+  async function deleteKey(id: number) {
+    if (confirm("Permanently delete this revoked API key?")) {
       await api(`api-keys/${id}`, { method: "DELETE" });
       await reload();
     }
@@ -102,7 +109,15 @@ export function APIKeysPage({
                       Revoke
                     </button>
                   ) : (
-                    "Revoked"
+                    <div className="revoked-key-actions">
+                      <span>Revoked</span>
+                      <button
+                        className="danger"
+                        onClick={() => void deleteKey(apiKey.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>

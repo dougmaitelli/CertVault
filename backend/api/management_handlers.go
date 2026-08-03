@@ -1,8 +1,11 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+
+	"github.com/certvault/certvault/database/repository"
 )
 
 func (a *API) session(w http.ResponseWriter, r *http.Request) {
@@ -71,5 +74,23 @@ func (a *API) revokeAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.repos.Audits.Record(r.Context(), "admin", "api_key.revoke", id, "", a.remoteIP(r))
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *API) deleteAPIKey(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	keyID, err := strconv.ParseInt(id, 10, 64)
+	if err == nil {
+		err = a.repos.APIKeys.Delete(r.Context(), keyID)
+	}
+	if err != nil {
+		if errors.Is(err, repository.ErrAPIKeyNotRevoked) {
+			problem(w, http.StatusConflict, "api_key_active", "API key must be revoked before it can be deleted")
+			return
+		}
+		respond(w, nil, err)
+		return
+	}
+	a.repos.Audits.Record(r.Context(), "admin", "api_key.delete", id, "", a.remoteIP(r))
 	w.WriteHeader(http.StatusNoContent)
 }

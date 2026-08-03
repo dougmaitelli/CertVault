@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -55,6 +56,57 @@ func TestAPIKeyAuthenticationAndRevocation(t *testing.T) {
 	}
 	if _, err = repository.Authenticate(ctx, token, "127.0.0.1"); err == nil {
 		t.Fatal("revoked key authenticated")
+	}
+}
+
+func TestAPIKeyCanOnlyBeDeletedAfterRevocation(t *testing.T) {
+	db, err := database.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	repositories := New(db)
+	if err = repositories.Certificates.Reconcile(context.Background(), &config.Config{
+		Certificates: []config.Certificate{
+			{Name: "home", Domains: []string{"example.com"}},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	repository := repositories.APIKeys
+	key, _, err := repository.Create(
+		context.Background(),
+		"node",
+		[]string{"certificates:read"},
+		[]string{"home"},
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = repository.Delete(context.Background(), key.ID); !errors.Is(err, ErrAPIKeyNotRevoked) {
+		t.Fatalf("deleting active API key returned %v", err)
+	}
+	if err = repository.Revoke(context.Background(), key.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err = repository.Delete(context.Background(), key.ID); err != nil {
+		t.Fatal(err)
+	}
+	keys, err := repository.List(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keys) != 0 {
+		t.Fatalf("API keys after deletion = %#v", keys)
+	}
+	var accessCount int64
+	if err = db.ORM().Model(&database.APIKeyCertificate{}).Count(&accessCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if accessCount != 0 {
+		t.Fatalf("API key certificate rows after deletion = %d", accessCount)
 	}
 }
 

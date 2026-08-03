@@ -373,6 +373,14 @@ th {
 .danger {
   color: #ff9090;
 }
+.revoked-key-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.revoked-key-actions span {
+  color: #8e9da6;
+}
 .token {
   border: 1px solid #a97724;
   background: #302817;

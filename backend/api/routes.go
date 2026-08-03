@@ -46,7 +46,8 @@ func (a *API) routes() http.Handler {
 	apiMux.HandleFunc("GET /api/v1/jobs", a.requireScope(scopeCertificatesRead, "", a.listJobs))
 	apiMux.HandleFunc("GET /api/v1/api-keys", requireAdministrator(a.listAPIKeys))
 	apiMux.HandleFunc("POST /api/v1/api-keys", requireAdministrator(a.createAPIKey))
-	apiMux.HandleFunc("DELETE /api/v1/api-keys/{id}", requireAdministrator(a.revokeAPIKey))
+	apiMux.HandleFunc("POST /api/v1/api-keys/{id}/revoke", requireAdministrator(a.revokeAPIKey))
+	apiMux.HandleFunc("DELETE /api/v1/api-keys/{id}", requireAdministrator(a.deleteAPIKey))
 	apiMux.HandleFunc("GET /api/v1/audit", requireAdministrator(a.listAudits))
 	mux.Handle("/api/", a.authenticator.Middleware(apiMux))
 

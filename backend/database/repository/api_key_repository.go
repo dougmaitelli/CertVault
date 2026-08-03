@@ -21,6 +21,8 @@ type APIKeyRepository struct {
 	database *database.Database
 }
 
+var ErrAPIKeyNotRevoked = errors.New("API key must be revoked before deletion")
+
 func (r *APIKeyRepository) Create(ctx context.Context, name string, scopes, certificates []string, expires *time.Time) (APIKey, string, error) {
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
@@ -195,4 +197,21 @@ func (r *APIKeyRepository) Revoke(ctx context.Context, id int64) error {
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+func (r *APIKeyRepository) Delete(ctx context.Context, id int64) error {
+	return r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var key database.APIKey
+		if err := tx.First(&key, id).Error; err != nil {
+			return err
+		}
+		if !key.Revoked {
+			return ErrAPIKeyNotRevoked
+		}
+		if err := tx.Where(&database.APIKeyCertificate{APIKeyID: key.ID}).
+			Delete(&database.APIKeyCertificate{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&key).Error
+	})
 }
