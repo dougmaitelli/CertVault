@@ -59,6 +59,13 @@ type Principal struct {
 	Certificates []string
 }
 
+func (p Principal) Allows(scope, certificate string) bool {
+	if !contains(p.Scopes, scope) && !contains(p.Scopes, "*") {
+		return false
+	}
+	return certificate == "" || contains(p.Certificates, certificate) || contains(p.Certificates, "*")
+}
+
 type Audit struct {
 	ID       int64     `json:"id"`
 	At       time.Time `json:"at"`

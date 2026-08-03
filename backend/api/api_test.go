@@ -37,16 +37,16 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = db.Close() }()
-	repository := store.New(db)
-	if err = repository.Reconcile(context.Background(), cfg); err != nil {
+	repositories := store.New(db)
+	if err = repositories.Certificates.Reconcile(context.Background(), cfg); err != nil {
 		t.Fatal(err)
 	}
 	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	manager, err := service.NewManager(cfg, repository, testLogger)
+	manager, err := service.NewManager(cfg, repositories, testLogger)
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler, err := New(cfg, repository, manager, slog.Default())
+	handler, err := New(cfg, repositories, manager, slog.Default())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		t.Fatalf("health returned %d", health.Code)
 	}
 
-	_, token, err := repository.CreateAPIKey(context.Background(), "node", []string{"certificates:read"}, []string{"home"}, nil)
+	_, token, err := repositories.APIKeys.Create(context.Background(), "node", []string{"certificates:read"}, []string{"home"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

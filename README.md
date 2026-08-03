@@ -148,7 +148,7 @@ format`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, o
 `npm run check`.
 
 The backend's `database` package owns the SQLite connection and GORM schema
-migrations. The `store` package contains repository operations and does not own
-connection setup or handwritten SQL.
+migrations. The `store` package provides separate certificate, job, API-key, and
+audit repositories; none owns connection setup or handwritten SQL.
 
 The API outline is in [`docs/openapi.yaml`](docs/openapi.yaml).

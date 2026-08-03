@@ -35,14 +35,14 @@ import (
 
 type Manager struct {
 	cfg     *config.Config
-	db      *store.Store
+	repos   *store.Repositories
 	log     *slog.Logger
 	locks   sync.Map
 	issueMu sync.Mutex
 }
 
-func NewManager(c *config.Config, db *store.Store, log *slog.Logger) (*Manager, error) {
-	return &Manager{cfg: c, db: db, log: log}, nil
+func NewManager(c *config.Config, repos *store.Repositories, log *slog.Logger) (*Manager, error) {
+	return &Manager{cfg: c, repos: repos, log: log}, nil
 }
 
 func (m *Manager) Run(ctx context.Context) {
@@ -60,7 +60,7 @@ func (m *Manager) Run(ctx context.Context) {
 }
 
 func (m *Manager) reconcile(ctx context.Context) {
-	certs, e := m.db.ListCertificates(ctx)
+	certs, e := m.repos.Certificates.List(ctx)
 	if e != nil {
 		m.log.Error("list certificates", "error", e)
 		return
@@ -89,12 +89,12 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 	if !ok {
 		return errors.New("unknown certificate")
 	}
-	job, e := m.db.StartJob(ctx, name, kind)
+	job, e := m.repos.Jobs.Start(ctx, name, kind)
 	if e != nil {
 		return e
 	}
 	var result error
-	defer func() { _ = m.db.FinishJob(context.Background(), job, result) }()
+	defer func() { _ = m.repos.Jobs.Finish(context.Background(), job, result) }()
 	m.issueMu.Lock()
 	defer m.issueMu.Unlock() // provider constructors consume process environment
 	client, e := m.client(ctx)
@@ -132,11 +132,11 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 		result = e
 		return e
 	}
-	if e = m.db.AddVersion(ctx, v); e != nil {
+	if e = m.repos.Certificates.AddVersion(ctx, v); e != nil {
 		result = e
 		return e
 	}
-	m.db.Audit(ctx, "system", "certificate."+kind, name, "", "")
+	m.repos.Audits.Record(ctx, "system", "certificate."+kind, name, "", "")
 	m.fireHooks(context.Background(), "certificate.issued", name, &v, nil)
 	if kind != "initial" {
 		m.fireHooks(context.Background(), "certificate.renewed", name, &v, nil)

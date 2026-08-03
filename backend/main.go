@@ -49,12 +49,12 @@ func main() {
 		fatal("open database", err)
 	}
 	defer func() { _ = db.Close() }()
-	repository := store.New(db)
-	if err := repository.Reconcile(context.Background(), cfg); err != nil {
+	repositories := store.New(db)
+	if err := repositories.Certificates.Reconcile(context.Background(), cfg); err != nil {
 		fatal("reconcile configuration", err)
 	}
 
-	manager, err := service.NewManager(cfg, repository, log)
+	manager, err := service.NewManager(cfg, repositories, log)
 	if err != nil {
 		fatal("initialize manager", err)
 	}
@@ -62,7 +62,7 @@ func main() {
 	defer cancel()
 	go manager.Run(ctx)
 
-	handler, err := api.New(cfg, repository, manager, log)
+	handler, err := api.New(cfg, repositories, manager, log)
 	if err != nil {
 		fatal("initialize API", err)
 	}

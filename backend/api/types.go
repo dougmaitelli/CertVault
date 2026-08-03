@@ -14,7 +14,7 @@ import (
 
 type API struct {
 	cfg       *config.Config
-	db        *store.Store
+	repos     *store.Repositories
 	manager   *service.Manager
 	log       *slog.Logger
 	bootstrap string

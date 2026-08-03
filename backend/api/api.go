@@ -32,8 +32,8 @@ const contentSecurityPolicy = "default-src 'self'; " +
 	"img-src 'self' data:; " +
 	"connect-src 'self'"
 
-func New(c *config.Config, db *store.Store, m *service.Manager, log *slog.Logger) (http.Handler, error) {
-	a := &API{cfg: c, db: db, manager: m, log: log}
+func New(c *config.Config, repos *store.Repositories, m *service.Manager, log *slog.Logger) (http.Handler, error) {
+	a := &API{cfg: c, repos: repos, manager: m, log: log}
 	if c.Auth.BootstrapTokenFile != "" {
 		b, e := os.ReadFile(c.Auth.BootstrapTokenFile)
 		if e != nil {
@@ -99,7 +99,7 @@ func (a *API) auth(next http.Handler) http.Handler {
 		}
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if token != "" {
-			p, e := a.db.Authenticate(r.Context(), token, remoteIP(r))
+			p, e := a.repos.APIKeys.Authenticate(r.Context(), token, remoteIP(r))
 			if e == nil {
 				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), principalKey, identity{name: p.Name, principal: p})))
 				return
@@ -130,7 +130,7 @@ func (a *API) api(w http.ResponseWriter, r *http.Request) {
 			problem(w, 403, "forbidden", "Missing scope")
 			return
 		}
-		v, e := a.db.Jobs(r.Context(), 100)
+		v, e := a.repos.Jobs.List(r.Context(), 100)
 		respond(w, v, e)
 		return
 	}
@@ -147,7 +147,7 @@ func (a *API) api(w http.ResponseWriter, r *http.Request) {
 			problem(w, 403, "forbidden", "Administrator access required")
 			return
 		}
-		v, e := a.db.Audits(r.Context(), 200)
+		v, e := a.repos.Audits.List(r.Context(), 200)
 		respond(w, v, e)
 		return
 	}
@@ -160,7 +160,7 @@ func (a *API) certificates(w http.ResponseWriter, r *http.Request, id identity, 
 			problem(w, 403, "forbidden", "Missing scope")
 			return
 		}
-		v, e := a.db.ListCertificates(r.Context())
+		v, e := a.repos.Certificates.List(r.Context())
 		if !id.admin {
 			filtered := v[:0]
 			for _, c := range v {
@@ -183,7 +183,7 @@ func (a *API) certificates(w http.ResponseWriter, r *http.Request, id identity, 
 			problem(w, 403, "forbidden", "Missing scope")
 			return
 		}
-		v, e := a.db.Certificate(r.Context(), name)
+		v, e := a.repos.Certificates.Get(r.Context(), name)
 		respond(w, v, e)
 		return
 	}
@@ -192,7 +192,7 @@ func (a *API) certificates(w http.ResponseWriter, r *http.Request, id identity, 
 			problem(w, 403, "forbidden", "Missing scope")
 			return
 		}
-		v, e := a.db.Versions(r.Context(), name)
+		v, e := a.repos.Certificates.Versions(r.Context(), name)
 		respond(w, v, e)
 		return
 	}
@@ -202,7 +202,7 @@ func (a *API) certificates(w http.ResponseWriter, r *http.Request, id identity, 
 			return
 		}
 		go func() { _ = a.manager.Issue(context.Background(), name, "manual") }()
-		a.db.Audit(r.Context(), id.name, "renewal.trigger", name, "", remoteIP(r))
+		a.repos.Audits.Record(r.Context(), id.name, "renewal.trigger", name, "", remoteIP(r))
 		jsonResponse(w, 202, map[string]string{"status": "queued"})
 		return
 	}
@@ -220,7 +220,7 @@ func (a *API) certificates(w http.ResponseWriter, r *http.Request, id identity, 
 			problem(w, 403, "forbidden", "Missing scope")
 			return
 		}
-		v, e := a.db.CurrentVersion(r.Context(), name)
+		v, e := a.repos.Certificates.CurrentVersion(r.Context(), name)
 		if e != nil {
 			respond(w, nil, e)
 			return
@@ -240,7 +240,7 @@ func (a *API) certificates(w http.ResponseWriter, r *http.Request, id identity, 
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name+"-"+file))
 		_, _ = w.Write(b)
-		a.db.Audit(r.Context(), id.name, "certificate.download", name, file, remoteIP(r))
+		a.repos.Audits.Record(r.Context(), id.name, "certificate.download", name, file, remoteIP(r))
 		return
 	}
 	problem(w, 404, "not_found", "Resource not found")
@@ -248,7 +248,7 @@ func (a *API) certificates(w http.ResponseWriter, r *http.Request, id identity, 
 
 func (a *API) keys(w http.ResponseWriter, r *http.Request, p []string) {
 	if len(p) == 1 && r.Method == "GET" {
-		v, e := a.db.ListAPIKeys(r.Context())
+		v, e := a.repos.APIKeys.List(r.Context())
 		respond(w, v, e)
 		return
 	}
@@ -262,25 +262,25 @@ func (a *API) keys(w http.ResponseWriter, r *http.Request, p []string) {
 			problem(w, 400, "invalid_request", "name, scopes, and certificates are required")
 			return
 		}
-		key, token, e := a.db.CreateAPIKey(r.Context(), in.Name, in.Scopes, in.Certificates, in.ExpiresAt)
+		key, token, e := a.repos.APIKeys.Create(r.Context(), in.Name, in.Scopes, in.Certificates, in.ExpiresAt)
 		if e != nil {
 			problem(w, 500, "database_error", e.Error())
 			return
 		}
-		a.db.Audit(r.Context(), "admin", "api_key.create", strconv.FormatInt(key.ID, 10), in.Name, remoteIP(r))
+		a.repos.Audits.Record(r.Context(), "admin", "api_key.create", strconv.FormatInt(key.ID, 10), in.Name, remoteIP(r))
 		jsonResponse(w, 201, map[string]any{"api_key": key, "token": token})
 		return
 	}
 	if len(p) == 2 && r.Method == "DELETE" {
 		id, e := strconv.ParseInt(p[1], 10, 64)
 		if e == nil {
-			e = a.db.RevokeAPIKey(r.Context(), id)
+			e = a.repos.APIKeys.Revoke(r.Context(), id)
 		}
 		if e != nil {
 			respond(w, nil, e)
 			return
 		}
-		a.db.Audit(r.Context(), "admin", "api_key.revoke", p[1], "", remoteIP(r))
+		a.repos.Audits.Record(r.Context(), "admin", "api_key.revoke", p[1], "", remoteIP(r))
 		w.WriteHeader(204)
 		return
 	}
@@ -298,7 +298,7 @@ func (a *API) bootstrapLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.setSession(w, "bootstrap-admin")
-	a.db.Audit(r.Context(), "bootstrap-admin", "auth.login", "ui", "", remoteIP(r))
+	a.repos.Audits.Record(r.Context(), "bootstrap-admin", "auth.login", "ui", "", remoteIP(r))
 	w.WriteHeader(204)
 }
 
@@ -350,7 +350,7 @@ func (a *API) callback(w http.ResponseWriter, r *http.Request) {
 		name = claims.Sub
 	}
 	a.setSession(w, name)
-	a.db.Audit(r.Context(), name, "auth.login", "ui", "oidc", remoteIP(r))
+	a.repos.Audits.Record(r.Context(), name, "auth.login", "ui", "oidc", remoteIP(r))
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
