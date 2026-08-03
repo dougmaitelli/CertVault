@@ -1,13 +1,14 @@
 {
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
-    "format": "prettier --write src eslint.config.mjs package.json tsconfig.json index.html",
-    "format:check": "prettier --check src eslint.config.mjs package.json tsconfig.json index.html",
+    "format": "prettier --write src eslint.config.mjs package.json tsconfig.json vite.config.ts index.html",
+    "format:check": "prettier --check src eslint.config.mjs package.json tsconfig.json vite.config.ts index.html",
     "test": "npm run typecheck",
     "check": "npm run format:check && npm run lint && npm run test && npm run build"
   },

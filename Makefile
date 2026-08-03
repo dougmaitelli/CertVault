@@ -7,7 +7,12 @@ export GOLANGCI_LINT_CACHE
 	build build-backend build-frontend test test-backend test-frontend \
 	format format-backend format-frontend format-check \
 	format-check-backend format-check-frontend lint lint-backend lint-frontend \
-	vet check tools clean docker config-check
+	vet check tools clean docker config-check dev
+
+DEV_DIR := $(CURDIR)/.cache/dev
+DEV_CONFIG := $(CURDIR)/config/config.dev.yaml
+DEV_MASTER_KEY := $(DEV_DIR)/master-key
+DEV_ADMIN_TOKEN := $(DEV_DIR)/admin-token
 
 build: build-backend build-frontend
 
@@ -36,7 +41,7 @@ test-frontend:
 format: format-backend format-frontend
 
 format-backend:
-	gofmt -w backend/main.go backend/api backend/config backend/database backend/service backend/store backend/vault
+	gofmt -w backend/main.go backend/api backend/config backend/database backend/service backend/vault
 
 format-frontend:
 	cd web && npm run format
@@ -44,7 +49,7 @@ format-frontend:
 format-check: format-check-backend format-check-frontend
 
 format-check-backend:
-	test -z "$$(gofmt -l backend/main.go backend/api backend/config backend/database backend/service backend/store backend/vault)"
+	test -z "$$(gofmt -l backend/main.go backend/api backend/config backend/database backend/service backend/vault)"
 
 format-check-frontend:
 	cd web && npm run format:check
@@ -79,3 +84,19 @@ docker:
 
 config-check:
 	cd backend && go run . -config ../config/config.yaml -check-config
+
+dev: dependencies
+	mkdir -p $(DEV_DIR)/data
+	test -f $(DEV_MASTER_KEY) || openssl rand -base64 32 > $(DEV_MASTER_KEY)
+	test -f $(DEV_ADMIN_TOKEN) || printf '%s\n' 'certvault-dev-admin' > $(DEV_ADMIN_TOKEN)
+	@echo "CertVault UI: http://localhost:8081"
+	@echo "Bootstrap token: certvault-dev-admin"
+	@set -eu; \
+		cd backend; \
+		CERTVAULT_MASTER_KEY_FILE=$(DEV_MASTER_KEY) \
+		CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE=$(DEV_ADMIN_TOKEN) \
+		go run . -config $(DEV_CONFIG) & \
+		backend_pid=$$!; \
+		trap 'kill $$backend_pid 2>/dev/null || true' EXIT INT TERM; \
+		cd ../web; \
+		npm run dev

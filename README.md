@@ -122,6 +122,19 @@ The service trusts proxy termination only for transport; it does not trust forwa
 
 ## Development
 
+To run the UI and API locally without configuring DNS or issuing certificates:
+
+```sh
+make dev
+```
+
+Open `http://localhost:8081` and use `certvault-dev-admin` as the bootstrap
+token. Development data and generated secrets are stored under the ignored
+`.cache/dev` directory. The development configuration contains no certificates,
+so the ACME manager has nothing to issue or renew.
+
+For the complete configured application:
+
 ```sh
 make dependencies
 make check

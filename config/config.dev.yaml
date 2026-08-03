@@ -1,0 +1,17 @@
+data_dir: ../.cache/dev/data
+
+server:
+  listen: 127.0.0.1:8080
+  public_url: http://localhost:8081
+  log_level: debug
+
+acme:
+  email: dev@localhost
+  directory_url: https://acme-staging-v02.api.letsencrypt.org/directory
+  accept_terms: true
+
+auth: {}
+dns_credentials: {}
+zones: []
+certificates: []
+hooks: []
