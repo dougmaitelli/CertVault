@@ -19,7 +19,10 @@ button {
   font-size: 0.9rem;
 }
 button,
-a {
+a,
+select,
+input[type="checkbox"],
+.grid article {
   cursor: pointer;
 }
 .splash {
