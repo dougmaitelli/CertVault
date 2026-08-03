@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/certvault/certvault/config"
@@ -26,35 +25,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type API struct {
-	cfg       *config.Config
-	db        *store.Store
-	manager   *service.Manager
-	log       *slog.Logger
-	bootstrap string
-	oidc      *oidc.Provider
-	oauth     *oauth2.Config
-	states    sync.Map
-}
-type oidcState struct {
-	Nonce    string
-	Verifier string
-	At       time.Time
-}
-type contextKey string
-
 const principalKey contextKey = "principal"
 
 const contentSecurityPolicy = "default-src 'self'; " +
 	"style-src 'self' 'unsafe-inline'; " +
 	"img-src 'self' data:; " +
 	"connect-src 'self'"
-
-type identity struct {
-	admin     bool
-	name      string
-	principal store.Principal
-}
 
 func New(c *config.Config, db *store.Store, m *service.Manager, log *slog.Logger) (http.Handler, error) {
 	a := &API{cfg: c, db: db, manager: m, log: log}
@@ -277,12 +253,7 @@ func (a *API) keys(w http.ResponseWriter, r *http.Request, p []string) {
 		return
 	}
 	if len(p) == 1 && r.Method == "POST" {
-		var in struct {
-			Name         string     `json:"name"`
-			Scopes       []string   `json:"scopes"`
-			Certificates []string   `json:"certificates"`
-			ExpiresAt    *time.Time `json:"expires_at"`
-		}
+		var in createAPIKeyRequest
 		if e := decode(r, &in); e != nil {
 			problem(w, 400, "invalid_request", e.Error())
 			return
@@ -321,9 +292,7 @@ func (a *API) allow(id identity, scope, cert string) bool {
 }
 
 func (a *API) bootstrapLogin(w http.ResponseWriter, r *http.Request) {
-	var in struct {
-		Token string `json:"token"`
-	}
+	var in bootstrapLoginRequest
 	if decode(r, &in) != nil || a.bootstrap == "" || !hmac.Equal([]byte(in.Token), []byte(a.bootstrap)) {
 		problem(w, 401, "unauthorized", "Invalid bootstrap token")
 		return
@@ -371,11 +340,7 @@ func (a *API) callback(w http.ResponseWriter, r *http.Request) {
 		problem(w, 401, "oidc_error", "ID token verification failed")
 		return
 	}
-	var claims struct {
-		Email  string   `json:"email"`
-		Sub    string   `json:"sub"`
-		Groups []string `json:"groups"`
-	}
+	var claims oidcClaims
 	if verified.Claims(&claims) != nil || !groupAllowed(claims.Groups, a.cfg.Auth.OIDC.AllowedGroups) {
 		problem(w, 403, "forbidden", "OIDC group is not allowed")
 		return

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/hmac"
@@ -27,12 +26,10 @@ import (
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/store"
 	"github.com/certvault/certvault/vault"
-	"github.com/go-acme/lego/v5/acme"
 	"github.com/go-acme/lego/v5/certcrypto"
 	"github.com/go-acme/lego/v5/certificate"
 	"github.com/go-acme/lego/v5/challenge"
 	"github.com/go-acme/lego/v5/lego"
-	"github.com/go-acme/lego/v5/providers/dns"
 	"github.com/go-acme/lego/v5/registration"
 )
 
@@ -43,15 +40,6 @@ type Manager struct {
 	locks   sync.Map
 	issueMu sync.Mutex
 }
-type acmeUser struct {
-	Email        string
-	Registration *acme.ExtendedAccount
-	Key          *ecdsa.PrivateKey
-}
-
-func (u *acmeUser) GetEmail() string                       { return u.Email }
-func (u *acmeUser) GetRegistration() *acme.ExtendedAccount { return u.Registration }
-func (u *acmeUser) GetPrivateKey() crypto.Signer           { return u.Key }
 
 func NewManager(c *config.Config, db *store.Store, log *slog.Logger) (*Manager, error) {
 	return &Manager{cfg: c, db: db, log: log}, nil
@@ -198,11 +186,7 @@ func (m *Manager) loadUser() (*acmeUser, error) {
 	if e != nil {
 		return nil, e
 	}
-	var wire struct {
-		Email        string
-		Key          []byte
-		Registration *acme.ExtendedAccount
-	}
+	var wire acmeUserWire
 	if e = json.Unmarshal(plain, &wire); e != nil {
 		return nil, e
 	}
@@ -215,88 +199,12 @@ func (m *Manager) saveUser(u *acmeUser) error {
 	if e != nil {
 		return e
 	}
-	plain, _ := json.Marshal(struct {
-		Email        string
-		Key          []byte
-		Registration *acme.ExtendedAccount
-	}{u.Email, key, u.Registration})
+	plain, _ := json.Marshal(acmeUserWire{u.Email, key, u.Registration})
 	b, e := vault.Encrypt(m.cfg.MasterKey, plain)
 	if e != nil {
 		return e
 	}
 	return atomicWrite(filepath.Join(m.cfg.DataDir, "accounts", "account.json.enc"), b, 0600)
-}
-
-type muxProvider struct {
-	cfg       *config.Config
-	cert      config.Certificate
-	providers map[string]challenge.Provider
-}
-
-func (m *muxProvider) forDomain(domain string) (challenge.Provider, error) {
-	name, cred, ok := m.cfg.CredentialForDomain(m.cert, domain)
-	if !ok {
-		return nil, fmt.Errorf("no DNS credential for %s", domain)
-	}
-	if p := m.providers[name]; p != nil {
-		return p, nil
-	}
-	restore := map[string]*string{}
-	for k, v := range cred.Environment {
-		old, exists := os.LookupEnv(k)
-		if exists {
-			copy := old
-			restore[k] = &copy
-		} else {
-			restore[k] = nil
-		}
-		if strings.HasSuffix(k, config.EnvFileSuffix) {
-			b, e := os.ReadFile(v)
-			if e != nil {
-				return nil, e
-			}
-			if err := os.Setenv(strings.TrimSuffix(k, config.EnvFileSuffix), strings.TrimSpace(string(b))); err != nil {
-				return nil, err
-			}
-		} else {
-			if err := os.Setenv(k, v); err != nil {
-				return nil, err
-			}
-		}
-	}
-	p, e := dns.NewDNSChallengeProviderByName(cred.Provider)
-	for k, v := range restore {
-		if v == nil {
-			if err := os.Unsetenv(k); err != nil {
-				return nil, err
-			}
-		} else {
-			if err := os.Setenv(k, *v); err != nil {
-				return nil, err
-			}
-		}
-	}
-	if e != nil {
-		return nil, e
-	}
-	m.providers[name] = p
-	return p, nil
-}
-
-func (m *muxProvider) Present(ctx context.Context, domain, token, keyAuth string) error {
-	p, e := m.forDomain(domain)
-	if e != nil {
-		return e
-	}
-	return p.Present(ctx, domain, token, keyAuth)
-}
-
-func (m *muxProvider) CleanUp(ctx context.Context, domain, token, keyAuth string) error {
-	p, e := m.forDomain(domain)
-	if e != nil {
-		return e
-	}
-	return p.CleanUp(ctx, domain, token, keyAuth)
 }
 
 func (m *Manager) provider(c config.Certificate) (challenge.Provider, error) {

@@ -4,17 +4,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"go.yaml.in/yaml/v3"
 )
-
-const DefaultRenewBefore = 30 * 24 * time.Hour
 
 type Config struct {
 	DataDir        string                   `yaml:"data_dir"`
@@ -26,82 +22,6 @@ type Config struct {
 	Certificates   []Certificate            `yaml:"certificates"`
 	Hooks          []Hook                   `yaml:"hooks"`
 	MasterKey      []byte                   `yaml:"-"`
-}
-type Server struct {
-	Listen    string   `yaml:"listen"`
-	PublicURL string   `yaml:"public_url"`
-	LogLevel  LogLevel `yaml:"log_level"`
-}
-type ACME struct {
-	Email        string `yaml:"email"`
-	DirectoryURL string `yaml:"directory_url"`
-	AcceptTerms  bool   `yaml:"accept_terms"`
-}
-type Auth struct {
-	BootstrapTokenFile string `yaml:"bootstrap_token_file"`
-	OIDC               *OIDC  `yaml:"oidc"`
-}
-type OIDC struct {
-	IssuerURL        string   `yaml:"issuer_url"`
-	ClientID         string   `yaml:"client_id"`
-	ClientSecretFile string   `yaml:"client_secret_file"`
-	RedirectURL      string   `yaml:"redirect_url"`
-	AllowedGroups    []string `yaml:"allowed_groups"`
-}
-type DNSCredential struct {
-	Provider    string            `yaml:"provider"`
-	Environment map[string]string `yaml:"environment"`
-}
-type Zone struct {
-	Name       string `yaml:"name"`
-	Credential string `yaml:"credential"`
-}
-type Certificate struct {
-	Name        string   `yaml:"name"`
-	Domains     []string `yaml:"domains"`
-	KeyType     KeyType  `yaml:"key_type"`
-	RenewBefore Duration `yaml:"renew_before"`
-	Credential  string   `yaml:"credential"`
-	Enabled     *bool    `yaml:"enabled"`
-}
-type Hook struct {
-	Name       string   `yaml:"name"`
-	Type       string   `yaml:"type"`
-	Events     []string `yaml:"events"`
-	URL        string   `yaml:"url"`
-	SecretFile string   `yaml:"secret_file"`
-	Command    string   `yaml:"command"`
-	Args       []string `yaml:"args"`
-	Timeout    Duration `yaml:"timeout"`
-}
-type Duration struct{ time.Duration }
-
-// LogLevel is a validated slog logging threshold.
-type LogLevel slog.Level
-
-func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
-	v, err := time.ParseDuration(n.Value)
-	d.Duration = v
-	return err
-}
-
-func (l *LogLevel) UnmarshalYAML(n *yaml.Node) error {
-	return l.UnmarshalText([]byte(n.Value))
-}
-
-// UnmarshalText parses a standard slog level name or offset.
-func (l *LogLevel) UnmarshalText(text []byte) error {
-	level, err := ParseLogLevel(string(text))
-	if err != nil {
-		return err
-	}
-	*l = LogLevel(level)
-	return nil
-}
-
-// Level returns the configured threshold as a slog level.
-func (l LogLevel) Level() slog.Level {
-	return slog.Level(l)
 }
 
 func Load(path string) (*Config, error) {
@@ -213,19 +133,6 @@ func (c *Config) Validate() error {
 		}
 	}
 	return nil
-}
-
-// ParseLogLevel converts a configured slog level name or offset into a level.
-func ParseLogLevel(value string) (slog.Level, error) {
-	normalized := strings.ToUpper(strings.TrimSpace(value))
-	if normalized == "WARNING" {
-		normalized = "WARN"
-	}
-	var level slog.Level
-	if err := level.UnmarshalText([]byte(normalized)); err != nil {
-		return 0, fmt.Errorf("invalid server.log_level %q: %w", value, err)
-	}
-	return level, nil
 }
 
 func (c *Config) Certificate(name string) (Certificate, bool) {
