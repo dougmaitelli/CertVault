@@ -21,30 +21,12 @@ const contentSecurityPolicy = "default-src 'self'; " +
 	"connect-src 'self'"
 
 func New(c *config.Config, repos *repository.Repositories, manager *service.Manager) (http.Handler, error) {
-	authenticator, err := auth.New(authenticationConfig(c), repos)
+	authenticator, err := auth.New(c, repos)
 	if err != nil {
 		return nil, err
 	}
 	a := &API{cfg: c, repos: repos, manager: manager, authenticator: authenticator}
 	return a.routes(), nil
-}
-
-func authenticationConfig(c *config.Config) auth.Config {
-	result := auth.Config{
-		PublicURL:          c.Server.PublicURL,
-		MasterKey:          c.MasterKey,
-		BootstrapTokenFile: c.Auth.BootstrapTokenFile,
-	}
-	if c.Auth.OIDC != nil {
-		result.OIDC = &auth.OIDCConfig{
-			IssuerURL:        c.Auth.OIDC.IssuerURL,
-			ClientID:         c.Auth.OIDC.ClientID,
-			ClientSecretFile: c.Auth.OIDC.ClientSecretFile,
-			RedirectURL:      c.Auth.OIDC.RedirectURL,
-			AllowedGroups:    c.Auth.OIDC.AllowedGroups,
-		}
-	}
-	return result
 }
 
 func (a *API) frontend(w http.ResponseWriter, r *http.Request) {

@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database/repository"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -27,30 +28,30 @@ const (
 	oidcStateLifetime            = 10 * time.Minute
 )
 
-func New(cfg Config, repos *repository.Repositories) (*Authenticator, error) {
+func New(cfg *config.Config, repos *repository.Repositories) (*Authenticator, error) {
 	authenticator := &Authenticator{config: cfg, repos: repos}
-	if cfg.BootstrapTokenFile != "" {
-		contents, err := os.ReadFile(cfg.BootstrapTokenFile)
+	if cfg.Auth.BootstrapTokenFile != "" {
+		contents, err := os.ReadFile(cfg.Auth.BootstrapTokenFile)
 		if err != nil {
 			return nil, err
 		}
 		authenticator.bootstrap = strings.TrimSpace(string(contents))
 	}
-	if cfg.OIDC != nil {
-		provider, err := oidc.NewProvider(context.Background(), cfg.OIDC.IssuerURL)
+	if cfg.Auth.OIDC != nil {
+		provider, err := oidc.NewProvider(context.Background(), cfg.Auth.OIDC.IssuerURL)
 		if err != nil {
 			return nil, fmt.Errorf("OIDC discovery: %w", err)
 		}
-		secret, err := os.ReadFile(cfg.OIDC.ClientSecretFile)
+		secret, err := os.ReadFile(cfg.Auth.OIDC.ClientSecretFile)
 		if err != nil {
 			return nil, err
 		}
 		authenticator.oidc = provider
 		authenticator.oauth = &oauth2.Config{
-			ClientID:     cfg.OIDC.ClientID,
+			ClientID:     cfg.Auth.OIDC.ClientID,
 			ClientSecret: strings.TrimSpace(string(secret)),
 			Endpoint:     provider.Endpoint(),
-			RedirectURL:  cfg.OIDC.RedirectURL,
+			RedirectURL:  cfg.Auth.OIDC.RedirectURL,
 			Scopes:       []string{oidc.ScopeOpenID, "profile", "email", "groups"},
 		}
 	}
@@ -132,7 +133,7 @@ func (a *Authenticator) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var claims oidcClaims
-	if verified.Claims(&claims) != nil || !groupAllowed(claims.Groups, a.config.OIDC.AllowedGroups) {
+	if verified.Claims(&claims) != nil || !groupAllowed(claims.Groups, a.config.Auth.OIDC.AllowedGroups) {
 		problem(w, http.StatusForbidden, "forbidden", "OIDC group is not allowed")
 		return
 	}
@@ -152,7 +153,7 @@ func (a *Authenticator) Logout(w http.ResponseWriter, _ *http.Request) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   strings.HasPrefix(a.config.PublicURL, "https://"),
+		Secure:   strings.HasPrefix(a.config.Server.PublicURL, "https://"),
 		SameSite: http.SameSiteStrictMode,
 	})
 	w.WriteHeader(http.StatusNoContent)
@@ -181,7 +182,7 @@ func (a *Authenticator) setSession(w http.ResponseWriter, name string) {
 		Path:     "/",
 		MaxAge:   int(sessionDuration.Seconds()),
 		HttpOnly: true,
-		Secure:   strings.HasPrefix(a.config.PublicURL, "https://"),
+		Secure:   strings.HasPrefix(a.config.Server.PublicURL, "https://"),
 		SameSite: http.SameSiteStrictMode,
 	})
 }

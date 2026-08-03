@@ -3,10 +3,12 @@ package auth
 import (
 	"net/http/httptest"
 	"testing"
+
+	"github.com/certvault/certvault/config"
 )
 
 func TestSessionRoundTrip(t *testing.T) {
-	authenticator := &Authenticator{config: Config{MasterKey: make([]byte, 32)}}
+	authenticator := &Authenticator{config: &config.Config{MasterKey: make([]byte, 32)}}
 	recorder := httptest.NewRecorder()
 	authenticator.setSession(recorder, "admin@example.com")
 
