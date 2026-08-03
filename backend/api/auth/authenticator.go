@@ -22,10 +22,12 @@ import (
 )
 
 const (
-	identityKey       contextKey = "identity"
-	sessionCookie                = "cv_session"
-	sessionDuration              = 12 * time.Hour
-	oidcStateLifetime            = 10 * time.Minute
+	identityKey         contextKey = "identity"
+	sessionCookie                  = "cv_session"
+	sessionDuration                = 12 * time.Hour
+	oidcStateLifetime              = 10 * time.Minute
+	authMethodBootstrap            = "bootstrap"
+	authMethodOIDC                 = "oidc"
 )
 
 func New(
@@ -98,7 +100,14 @@ func (a *Authenticator) BootstrapLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.setSession(w, "bootstrap-admin")
-	a.repos.Audits.Record(r.Context(), "bootstrap-admin", "auth.login", "ui", "", a.remoteIP(r))
+	a.repos.Audits.Record(
+		r.Context(),
+		"bootstrap-admin",
+		"auth.login",
+		"ui",
+		authMethodBootstrap,
+		a.remoteIP(r),
+	)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -155,7 +164,7 @@ func (a *Authenticator) Callback(w http.ResponseWriter, r *http.Request) {
 		name = claims.Sub
 	}
 	a.setSession(w, name)
-	a.repos.Audits.Record(r.Context(), name, "auth.login", "ui", "oidc", a.remoteIP(r))
+	a.repos.Audits.Record(r.Context(), name, "auth.login", "ui", authMethodOIDC, a.remoteIP(r))
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 

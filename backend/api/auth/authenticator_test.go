@@ -1,10 +1,17 @@
 package auth
 
 import (
+	"context"
+	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/certvault/certvault/config"
+	"github.com/certvault/certvault/database"
+	"github.com/certvault/certvault/database/repository"
+	certnetwork "github.com/certvault/certvault/network"
 )
 
 func TestSessionRoundTrip(t *testing.T) {
@@ -33,5 +40,50 @@ func TestGroupAllowed(t *testing.T) {
 	}
 	if groupAllowed([]string{"users"}, []string{"operators"}) {
 		t.Fatal("non-matching group was accepted")
+	}
+}
+
+func TestBootstrapLoginRecordsAuthenticationMethod(t *testing.T) {
+	db, err := database.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	repositories := repository.New(db)
+	clientIPs, err := certnetwork.NewClientIPResolver(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	authenticator, err := New(
+		&config.Config{
+			MasterKey: make([]byte, 32),
+			Auth:      config.Auth{BootstrapToken: "secret"},
+		},
+		repositories,
+		clientIPs,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	request := httptest.NewRequestWithContext(
+		context.Background(),
+		http.MethodPost,
+		"/auth/bootstrap",
+		strings.NewReader(`{"token":"secret"}`),
+	)
+	response := httptest.NewRecorder()
+	authenticator.BootstrapLogin(response, request)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("bootstrap login returned %d", response.Code)
+	}
+
+	audits, err := repositories.Audits.List(context.Background(), 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(audits) != 1 || audits[0].Detail != authMethodBootstrap {
+		t.Fatalf("bootstrap audit events = %#v", audits)
 	}
 }
