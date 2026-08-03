@@ -167,6 +167,7 @@ func (c *Config) Validate() error {
 		return err
 	}
 	if c.Auth.OIDC != nil {
+		c.Auth.OIDC.IssuerURL = strings.TrimRight(c.Auth.OIDC.IssuerURL, "/")
 		if c.Auth.OIDC.IssuerURL == "" || c.Auth.OIDC.ClientID == "" {
 			return errors.New("auth.oidc requires issuer_url and client_id")
 		}

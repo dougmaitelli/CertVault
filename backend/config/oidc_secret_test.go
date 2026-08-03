@@ -71,3 +71,26 @@ func TestOIDCRedirectURLUsesPublicURL(t *testing.T) {
 		t.Fatalf("OIDCRedirectURL() = %q", actual)
 	}
 }
+
+func TestValidateRemovesTrailingSlashesFromOIDCIssuer(t *testing.T) {
+	configuration := Config{
+		Server: Server{PublicURL: "https://certvault.example.com"},
+		ACME: ACME{
+			Email:        "admin@example.com",
+			DirectoryURL: "https://acme.example.com/directory",
+			AcceptTerms:  true,
+		},
+		Auth: Auth{OIDC: &OIDC{
+			IssuerURL:    "https://id.example.com/realms/homelab///",
+			ClientID:     "certvault",
+			ClientSecret: "secret",
+		}},
+	}
+
+	if err := configuration.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if configuration.Auth.OIDC.IssuerURL != "https://id.example.com/realms/homelab" {
+		t.Fatalf("OIDC issuer URL = %q", configuration.Auth.OIDC.IssuerURL)
+	}
+}
