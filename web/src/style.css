@@ -306,7 +306,7 @@ form button,
 .table {
   border: 1px solid #222e36;
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 table {
   width: 100%;

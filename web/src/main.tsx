@@ -8,6 +8,7 @@ const pageRoutes = {
   certificates: "/certificates",
   history: "/history",
   "api keys": "/api-keys",
+  "audit logs": "/audit-logs",
 } as const;
 
 type Page = keyof typeof pageRoutes;
@@ -55,6 +56,15 @@ type Job = {
   error: string;
   started_at: string;
   finished_at?: string;
+};
+type Audit = {
+  id: number;
+  at: string;
+  actor: string;
+  action: string;
+  resource: string;
+  detail?: string;
+  ip?: string;
 };
 
 type Session = {
@@ -153,17 +163,20 @@ function Console() {
   const [certs, setCerts] = useState<Cert[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [keys, setKeys] = useState<APIKey[]>([]);
+  const [audits, setAudits] = useState<Audit[]>([]);
   const [error, setError] = useState("");
   const load = (): Promise<void> =>
     Promise.all([
       api<Cert[]>("certificates"),
       api<Job[]>("jobs"),
       api<APIKey[]>("api-keys"),
+      api<Audit[]>("audit"),
     ])
-      .then(([c, j, k]) => {
+      .then(([c, j, k, a]) => {
         setCerts(c);
         setJobs(j);
         setKeys(k);
+        setAudits(a);
       })
       .catch((e) => setError(String(e)));
   useEffect(() => {
@@ -233,6 +246,7 @@ function Console() {
         {page === "api keys" && (
           <Keys keys={keys} certs={certs} reload={load} />
         )}
+        {page === "audit logs" && <AuditLogs audits={audits} />}
       </main>
     </div>
   );
@@ -383,6 +397,38 @@ function History({ jobs }: { jobs: Job[] }) {
               </td>
               <td>{fmt(j.started_at)}</td>
               <td>{j.error ? j.error : fmt(j.finished_at)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function AuditLogs({ audits }: { audits: Audit[] }) {
+  return (
+    <div className="table">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Actor</th>
+            <th>Action</th>
+            <th>Resource</th>
+            <th>Detail</th>
+            <th>Source IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {audits.map((audit) => (
+            <tr key={audit.id}>
+              <td>{fmt(audit.at)}</td>
+              <td>{audit.actor}</td>
+              <td>
+                <code>{audit.action}</code>
+              </td>
+              <td>{audit.resource}</td>
+              <td>{audit.detail ?? "—"}</td>
+              <td>{audit.ip ?? "—"}</td>
             </tr>
           ))}
         </tbody>
