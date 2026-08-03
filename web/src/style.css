@@ -358,6 +358,11 @@ th {
   overflow: auto;
   color: #ffd887;
 }
+.token button.copied {
+  border-color: #4be0bd;
+  background: #153229;
+  color: #59dfbe;
+}
 .modal {
   position: fixed;
   inset: 0;

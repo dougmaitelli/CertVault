@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import type { APIKey, Certificate } from "../api/types";
 import { CreateAPIKeyDialog } from "../dialogs/CreateAPIKeyDialog";
 import { formatDate } from "../utils/date";
+
+const copyFeedbackDuration = 2000;
 
 type APIKeysPageProps = {
   apiKeys: APIKey[];
@@ -17,6 +19,29 @@ export function APIKeysPage({
 }: APIKeysPageProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [token, setToken] = useState("");
+  const [copied, setCopied] = useState(false);
+  const copyFeedbackTimeout = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copyFeedbackTimeout.current !== null) {
+        window.clearTimeout(copyFeedbackTimeout.current);
+      }
+    },
+    [],
+  );
+
+  async function copyToken() {
+    await navigator.clipboard.writeText(token);
+    setCopied(true);
+    if (copyFeedbackTimeout.current !== null) {
+      window.clearTimeout(copyFeedbackTimeout.current);
+    }
+    copyFeedbackTimeout.current = window.setTimeout(
+      () => setCopied(false),
+      copyFeedbackDuration,
+    );
+  }
 
   async function revoke(id: number) {
     if (confirm("Revoke this API key?")) {
@@ -37,8 +62,12 @@ export function APIKeysPage({
         <div className="token">
           <b>Copy this token now — it cannot be shown again.</b>
           <code>{token}</code>
-          <button onClick={() => void navigator.clipboard.writeText(token)}>
-            Copy
+          <button
+            className={copied ? "copied" : ""}
+            onClick={() => void copyToken()}
+            aria-live="polite"
+          >
+            {copied ? "Copied!" : "Copy"}
           </button>
         </div>
       )}
