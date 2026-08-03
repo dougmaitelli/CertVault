@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api } from "../api/client";
-import type { Certificate } from "../api/types";
+import type { Certificate, Job } from "../api/types";
 import { CertificateDetails } from "../components/CertificateDetails";
 import { CertificateDownloadLink } from "../components/CertificateDownloadLink";
 import { Stat } from "../components/Stat";
@@ -8,18 +8,58 @@ import { formatDate } from "../utils/date";
 
 type CertificatesPageProps = {
   certificates: Certificate[];
+  jobs: Job[];
   reload: () => Promise<void>;
 };
 
 export function CertificatesPage({
   certificates,
+  jobs,
   reload,
 }: CertificatesPageProps) {
   const [selected, setSelected] = useState<Certificate>();
+  const [requestedRenewals, setRequestedRenewals] = useState<
+    Partial<Record<string, number>>
+  >({});
 
   const renew = async (name: string) => {
-    await api(`certificates/${name}/renew`, { method: "POST" });
-    await reload();
+    const latestJobID = jobs.reduce(
+      (latest, job) => Math.max(latest, job.id),
+      0,
+    );
+    setRequestedRenewals((current) => ({
+      ...current,
+      [name]: latestJobID,
+    }));
+    try {
+      await api(`certificates/${name}/renew`, { method: "POST" });
+      await reload();
+    } catch (error) {
+      setRequestedRenewals((current) => {
+        const pending = { ...current };
+        delete pending[name];
+        return pending;
+      });
+      throw error;
+    }
+  };
+
+  const taskRunning = (name: string) => {
+    const previousJobID = requestedRenewals[name];
+    const requestedRenewalPending =
+      previousJobID !== undefined &&
+      !jobs.some(
+        (job) =>
+          job.certificate_name === name &&
+          job.finished_at !== undefined &&
+          job.id > previousJobID,
+      );
+    return (
+      requestedRenewalPending ||
+      jobs.some(
+        (job) => job.certificate_name === name && job.status === "running",
+      )
+    );
   };
 
   return (
@@ -43,9 +83,16 @@ export function CertificatesPage({
           >
             <div className="row">
               <h3>{certificate.name}</h3>
-              <span className={`status ${certificate.status}`}>
-                {certificate.status}
-              </span>
+              <div className="certificate-statuses">
+                {taskRunning(certificate.name) && (
+                  <span className="status running task-running">
+                    <i /> Running
+                  </span>
+                )}
+                <span className={`status ${certificate.status}`}>
+                  {certificate.status}
+                </span>
+              </div>
             </div>
             <code className="certificate-domains">
               {certificate.domains.join(", ")}
@@ -78,12 +125,13 @@ export function CertificatesPage({
               </CertificateDownloadLink>
               <button
                 className="action-button success"
+                disabled={taskRunning(certificate.name)}
                 onClick={(event) => {
                   event.stopPropagation();
                   void renew(certificate.name);
                 }}
               >
-                Renew
+                {taskRunning(certificate.name) ? "Running" : "Renew"}
               </button>
             </div>
           </article>

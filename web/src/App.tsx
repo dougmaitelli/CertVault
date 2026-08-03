@@ -10,6 +10,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { pageFromPath, pageRoutes, type Page } from "./routing/routes";
 
 const statusRefreshInterval = 30_000;
+const taskRefreshInterval = 2_000;
 
 export function App() {
   const [session, setSession] = useState<Session>();
@@ -65,9 +66,6 @@ function Console() {
       void Promise.all([api("health"), api("ready")])
         .then(() => setInfrastructureHealthy(true))
         .catch(() => setInfrastructureHealthy(false));
-      void api<Certificate[]>("certificates")
-        .then(setCertificates)
-        .catch(() => {});
     };
 
     checkInfrastructure();
@@ -75,6 +73,20 @@ function Console() {
       checkInfrastructure,
       statusRefreshInterval,
     );
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const refreshTasks = () => {
+      void Promise.all([api<Certificate[]>("certificates"), api<Job[]>("jobs")])
+        .then(([loadedCertificates, loadedJobs]) => {
+          setCertificates(loadedCertificates);
+          setJobs(loadedJobs);
+        })
+        .catch(() => {});
+    };
+
+    const interval = window.setInterval(refreshTasks, taskRefreshInterval);
     return () => window.clearInterval(interval);
   }, []);
 
@@ -109,7 +121,11 @@ function Console() {
       onNavigate={navigate}
     >
       {page === "certificates" && (
-        <CertificatesPage certificates={certificates} reload={load} />
+        <CertificatesPage
+          certificates={certificates}
+          jobs={jobs}
+          reload={load}
+        />
       )}
       {page === "history" && <HistoryPage jobs={jobs} />}
       {page === "api keys" && (
