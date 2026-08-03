@@ -36,11 +36,7 @@ func Load(path string) (*Config, error) {
 	if err := applyEnv(&c); err != nil {
 		return nil, err
 	}
-	keyFile := os.Getenv(EnvMasterKeyFile)
-	if keyFile == "" {
-		keyFile = filepath.Join(c.DataDir, "master.key")
-	}
-	c.MasterKey, err = loadOrCreateKey(keyFile)
+	c.MasterKey, err = loadMasterKey(c.DataDir)
 	if err != nil {
 		return nil, fmt.Errorf("master key: %w", err)
 	}
@@ -173,17 +169,36 @@ func findZone(domain string, zones map[string]string) string {
 	return value
 }
 
-func loadOrCreateKey(path string) ([]byte, error) {
+func loadMasterKeyFile(path string) ([]byte, error) {
 	b, err := os.ReadFile(path)
 	if err == nil {
-		raw, e := base64.StdEncoding.DecodeString(strings.TrimSpace(string(b)))
-		if e != nil || len(raw) != 32 {
-			return nil, errors.New("master key must be base64-encoded 32 bytes")
-		}
-		return raw, nil
+		return decodeMasterKey(string(b))
 	}
 	if !os.IsNotExist(err) {
 		return nil, err
 	}
 	return nil, fmt.Errorf("%s does not exist; generate it with: openssl rand -base64 32", path)
+}
+
+func loadMasterKey(dataDir string) ([]byte, error) {
+	value := os.Getenv(EnvMasterKey)
+	path := os.Getenv(EnvMasterKeyFile)
+	if value != "" && path != "" {
+		return nil, fmt.Errorf("%s and %s cannot both be set", EnvMasterKey, EnvMasterKeyFile)
+	}
+	if value != "" {
+		return decodeMasterKey(value)
+	}
+	if path == "" {
+		path = filepath.Join(dataDir, "master.key")
+	}
+	return loadMasterKeyFile(path)
+}
+
+func decodeMasterKey(encoded string) ([]byte, error) {
+	raw, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encoded))
+	if err != nil || len(raw) != 32 {
+		return nil, errors.New("master key must be base64-encoded 32 bytes")
+	}
+	return raw, nil
 }

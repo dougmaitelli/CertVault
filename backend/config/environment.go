@@ -9,6 +9,7 @@ const (
 	EnvLogLevel                = "CERTVAULT_LOG_LEVEL"
 	EnvACMEEmail               = "CERTVAULT_ACME_EMAIL"
 	EnvACMEDirectoryURL        = "CERTVAULT_ACME_DIRECTORY_URL"
+	EnvMasterKey               = "CERTVAULT_MASTER_KEY"
 	EnvMasterKeyFile           = "CERTVAULT_MASTER_KEY_FILE"
 	EnvBootstrapAdminTokenFile = "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE"
 	EnvUIDir                   = "CERTVAULT_UI_DIR"
