@@ -17,27 +17,70 @@ select {
 }
 button {
   font-size: 0.9rem;
+}
+button:not(.close),
+.actions a {
+  position: relative;
+  overflow: hidden;
   transition:
-    transform 150ms ease,
     filter 150ms ease,
     box-shadow 150ms ease;
 }
-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-  box-shadow: 0 5px 14px #0005;
+button:not(.close)::after,
+.actions a::after {
+  position: absolute;
+  inset: -100% -50%;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    #ffffff90 50%,
+    transparent 58%
+  );
+  opacity: 0;
+  transform: translateX(-65%);
 }
-button:active:not(:disabled) {
-  transform: translateY(0);
-  transition-duration: 60ms;
+button:not(.close):hover:not(:disabled),
+.actions a:hover {
+  filter: brightness(1.1);
+  box-shadow:
+    0 0 0 1px #ffffff20,
+    0 0 16px #4be0bd55;
+}
+button:not(.close):hover:not(:disabled)::after,
+.actions a:hover::after {
+  animation: button-sparkle 700ms ease-out;
+}
+button:not(.close):active:not(:disabled),
+.actions a:active {
+  filter: brightness(0.95);
 }
 button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 @media (prefers-reduced-motion: reduce) {
-  button {
+  button:not(.close),
+  .actions a {
     transition: none;
+  }
+  button:not(.close)::after,
+  .actions a::after {
+    display: none;
+  }
+}
+@keyframes button-sparkle {
+  0% {
+    opacity: 0;
+    transform: translateX(-65%);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(65%);
   }
 }
 button,
