@@ -4,14 +4,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/certvault/certvault/store"
+	"github.com/certvault/certvault/database/repository"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 
 type Authenticator struct {
 	config    Config
-	repos     *store.Repositories
+	repos     *repository.Repositories
 	bootstrap string
 	oidc      *oidc.Provider
 	oauth     *oauth2.Config
@@ -36,7 +36,7 @@ type OIDCConfig struct {
 type Identity struct {
 	Admin     bool
 	Name      string
-	Principal store.Principal
+	Principal repository.Principal
 }
 
 type oidcState struct {

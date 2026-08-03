@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/certvault/certvault/auth"
+	"github.com/certvault/certvault/api/auth"
 	"github.com/certvault/certvault/config"
+	"github.com/certvault/certvault/database/repository"
 	"github.com/certvault/certvault/service"
-	"github.com/certvault/certvault/store"
 )
 
 const contentSecurityPolicy = "default-src 'self'; " +
@@ -20,7 +20,7 @@ const contentSecurityPolicy = "default-src 'self'; " +
 	"img-src 'self' data:; " +
 	"connect-src 'self'"
 
-func New(c *config.Config, repos *store.Repositories, manager *service.Manager) (http.Handler, error) {
+func New(c *config.Config, repos *repository.Repositories, manager *service.Manager) (http.Handler, error) {
 	authenticator, err := auth.New(authenticationConfig(c), repos)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func respond(w http.ResponseWriter, v any, e error) {
 		jsonResponse(w, 200, v)
 		return
 	}
-	if store.NotFound(e) {
+	if repository.NotFound(e) {
 		problem(w, 404, "not_found", "Resource not found")
 		return
 	}

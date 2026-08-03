@@ -16,8 +16,8 @@ import (
 	"github.com/certvault/certvault/api"
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database"
+	"github.com/certvault/certvault/database/repository"
 	"github.com/certvault/certvault/service"
-	"github.com/certvault/certvault/store"
 )
 
 const (
@@ -49,7 +49,7 @@ func main() {
 		fatal("open database", err)
 	}
 	defer func() { _ = db.Close() }()
-	repositories := store.New(db)
+	repositories := repository.New(db)
 	if err := repositories.Certificates.Reconcile(context.Background(), cfg); err != nil {
 		fatal("reconcile configuration", err)
 	}

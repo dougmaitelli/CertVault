@@ -1,4 +1,4 @@
-package store
+package repository
 
 import "github.com/certvault/certvault/database"
 

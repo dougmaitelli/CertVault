@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/certvault/certvault/config"
-	"github.com/certvault/certvault/store"
+	"github.com/certvault/certvault/database/repository"
 	"github.com/certvault/certvault/vault"
 	"github.com/go-acme/lego/v5/certcrypto"
 	"github.com/go-acme/lego/v5/certificate"
@@ -35,13 +35,13 @@ import (
 
 type Manager struct {
 	cfg     *config.Config
-	repos   *store.Repositories
+	repos   *repository.Repositories
 	log     *slog.Logger
 	locks   sync.Map
 	issueMu sync.Mutex
 }
 
-func NewManager(c *config.Config, repos *store.Repositories, log *slog.Logger) (*Manager, error) {
+func NewManager(c *config.Config, repos *repository.Repositories, log *slog.Logger) (*Manager, error) {
 	return &Manager{cfg: c, repos: repos, log: log}, nil
 }
 
@@ -217,25 +217,25 @@ func (m *Manager) provider(c config.Certificate) (challenge.Provider, error) {
 	return p, nil
 }
 
-func (m *Manager) save(name string, r *certificate.Resource) (store.Version, error) {
+func (m *Manager) save(name string, r *certificate.Resource) (repository.Version, error) {
 	block, _ := pem.Decode(r.Certificate)
 	if block == nil {
-		return store.Version{}, errors.New("ACME response contained no certificate")
+		return repository.Version{}, errors.New("ACME response contained no certificate")
 	}
 	cert, e := x509.ParseCertificate(block.Bytes)
 	if e != nil {
-		return store.Version{}, e
+		return repository.Version{}, e
 	}
 	now := time.Now().UTC()
 	version := now.Format("20060102T150405Z")
 	rel := filepath.Join("certificates", name, "versions", version)
 	dir := filepath.Join(m.cfg.DataDir, rel)
 	if e = os.MkdirAll(dir, 0700); e != nil {
-		return store.Version{}, e
+		return repository.Version{}, e
 	}
 	key, e := vault.Encrypt(m.cfg.MasterKey, r.PrivateKey)
 	if e != nil {
-		return store.Version{}, e
+		return repository.Version{}, e
 	}
 	fullChain := append(append([]byte{}, r.Certificate...), r.IssuerCertificate...)
 	files := map[string][]byte{
@@ -246,11 +246,11 @@ func (m *Manager) save(name string, r *certificate.Resource) (store.Version, err
 	}
 	for n, b := range files {
 		if e = atomicWrite(filepath.Join(dir, n), b, 0600); e != nil {
-			return store.Version{}, e
+			return repository.Version{}, e
 		}
 	}
 	sum := sha256.Sum256(cert.Raw)
-	v := store.Version{
+	v := repository.Version{
 		CertificateName:   name,
 		Path:              rel,
 		Serial:            cert.SerialNumber.String(),
@@ -263,12 +263,12 @@ func (m *Manager) save(name string, r *certificate.Resource) (store.Version, err
 	}
 	meta, _ := json.MarshalIndent(v, "", "  ")
 	if e = atomicWrite(filepath.Join(dir, "metadata.json"), meta, 0600); e != nil {
-		return store.Version{}, e
+		return repository.Version{}, e
 	}
 	return v, nil
 }
 
-func (m *Manager) ReadFile(v *store.Version, name string) ([]byte, error) {
+func (m *Manager) ReadFile(v *repository.Version, name string) ([]byte, error) {
 	allowed := map[string]bool{"certificate.pem": true, "chain.pem": true, "fullchain.pem": true, "private-key.pem": true}
 	if !allowed[name] {
 		return nil, errors.New("invalid file")
@@ -313,7 +313,7 @@ func atomicWrite(path string, b []byte, mode os.FileMode) error {
 	return os.Rename(tmp, path)
 }
 
-func (m *Manager) fireHooks(ctx context.Context, event, name string, v *store.Version, eventErr error) {
+func (m *Manager) fireHooks(ctx context.Context, event, name string, v *repository.Version, eventErr error) {
 	payload := map[string]any{
 		"id":          fmt.Sprintf("evt_%d", time.Now().UnixNano()),
 		"event":       event,

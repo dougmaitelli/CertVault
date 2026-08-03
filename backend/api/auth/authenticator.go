@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/certvault/certvault/store"
+	"github.com/certvault/certvault/database/repository"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
@@ -27,7 +27,7 @@ const (
 	oidcStateLifetime            = 10 * time.Minute
 )
 
-func New(cfg Config, repos *store.Repositories) (*Authenticator, error) {
+func New(cfg Config, repos *repository.Repositories) (*Authenticator, error) {
 	authenticator := &Authenticator{config: cfg, repos: repos}
 	if cfg.BootstrapTokenFile != "" {
 		contents, err := os.ReadFile(cfg.BootstrapTokenFile)

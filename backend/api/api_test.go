@@ -11,8 +11,8 @@ import (
 
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database"
+	"github.com/certvault/certvault/database/repository"
 	"github.com/certvault/certvault/service"
-	"github.com/certvault/certvault/store"
 )
 
 func TestHealthAndScopedCertificateList(t *testing.T) {
@@ -37,7 +37,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = db.Close() }()
-	repositories := store.New(db)
+	repositories := repository.New(db)
 	if err = repositories.Certificates.Reconcile(context.Background(), cfg); err != nil {
 		t.Fatal(err)
 	}

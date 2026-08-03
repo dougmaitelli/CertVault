@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/certvault/certvault/auth"
+	"github.com/certvault/certvault/api/auth"
 )
 
 const (

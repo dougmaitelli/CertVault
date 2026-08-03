@@ -3,15 +3,15 @@ package api
 import (
 	"time"
 
-	"github.com/certvault/certvault/auth"
+	"github.com/certvault/certvault/api/auth"
 	"github.com/certvault/certvault/config"
+	"github.com/certvault/certvault/database/repository"
 	"github.com/certvault/certvault/service"
-	"github.com/certvault/certvault/store"
 )
 
 type API struct {
 	cfg           *config.Config
-	repos         *store.Repositories
+	repos         *repository.Repositories
 	manager       *service.Manager
 	authenticator *auth.Authenticator
 }
