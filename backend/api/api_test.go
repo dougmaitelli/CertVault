@@ -105,4 +105,30 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	if unknown.Code != http.StatusNotFound {
 		t.Fatalf("unknown API route returned %d", unknown.Code)
 	}
+
+	privateKeyRequest := httptest.NewRequestWithContext(
+		context.Background(),
+		http.MethodGet,
+		"/api/v1/certificates/home/private-key.pem",
+		nil,
+	)
+	privateKeyRequest.Header.Set("Authorization", "Bearer "+token)
+	privateKey := httptest.NewRecorder()
+	handler.ServeHTTP(privateKey, privateKeyRequest)
+	if privateKey.Code != http.StatusForbidden {
+		t.Fatalf("private key without scope returned %d", privateKey.Code)
+	}
+
+	adminRequest := httptest.NewRequestWithContext(
+		context.Background(),
+		http.MethodGet,
+		"/api/v1/api-keys",
+		nil,
+	)
+	adminRequest.Header.Set("Authorization", "Bearer "+token)
+	admin := httptest.NewRecorder()
+	handler.ServeHTTP(admin, adminRequest)
+	if admin.Code != http.StatusForbidden {
+		t.Fatalf("admin route with machine key returned %d", admin.Code)
+	}
 }

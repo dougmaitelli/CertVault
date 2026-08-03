@@ -62,10 +62,6 @@ func New(c *config.Config, repos *store.Repositories, m *service.Manager, log *s
 	return a.routes(), nil
 }
 
-func (a *API) allow(id identity, scope, cert string) bool {
-	return id.admin || id.principal.Allows(scope, cert)
-}
-
 func (a *API) bootstrapLogin(w http.ResponseWriter, r *http.Request) {
 	var in bootstrapLoginRequest
 	if decode(r, &in) != nil || a.bootstrap == "" || !hmac.Equal([]byte(in.Token), []byte(a.bootstrap)) {

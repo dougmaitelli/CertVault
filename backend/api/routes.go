@@ -21,21 +21,33 @@ func (a *API) routes() http.Handler {
 
 	apiMux := http.NewServeMux()
 	apiMux.HandleFunc("GET /api/v1/session", a.session)
-	apiMux.HandleFunc("GET /api/v1/certificates", a.listCertificates)
-	apiMux.HandleFunc("GET /api/v1/certificates/{name}", a.getCertificate)
-	apiMux.HandleFunc("GET /api/v1/certificates/{name}/versions", a.listCertificateVersions)
-	apiMux.HandleFunc("POST /api/v1/certificates/{name}/renew", a.renewCertificate)
-	for _, artifact := range certificateArtifacts {
+	apiMux.HandleFunc(
+		"GET /api/v1/certificates",
+		a.requireScope(scopeCertificatesRead, "", a.listCertificates),
+	)
+	apiMux.HandleFunc(
+		"GET /api/v1/certificates/{name}",
+		a.requireScope(scopeCertificatesRead, "name", a.getCertificate),
+	)
+	apiMux.HandleFunc(
+		"GET /api/v1/certificates/{name}/versions",
+		a.requireScope(scopeCertificatesRead, "name", a.listCertificateVersions),
+	)
+	apiMux.HandleFunc(
+		"POST /api/v1/certificates/{name}/renew",
+		a.requireScope(scopeRenewalsTrigger, "name", a.renewCertificate),
+	)
+	for artifact, scope := range certificateArtifacts {
 		apiMux.Handle(
 			"GET /api/v1/certificates/{name}/"+artifact,
-			a.downloadCertificate(artifact),
+			a.requireScope(scope, "name", a.downloadCertificate(artifact)),
 		)
 	}
-	apiMux.HandleFunc("GET /api/v1/jobs", a.listJobs)
-	apiMux.HandleFunc("GET /api/v1/api-keys", a.listAPIKeys)
-	apiMux.HandleFunc("POST /api/v1/api-keys", a.createAPIKey)
-	apiMux.HandleFunc("DELETE /api/v1/api-keys/{id}", a.revokeAPIKey)
-	apiMux.HandleFunc("GET /api/v1/audit", a.listAudits)
+	apiMux.HandleFunc("GET /api/v1/jobs", a.requireScope(scopeCertificatesRead, "", a.listJobs))
+	apiMux.HandleFunc("GET /api/v1/api-keys", requireAdministrator(a.listAPIKeys))
+	apiMux.HandleFunc("POST /api/v1/api-keys", requireAdministrator(a.createAPIKey))
+	apiMux.HandleFunc("DELETE /api/v1/api-keys/{id}", requireAdministrator(a.revokeAPIKey))
+	apiMux.HandleFunc("GET /api/v1/audit", requireAdministrator(a.listAudits))
 	mux.Handle("/api/", a.auth(apiMux))
 
 	mux.HandleFunc("/", a.frontend)

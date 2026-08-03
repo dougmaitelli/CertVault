@@ -14,38 +14,21 @@ func (a *API) session(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) listJobs(w http.ResponseWriter, r *http.Request) {
-	id, ok := requestIdentity(w, r)
-	if !ok {
-		return
-	}
-	if !a.allow(id, "certificates:read", "") {
-		problem(w, http.StatusForbidden, "forbidden", "Missing scope")
-		return
-	}
 	jobs, err := a.repos.Jobs.List(r.Context(), 100)
 	respond(w, jobs, err)
 }
 
 func (a *API) listAudits(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) {
-		return
-	}
 	audits, err := a.repos.Audits.List(r.Context(), 200)
 	respond(w, audits, err)
 }
 
 func (a *API) listAPIKeys(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) {
-		return
-	}
 	keys, err := a.repos.APIKeys.List(r.Context())
 	respond(w, keys, err)
 }
 
 func (a *API) createAPIKey(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) {
-		return
-	}
 	var input createAPIKeyRequest
 	if err := decode(r, &input); err != nil {
 		problem(w, http.StatusBadRequest, "invalid_request", err.Error())
@@ -78,9 +61,6 @@ func (a *API) createAPIKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) revokeAPIKey(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) {
-		return
-	}
 	id := r.PathValue("id")
 	keyID, err := strconv.ParseInt(id, 10, 64)
 	if err == nil {
@@ -92,29 +72,4 @@ func (a *API) revokeAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 	a.repos.Audits.Record(r.Context(), "admin", "api_key.revoke", id, "", remoteIP(r))
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func requestIdentity(w http.ResponseWriter, r *http.Request) (identity, bool) {
-	id, ok := r.Context().Value(principalKey).(identity)
-	if !ok {
-		problem(
-			w,
-			http.StatusInternalServerError,
-			"missing_identity",
-			"Authenticated identity is unavailable",
-		)
-	}
-	return id, ok
-}
-
-func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
-	id, ok := requestIdentity(w, r)
-	if !ok {
-		return false
-	}
-	if !id.admin {
-		problem(w, http.StatusForbidden, "forbidden", "Administrator access required")
-		return false
-	}
-	return true
 }

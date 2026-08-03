@@ -14,11 +14,11 @@ const (
 	privateKeyArtifact  = "private-key.pem"
 )
 
-var certificateArtifacts = []string{
-	certificateArtifact,
-	chainArtifact,
-	fullChainArtifact,
-	privateKeyArtifact,
+var certificateArtifacts = map[string]string{
+	certificateArtifact: scopeCertificatesRead,
+	chainArtifact:       scopeCertificatesRead,
+	fullChainArtifact:   scopeCertificatesRead,
+	privateKeyArtifact:  scopePrivateKeysRead,
 }
 
 func (a *API) listCertificates(w http.ResponseWriter, r *http.Request) {
@@ -26,15 +26,11 @@ func (a *API) listCertificates(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if !a.allow(id, "certificates:read", "") {
-		problem(w, http.StatusForbidden, "forbidden", "Missing scope")
-		return
-	}
 	certificates, err := a.repos.Certificates.List(r.Context())
 	if !id.admin {
 		filtered := certificates[:0]
 		for _, certificate := range certificates {
-			if id.principal.Allows("certificates:read", certificate.Name) {
+			if id.principal.Allows(scopeCertificatesRead, certificate.Name) {
 				filtered = append(filtered, certificate)
 			}
 		}
@@ -44,29 +40,13 @@ func (a *API) listCertificates(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) getCertificate(w http.ResponseWriter, r *http.Request) {
-	id, ok := requestIdentity(w, r)
-	if !ok {
-		return
-	}
 	name := r.PathValue("name")
-	if !a.allow(id, "certificates:read", name) {
-		problem(w, http.StatusForbidden, "forbidden", "Missing scope")
-		return
-	}
 	certificate, err := a.repos.Certificates.Get(r.Context(), name)
 	respond(w, certificate, err)
 }
 
 func (a *API) listCertificateVersions(w http.ResponseWriter, r *http.Request) {
-	id, ok := requestIdentity(w, r)
-	if !ok {
-		return
-	}
 	name := r.PathValue("name")
-	if !a.allow(id, "certificates:read", name) {
-		problem(w, http.StatusForbidden, "forbidden", "Missing scope")
-		return
-	}
 	versions, err := a.repos.Certificates.Versions(r.Context(), name)
 	respond(w, versions, err)
 }
@@ -77,10 +57,6 @@ func (a *API) renewCertificate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.PathValue("name")
-	if !a.allow(id, "renewals:trigger", name) {
-		problem(w, http.StatusForbidden, "forbidden", "Missing scope")
-		return
-	}
 	go func() { _ = a.manager.Issue(context.Background(), name, "manual") }()
 	a.repos.Audits.Record(r.Context(), id.name, "renewal.trigger", name, "", remoteIP(r))
 	jsonResponse(w, http.StatusAccepted, map[string]string{"status": "queued"})
@@ -93,14 +69,6 @@ func (a *API) downloadCertificate(file string) http.HandlerFunc {
 			return
 		}
 		name := r.PathValue("name")
-		scope := "certificates:read"
-		if file == privateKeyArtifact {
-			scope = "private_keys:read"
-		}
-		if !a.allow(id, scope, name) {
-			problem(w, http.StatusForbidden, "forbidden", "Missing scope")
-			return
-		}
 		version, err := a.repos.Certificates.CurrentVersion(r.Context(), name)
 		if err != nil {
 			respond(w, nil, err)
