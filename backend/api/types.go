@@ -5,6 +5,7 @@ import (
 
 	"github.com/certvault/certvault/api/auth"
 	"github.com/certvault/certvault/config"
+	"github.com/certvault/certvault/database"
 	"github.com/certvault/certvault/database/repository"
 	certnetwork "github.com/certvault/certvault/network"
 	"github.com/certvault/certvault/service"
@@ -12,6 +13,7 @@ import (
 
 type API struct {
 	cfg           *config.Config
+	database      *database.Database
 	repos         *repository.Repositories
 	manager       *service.Manager
 	authenticator *auth.Authenticator

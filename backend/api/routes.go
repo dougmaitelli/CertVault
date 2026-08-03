@@ -8,12 +8,8 @@ import (
 
 func (a *API) routes() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/v1/health", func(w http.ResponseWriter, _ *http.Request) {
-		jsonResponse(w, http.StatusOK, map[string]string{"status": "ok"})
-	})
-	mux.HandleFunc("GET /api/v1/ready", func(w http.ResponseWriter, _ *http.Request) {
-		jsonResponse(w, http.StatusOK, map[string]string{"status": "ready"})
-	})
+	mux.HandleFunc("GET /api/v1/health", a.health)
+	mux.HandleFunc("GET /api/v1/ready", a.ready)
 	mux.HandleFunc("GET /auth/login", a.authenticator.Login)
 	mux.HandleFunc("GET "+config.OIDCCallbackPath, a.authenticator.Callback)
 	mux.HandleFunc("POST /auth/bootstrap", a.authenticator.BootstrapLogin)

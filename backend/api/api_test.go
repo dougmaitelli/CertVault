@@ -46,7 +46,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler, err := New(cfg, repositories, manager)
+	handler, err := New(cfg, db, repositories, manager)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,6 +61,17 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	handler.ServeHTTP(health, healthRequest)
 	if health.Code != http.StatusOK {
 		t.Fatalf("health returned %d", health.Code)
+	}
+	ready := httptest.NewRecorder()
+	readyRequest := httptest.NewRequestWithContext(
+		context.Background(),
+		http.MethodGet,
+		"/api/v1/ready",
+		nil,
+	)
+	handler.ServeHTTP(ready, readyRequest)
+	if ready.Code != http.StatusOK {
+		t.Fatalf("ready returned %d: %s", ready.Code, ready.Body.String())
 	}
 
 	_, token, err := repositories.APIKeys.Create(context.Background(), "node", []string{"certificates:read"}, []string{"home"}, nil)
@@ -130,5 +141,14 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	handler.ServeHTTP(admin, adminRequest)
 	if admin.Code != http.StatusForbidden {
 		t.Fatalf("admin route with machine key returned %d", admin.Code)
+	}
+
+	if err = db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	unavailable := httptest.NewRecorder()
+	handler.ServeHTTP(unavailable, readyRequest)
+	if unavailable.Code != http.StatusServiceUnavailable {
+		t.Fatalf("ready with closed database returned %d: %s", unavailable.Code, unavailable.Body.String())
 	}
 }

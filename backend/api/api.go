@@ -10,6 +10,7 @@ import (
 
 	"github.com/certvault/certvault/api/auth"
 	"github.com/certvault/certvault/config"
+	"github.com/certvault/certvault/database"
 	"github.com/certvault/certvault/database/repository"
 	certnetwork "github.com/certvault/certvault/network"
 	"github.com/certvault/certvault/service"
@@ -20,7 +21,12 @@ const contentSecurityPolicy = "default-src 'self'; " +
 	"img-src 'self' data:; " +
 	"connect-src 'self'"
 
-func New(c *config.Config, repos *repository.Repositories, manager *service.Manager) (http.Handler, error) {
+func New(
+	c *config.Config,
+	db *database.Database,
+	repos *repository.Repositories,
+	manager *service.Manager,
+) (http.Handler, error) {
 	clientIPs, err := certnetwork.NewClientIPResolver(c.Server.TrustedProxies)
 	if err != nil {
 		return nil, err
@@ -31,6 +37,7 @@ func New(c *config.Config, repos *repository.Repositories, manager *service.Mana
 	}
 	a := &API{
 		cfg:           c,
+		database:      db,
 		repos:         repos,
 		manager:       manager,
 		authenticator: authenticator,

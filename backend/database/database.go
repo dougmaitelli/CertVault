@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -63,6 +64,11 @@ func (d *Database) migrate() error {
 // ORM returns the configured GORM connection for repository packages.
 func (d *Database) ORM() *gorm.DB {
 	return d.orm
+}
+
+// Ping verifies that the database connection is available.
+func (d *Database) Ping(ctx context.Context) error {
+	return d.sql.PingContext(ctx)
 }
 
 // Close releases the underlying SQL connection pool.
