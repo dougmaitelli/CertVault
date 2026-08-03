@@ -1,9 +1,10 @@
 package config
 
 type Server struct {
-	Listen    string   `yaml:"listen"`
-	PublicURL string   `yaml:"public_url"`
-	LogLevel  LogLevel `yaml:"log_level"`
+	Listen         string   `yaml:"listen"`
+	PublicURL      string   `yaml:"public_url"`
+	LogLevel       LogLevel `yaml:"log_level"`
+	TrustedProxies []string `yaml:"trusted_proxies"`
 }
 
 type ACME struct {
@@ -21,6 +22,7 @@ type Auth struct {
 type OIDC struct {
 	IssuerURL        string   `yaml:"issuer_url"`
 	ClientID         string   `yaml:"client_id"`
+	ClientSecret     string   `yaml:"-"`
 	ClientSecretFile string   `yaml:"client_secret_file"`
 	RedirectURL      string   `yaml:"redirect_url"`
 	AllowedGroups    []string `yaml:"allowed_groups"`

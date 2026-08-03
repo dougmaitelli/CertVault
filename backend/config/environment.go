@@ -13,6 +13,8 @@ const (
 	EnvMasterKeyFile           = "CERTVAULT_MASTER_KEY_FILE"
 	EnvBootstrapAdminToken     = "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN"
 	EnvBootstrapAdminTokenFile = "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE"
+	EnvOIDCClientSecret        = "CERTVAULT_OIDC_CLIENT_SECRET"
+	EnvOIDCClientSecretFile    = "CERTVAULT_OIDC_CLIENT_SECRET_FILE"
 	EnvUIDir                   = "CERTVAULT_UI_DIR"
 	EnvEventJSON               = "CERTVAULT_EVENT_JSON"
 	EnvPath                    = "PATH"

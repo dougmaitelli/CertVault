@@ -4,6 +4,8 @@ server:
   listen: 0.0.0.0:8080
   public_url: https://certvault.home.example.com
   log_level: info
+  # Only trust forwarding headers from reverse proxies you operate.
+  # trusted_proxies: [172.18.0.0/16]
 
 acme:
   email: admin@example.com
@@ -16,6 +18,7 @@ auth:
   # oidc:
   #   issuer_url: https://auth.example.com
   #   client_id: certvault
+  #   # Or set CERTVAULT_OIDC_CLIENT_SECRET directly.
   #   client_secret_file: /run/secrets/oidc_client_secret
   #   redirect_url: https://certvault.home.example.com/auth/callback
   #   allowed_groups: [cert-admins]

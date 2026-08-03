@@ -6,6 +6,7 @@ import (
 
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database/repository"
+	certnetwork "github.com/certvault/certvault/network"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
@@ -16,6 +17,7 @@ type Authenticator struct {
 	bootstrap string
 	oidc      *oidc.Provider
 	oauth     *oauth2.Config
+	clientIPs *certnetwork.ClientIPResolver
 	states    sync.Map
 }
 

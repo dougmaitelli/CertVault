@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	certnetwork "github.com/certvault/certvault/network"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -90,6 +91,26 @@ func applyEnv(c *Config) error {
 		c.Auth.BootstrapToken = ""
 		c.Auth.BootstrapTokenFile = bootstrapTokenFile
 	}
+	oidcClientSecret := os.Getenv(EnvOIDCClientSecret)
+	oidcClientSecretFile := os.Getenv(EnvOIDCClientSecretFile)
+	if oidcClientSecret != "" && oidcClientSecretFile != "" {
+		return fmt.Errorf(
+			"%s and %s cannot both be set",
+			EnvOIDCClientSecret,
+			EnvOIDCClientSecretFile,
+		)
+	}
+	if (oidcClientSecret != "" || oidcClientSecretFile != "") && c.Auth.OIDC == nil {
+		return errors.New("auth.oidc must be configured when an OIDC client secret is set")
+	}
+	if oidcClientSecret != "" {
+		c.Auth.OIDC.ClientSecret = oidcClientSecret
+		c.Auth.OIDC.ClientSecretFile = ""
+	}
+	if oidcClientSecretFile != "" {
+		c.Auth.OIDC.ClientSecret = ""
+		c.Auth.OIDC.ClientSecretFile = oidcClientSecretFile
+	}
 	return nil
 }
 
@@ -102,6 +123,20 @@ func (c *Config) Validate() error {
 	}
 	if _, err := url.ParseRequestURI(c.ACME.DirectoryURL); err != nil {
 		return fmt.Errorf("invalid ACME directory URL: %w", err)
+	}
+	if _, err := certnetwork.NewClientIPResolver(c.Server.TrustedProxies); err != nil {
+		return err
+	}
+	if c.Auth.OIDC != nil {
+		if c.Auth.OIDC.IssuerURL == "" || c.Auth.OIDC.ClientID == "" || c.Auth.OIDC.RedirectURL == "" {
+			return errors.New("auth.oidc requires issuer_url, client_id, and redirect_url")
+		}
+		if c.Auth.OIDC.ClientSecret == "" && c.Auth.OIDC.ClientSecretFile == "" {
+			return errors.New("auth.oidc requires a client secret")
+		}
+		if c.Auth.OIDC.ClientSecret != "" && c.Auth.OIDC.ClientSecretFile != "" {
+			return errors.New("auth.oidc client secret and client secret file cannot both be set")
+		}
 	}
 	credentials := map[string]bool{}
 	for name, cred := range c.DNSCredentials {

@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database/repository"
+	certnetwork "github.com/certvault/certvault/network"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
@@ -28,8 +28,17 @@ const (
 	oidcStateLifetime            = 10 * time.Minute
 )
 
-func New(cfg *config.Config, repos *repository.Repositories) (*Authenticator, error) {
-	authenticator := &Authenticator{config: cfg, repos: repos, bootstrap: cfg.Auth.BootstrapToken}
+func New(
+	cfg *config.Config,
+	repos *repository.Repositories,
+	clientIPs *certnetwork.ClientIPResolver,
+) (*Authenticator, error) {
+	authenticator := &Authenticator{
+		config:    cfg,
+		repos:     repos,
+		bootstrap: cfg.Auth.BootstrapToken,
+		clientIPs: clientIPs,
+	}
 	if cfg.Auth.BootstrapTokenFile != "" {
 		contents, err := os.ReadFile(cfg.Auth.BootstrapTokenFile)
 		if err != nil {
@@ -42,14 +51,18 @@ func New(cfg *config.Config, repos *repository.Repositories) (*Authenticator, er
 		if err != nil {
 			return nil, fmt.Errorf("OIDC discovery: %w", err)
 		}
-		secret, err := os.ReadFile(cfg.Auth.OIDC.ClientSecretFile)
-		if err != nil {
-			return nil, err
+		secret := cfg.Auth.OIDC.ClientSecret
+		if cfg.Auth.OIDC.ClientSecretFile != "" {
+			contents, readErr := os.ReadFile(cfg.Auth.OIDC.ClientSecretFile)
+			if readErr != nil {
+				return nil, readErr
+			}
+			secret = strings.TrimSpace(string(contents))
 		}
 		authenticator.oidc = provider
 		authenticator.oauth = &oauth2.Config{
 			ClientID:     cfg.Auth.OIDC.ClientID,
-			ClientSecret: strings.TrimSpace(string(secret)),
+			ClientSecret: secret,
 			Endpoint:     provider.Endpoint(),
 			RedirectURL:  cfg.Auth.OIDC.RedirectURL,
 			Scopes:       []string{oidc.ScopeOpenID, "profile", "email", "groups"},
@@ -68,7 +81,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		}
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if token != "" {
-			principal, err := a.repos.APIKeys.Authenticate(r.Context(), token, remoteIP(r))
+			principal, err := a.repos.APIKeys.Authenticate(r.Context(), token, a.remoteIP(r))
 			if err == nil {
 				next.ServeHTTP(w, withIdentity(r, Identity{Name: principal.Name, Principal: principal}))
 				return
@@ -85,7 +98,7 @@ func (a *Authenticator) BootstrapLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.setSession(w, "bootstrap-admin")
-	a.repos.Audits.Record(r.Context(), "bootstrap-admin", "auth.login", "ui", "", remoteIP(r))
+	a.repos.Audits.Record(r.Context(), "bootstrap-admin", "auth.login", "ui", "", a.remoteIP(r))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -142,7 +155,7 @@ func (a *Authenticator) Callback(w http.ResponseWriter, r *http.Request) {
 		name = claims.Sub
 	}
 	a.setSession(w, name)
-	a.repos.Audits.Record(r.Context(), name, "auth.login", "ui", "oidc", remoteIP(r))
+	a.repos.Audits.Record(r.Context(), name, "auth.login", "ui", "oidc", a.remoteIP(r))
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -240,10 +253,6 @@ func groupAllowed(got, wanted []string) bool {
 	return false
 }
 
-func remoteIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil {
-		return host
-	}
-	return r.RemoteAddr
+func (a *Authenticator) remoteIP(r *http.Request) string {
+	return a.clientIPs.ClientIP(r)
 }

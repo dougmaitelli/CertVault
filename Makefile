@@ -41,7 +41,7 @@ test-frontend:
 format: format-backend format-frontend
 
 format-backend:
-	gofmt -w backend/main.go backend/api backend/config backend/database backend/service backend/vault
+	gofmt -w backend/main.go backend/api backend/config backend/database backend/network backend/service backend/vault
 
 format-frontend:
 	cd web && npm run format
@@ -49,7 +49,7 @@ format-frontend:
 format-check: format-check-backend format-check-frontend
 
 format-check-backend:
-	test -z "$$(gofmt -l backend/main.go backend/api backend/config backend/database backend/service backend/vault)"
+	test -z "$$(gofmt -l backend/main.go backend/api backend/config backend/database backend/network backend/service backend/vault)"
 
 format-check-frontend:
 	cd web && npm run format:check

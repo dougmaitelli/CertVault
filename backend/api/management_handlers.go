@@ -55,7 +55,7 @@ func (a *API) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		"api_key.create",
 		strconv.FormatInt(key.ID, 10),
 		input.Name,
-		remoteIP(r),
+		a.remoteIP(r),
 	)
 	jsonResponse(w, http.StatusCreated, map[string]any{"api_key": key, "token": token})
 }
@@ -70,6 +70,6 @@ func (a *API) revokeAPIKey(w http.ResponseWriter, r *http.Request) {
 		respond(w, nil, err)
 		return
 	}
-	a.repos.Audits.Record(r.Context(), "admin", "api_key.revoke", id, "", remoteIP(r))
+	a.repos.Audits.Record(r.Context(), "admin", "api_key.revoke", id, "", a.remoteIP(r))
 	w.WriteHeader(http.StatusNoContent)
 }

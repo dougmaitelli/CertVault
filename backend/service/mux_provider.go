@@ -28,6 +28,12 @@ func (m *muxProvider) forDomain(domain string) (challenge.Provider, error) {
 
 	restore := map[string]*string{}
 	for key, value := range credential.Environment {
+		if value == "" {
+			if _, exists := os.LookupEnv(key); !exists {
+				return nil, fmt.Errorf("DNS credential environment variable %s is not set", key)
+			}
+			continue
+		}
 		old, exists := os.LookupEnv(key)
 		if exists {
 			copy := old

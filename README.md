@@ -12,25 +12,59 @@ CertVault is a self-hosted ACME certificate controller for homelabs. It obtains 
 - Immutable, atomic certificate versions with GORM-managed SQLite metadata
 - Six-hour renewal reconciliation with per-certificate locking
 - Hashed, revocable API keys scoped by operation and certificate
-- Optional OIDC Authorization Code + PKCE login and group allowlisting
+- Optional OIDC Authorization + PKCE login
 - Signed webhooks and restricted executable hooks
-- Responsive React operations console
+- Responsive React Console
 - Non-root, capability-free Docker deployment
 
 ## Quick start
 
-The example deliberately uses Let's Encrypt staging. Do not switch to production until staging issuance succeeds.
+Create `config.yaml` and replace the example email and domain. The example uses Let's Encrypt staging so initial testing cannot exhaust production rate limits.
 
-```sh
-cp config/config.example.yaml config/config.yaml
-mkdir -p secrets hooks
-openssl rand -base64 32 > secrets/master-key
-openssl rand -base64 32 > secrets/admin-token
-printf '%s' 'your-scoped-cloudflare-token' > secrets/cloudflare-token
-chmod 600 secrets/*
+```yaml
+server:
+  public_url: http://localhost:8080
+  log_level: info
+  # Only add the IP or network of a reverse proxy you operate.
+  # trusted_proxies: [172.18.0.0/16]
+
+acme:
+  email: admin@example.com
+  directory_url: https://acme-staging-v02.api.letsencrypt.org/directory
+  accept_terms: true
+
+# Uncomment to enable OIDC. Keep the client secret in .env.
+# auth:
+#   oidc:
+#     issuer_url: https://auth.example.com
+#     client_id: certvault
+#     redirect_url: http://localhost:8080/auth/callback
+#     allowed_groups: [cert-admins]
+
+dns_credentials:
+  cloudflare:
+    provider: cloudflare
+
+zones:
+  - name: example.com
+    credential: cloudflare
+
+certificates:
+  - name: example-wildcard
+    domains: [example.com, "*.example.com"]
+    renew_before: 720h
 ```
 
-Create `compose.yaml` in the repository root:
+Create an untracked `.env` file beside it. Generate the master key with `openssl rand -base64 32`, then replace all three values:
+
+```dotenv
+CERTVAULT_MASTER_KEY=replace-with-output-of-openssl-rand-base64-32
+CERTVAULT_BOOTSTRAP_ADMIN_TOKEN=replace-with-a-long-random-login-token
+CLOUDFLARE_DNS_API_TOKEN=replace-with-cloudflare-token
+# CERTVAULT_OIDC_CLIENT_SECRET=replace-with-oidc-client-secret
+```
+
+Create `compose.yaml` beside both files:
 
 ```yaml
 services:
@@ -40,40 +74,33 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
-    environment:
-      CERTVAULT_CONFIG: /config/config.yaml
-      CERTVAULT_MASTER_KEY_FILE: /run/secrets/master_key
+    env_file:
+      - .env
     volumes:
-      - ./config/config.yaml:/config/config.yaml:ro
-      - ./hooks:/hooks:ro
+      - ./config.yaml:/config/config.yaml:ro
       - certvault-data:/data
-    secrets:
-      - master_key
-      - admin_token
-      - cloudflare_token
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:8080/api/v1/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     security_opt:
       - no-new-privileges:true
 
 volumes:
   certvault-data:
-
-secrets:
-  master_key:
-    file: ./secrets/master-key
-  admin_token:
-    file: ./secrets/admin-token
-  cloudflare_token:
-    file: ./secrets/cloudflare-token
 ```
-
-Edit `config/config.yaml`, replacing the email, public URL, zone, and certificate domains. Then run:
 
 ```sh
 docker compose up -d
-docker compose logs -f certvault
 ```
 
-Open `http://localhost:8080` and sign in with the content of `secrets/admin-token`. Put CertVault behind an HTTPS reverse proxy before using it across the network—the API can return private keys and must not be exposed over plaintext HTTP.
+Open `http://localhost:8080` and sign in with the value assigned to `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN`.
+
+Put CertVault behind an HTTPS reverse proxy before using it across the network—the API can return private keys and must not be exposed over plaintext HTTP.
 
 When staging succeeds, change the directory URL to:
 
@@ -81,11 +108,13 @@ When staging succeeds, change the directory URL to:
 https://acme-v02.api.letsencrypt.org/directory
 ```
 
-The production and staging ACME accounts are cryptographically separate. Keep the `/data` volume and `secrets/master-key` backed up together. The encrypted data cannot be recovered without that master key.
+The production and staging ACME accounts are cryptographically separate. Back up the `/data` volume and master key together. Encrypted data cannot be recovered without that key.
 
-## Cloudflare permissions
+## DNS providers
 
-Create an API token restricted to the required zones with `Zone:Read` and `DNS:Edit`. Do not use the Cloudflare global API key. The token is read from the Docker secret and is never persisted in SQLite.
+Cloudflare is used only as a familiar Quick Start example. It is not required. CertVault supports the DNS providers available through lego; choose a provider and its required environment variables from the [lego DNS provider documentation](https://go-acme.github.io/lego/dns/).
+
+For the Cloudflare example, create an API token restricted to the required zones with `Zone:Read` and `DNS:Edit`. Do not use the Cloudflare global API key. DNS credentials are not persisted in SQLite.
 
 ## Machine access
 
@@ -121,28 +150,21 @@ Global values can be overridden with:
 | `CERTVAULT_MASTER_KEY_FILE` | Path to a file containing the Base64-encoded encryption key |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` | Break-glass UI token |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` | Path to a file containing the break-glass UI token |
+| `CERTVAULT_OIDC_CLIENT_SECRET` | OIDC client secret |
+| `CERTVAULT_OIDC_CLIENT_SECRET_FILE` | Path to a file containing the OIDC client secret |
 | `CERTVAULT_UI_DIR` | Built frontend directory |
 
-DNS provider environment entries may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.
+Some values may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.
 
-Set either `CERTVAULT_MASTER_KEY` directly or `CERTVAULT_MASTER_KEY_FILE` to
-the path of a mounted secret. They cannot both be set. The file form is
-recommended for Docker because the key is not exposed in the container's
-environment metadata.
+Set either `CERTVAULT_MASTER_KEY` directly or `CERTVAULT_MASTER_KEY_FILE` to the path of a mounted secret. They cannot both be set. The file form is recommended for Docker because the key is not exposed in the container's environment metadata.
 
-The bootstrap administrator credential follows the same pattern: set either
-`CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` directly or
-`CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` to a secret file path, but not both. The
-file form remains recommended for Docker deployments.
-
-`server.log_level` and `CERTVAULT_LOG_LEVEL` accept `debug`, `info`, `warn`
-(`warning` is also accepted), `error`, and slog offsets such as `DEBUG+2`.
+The bootstrap administrator credential follows the same pattern: set either `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` directly or `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` to a secret file path, but not both. The file form remains recommended for Docker deployments.
 
 Certificate key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `rsa4096`. `renew_before` uses Go duration syntax; `720h` is 30 days.
 
 ## OIDC
 
-Uncomment `auth.oidc` in the example. Register its exact `redirect_url` with the provider and mount the client secret file. If `allowed_groups` is empty, any successfully authenticated identity is an administrator; setting it is strongly recommended. The bootstrap token remains available as break-glass access.
+Uncomment `auth.oidc` in the Quick Start and add `CERTVAULT_OIDC_CLIENT_SECRET` to `.env`. Register the exact `redirect_url` with the provider. The client secret may instead be supplied through `CERTVAULT_OIDC_CLIENT_SECRET_FILE`, but both forms cannot be set together. If `allowed_groups` is empty, any successfully authenticated identity is an administrator; setting an allowlist is strongly recommended. The bootstrap token remains available as break-glass access.
 
 ## Hooks
 
@@ -163,10 +185,8 @@ Supported events are `certificate.issued`, `certificate.renewed`, and `certifica
 - Certificate versions are written through temporary files and atomic renames.
 - A failed renewal leaves the prior version untouched.
 - Only one issuance runs at a time because lego provider construction reads process environment.
-- Run only one CertVault replica against a data volume.
-- Back up the volume and master key separately and test restoration.
 
-The service trusts proxy termination only for transport; it does not trust forwarded client addresses. Audit IPs therefore record the direct peer, which avoids spoofing unless explicit trusted-proxy support is added later.
+By default, audit entries record the direct network peer and ignore forwarded address headers. Set `server.trusted_proxies` to proxy IPs or CIDRs to accept `X-Forwarded-For` and `X-Real-IP` only from those peers. CertVault walks trusted proxy chains from right to left so client-supplied entries cannot override the address added by your proxy. Never configure an untrusted network such as `0.0.0.0/0`.
 
 ## Development
 
@@ -176,23 +196,9 @@ To run the UI and API locally without configuring DNS or issuing certificates:
 make dev
 ```
 
-Open `http://localhost:8081` and use `certvault-dev-admin` as the bootstrap
-token. Development data and generated secrets are stored under the ignored
-`.cache/dev` directory. The development configuration contains no certificates,
-so the ACME manager has nothing to issue or renew.
+Open `http://localhost:8081` and use `certvault-dev-admin` as the bootstrap token. Development data and generated secrets are stored under the ignored `.cache/dev` directory. The development configuration contains no certificates, so the ACME manager has nothing to issue or renew.
 
-For the complete configured application:
-
-```sh
-make dependencies
-make check
-cd backend
-CERTVAULT_UI_DIR="$PWD/../web/dist" go run . -config ../config/config.yaml
-```
-
-The repository pins its frontend dependencies in `package-lock.json` and installs
-golangci-lint v2.12.2 into the ignored `.bin` directory. The main quality commands
-are:
+The main quality commands are:
 
 ```sh
 make format        # gofmt and Prettier
@@ -204,13 +210,6 @@ make build         # backend binary and frontend production bundle
 make check         # run every non-mutating verification above
 ```
 
-Frontend commands can also be run independently from `web/` with `npm run
-format`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, or
-`npm run check`.
-
-The backend's `database` package owns the SQLite connection and GORM schema
-migrations. Its `database/repository` subpackage provides separate certificate,
-job, API-key, and audit repositories; none owns connection setup or handwritten
-SQL. HTTP authentication lives in `api/auth`.
+Frontend commands can also be run independently from `web/` with `npm run format`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, or `npm run check`.
 
 The API outline is in [`docs/openapi.yaml`](docs/openapi.yaml).

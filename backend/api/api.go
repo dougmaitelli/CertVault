@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"mime"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"github.com/certvault/certvault/api/auth"
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database/repository"
+	certnetwork "github.com/certvault/certvault/network"
 	"github.com/certvault/certvault/service"
 )
 
@@ -21,11 +21,21 @@ const contentSecurityPolicy = "default-src 'self'; " +
 	"connect-src 'self'"
 
 func New(c *config.Config, repos *repository.Repositories, manager *service.Manager) (http.Handler, error) {
-	authenticator, err := auth.New(c, repos)
+	clientIPs, err := certnetwork.NewClientIPResolver(c.Server.TrustedProxies)
 	if err != nil {
 		return nil, err
 	}
-	a := &API{cfg: c, repos: repos, manager: manager, authenticator: authenticator}
+	authenticator, err := auth.New(c, repos, clientIPs)
+	if err != nil {
+		return nil, err
+	}
+	a := &API{
+		cfg:           c,
+		repos:         repos,
+		manager:       manager,
+		authenticator: authenticator,
+		clientIPs:     clientIPs,
+	}
 	return a.routes(), nil
 }
 
@@ -78,10 +88,6 @@ func respond(w http.ResponseWriter, v any, e error) {
 	problem(w, 500, "internal_error", e.Error())
 }
 
-func remoteIP(r *http.Request) string {
-	h, _, e := net.SplitHostPort(r.RemoteAddr)
-	if e == nil {
-		return h
-	}
-	return r.RemoteAddr
+func (a *API) remoteIP(r *http.Request) string {
+	return a.clientIPs.ClientIP(r)
 }
