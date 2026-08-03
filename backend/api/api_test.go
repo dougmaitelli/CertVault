@@ -79,4 +79,30 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	if list.Code != http.StatusOK {
 		t.Fatalf("list returned %d: %s", list.Code, list.Body.String())
 	}
+
+	wrongMethodRequest := httptest.NewRequestWithContext(
+		context.Background(),
+		http.MethodPost,
+		"/api/v1/certificates",
+		nil,
+	)
+	wrongMethodRequest.Header.Set("Authorization", "Bearer "+token)
+	wrongMethod := httptest.NewRecorder()
+	handler.ServeHTTP(wrongMethod, wrongMethodRequest)
+	if wrongMethod.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("wrong method returned %d", wrongMethod.Code)
+	}
+
+	unknownRequest := httptest.NewRequestWithContext(
+		context.Background(),
+		http.MethodGet,
+		"/api/v1/unknown",
+		nil,
+	)
+	unknownRequest.Header.Set("Authorization", "Bearer "+token)
+	unknown := httptest.NewRecorder()
+	handler.ServeHTTP(unknown, unknownRequest)
+	if unknown.Code != http.StatusNotFound {
+		t.Fatalf("unknown API route returned %d", unknown.Code)
+	}
 }
