@@ -88,6 +88,8 @@ services:
       start_period: 10s
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
 volumes:
   certvault-data:
