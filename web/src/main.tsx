@@ -3,6 +3,21 @@ import { createRoot } from "react-dom/client";
 import "./style.css";
 
 const allCertificatesAccess = "*";
+const defaultPage = "certificates";
+const pageRoutes = {
+  certificates: "/certificates",
+  history: "/history",
+  "api keys": "/api-keys",
+} as const;
+
+type Page = keyof typeof pageRoutes;
+
+function pageFromPath(path: string): Page {
+  return (
+    (Object.entries(pageRoutes).find(([, route]) => route === path)?.[0] as
+      Page | undefined) ?? defaultPage
+  );
+}
 
 type Version = {
   id: number;
@@ -132,7 +147,9 @@ function App() {
   return <Console />;
 }
 function Console() {
-  const [page, setPage] = useState("certificates");
+  const [page, setPage] = useState<Page>(() =>
+    pageFromPath(window.location.pathname),
+  );
   const [certs, setCerts] = useState<Cert[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [keys, setKeys] = useState<APIKey[]>([]);
@@ -152,6 +169,18 @@ function Console() {
   useEffect(() => {
     void load();
   }, []);
+  useEffect(() => {
+    const updatePage = () => setPage(pageFromPath(window.location.pathname));
+    window.addEventListener("popstate", updatePage);
+    return () => window.removeEventListener("popstate", updatePage);
+  }, []);
+  const navigate = (nextPage: Page) => {
+    const path = pageRoutes[nextPage];
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, "", path);
+    }
+    setPage(nextPage);
+  };
   return (
     <div className="shell">
       <aside>
@@ -160,14 +189,18 @@ function Console() {
           <b>CertVault</b>
         </header>
         <nav>
-          {["certificates", "history", "api keys"].map((x) => (
-            <button
-              className={page === x ? "active" : ""}
-              onClick={() => setPage(x)}
-              key={x}
+          {(Object.keys(pageRoutes) as Page[]).map((item) => (
+            <a
+              className={page === item ? "active" : ""}
+              href={pageRoutes[item]}
+              onClick={(event) => {
+                event.preventDefault();
+                navigate(item);
+              }}
+              key={item}
             >
-              {x}
-            </button>
+              {item}
+            </a>
           ))}
         </nav>
         <footer>

@@ -150,17 +150,18 @@ form button,
   display: grid;
   gap: 5px;
 }
-.shell nav button,
+.shell nav a,
 .shell footer button {
   border: 0;
   background: transparent;
   color: #8d9ba4;
   text-align: left;
+  text-decoration: none;
   text-transform: capitalize;
   padding: 11px 14px;
   border-radius: 7px;
 }
-.shell nav button.active {
+.shell nav a.active {
   background: #17252a;
   color: #56d9bc;
 }
