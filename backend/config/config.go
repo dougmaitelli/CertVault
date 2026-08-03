@@ -73,8 +73,22 @@ func applyEnv(c *Config) error {
 	if c.ACME.DirectoryURL == "" {
 		c.ACME.DirectoryURL = "https://acme-v02.api.letsencrypt.org/directory"
 	}
-	if v := os.Getenv(EnvBootstrapAdminTokenFile); v != "" {
-		c.Auth.BootstrapTokenFile = v
+	bootstrapToken := os.Getenv(EnvBootstrapAdminToken)
+	bootstrapTokenFile := os.Getenv(EnvBootstrapAdminTokenFile)
+	if bootstrapToken != "" && bootstrapTokenFile != "" {
+		return fmt.Errorf(
+			"%s and %s cannot both be set",
+			EnvBootstrapAdminToken,
+			EnvBootstrapAdminTokenFile,
+		)
+	}
+	if bootstrapToken != "" {
+		c.Auth.BootstrapToken = bootstrapToken
+		c.Auth.BootstrapTokenFile = ""
+	}
+	if bootstrapTokenFile != "" {
+		c.Auth.BootstrapToken = ""
+		c.Auth.BootstrapTokenFile = bootstrapTokenFile
 	}
 	return nil
 }

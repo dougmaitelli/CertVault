@@ -11,6 +11,7 @@ const (
 	EnvACMEDirectoryURL        = "CERTVAULT_ACME_DIRECTORY_URL"
 	EnvMasterKey               = "CERTVAULT_MASTER_KEY"
 	EnvMasterKeyFile           = "CERTVAULT_MASTER_KEY_FILE"
+	EnvBootstrapAdminToken     = "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN"
 	EnvBootstrapAdminTokenFile = "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE"
 	EnvUIDir                   = "CERTVAULT_UI_DIR"
 	EnvEventJSON               = "CERTVAULT_EVENT_JSON"

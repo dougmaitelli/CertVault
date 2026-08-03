@@ -119,7 +119,8 @@ Global values can be overridden with:
 | `CERTVAULT_ACME_DIRECTORY_URL` | ACME directory override |
 | `CERTVAULT_MASTER_KEY` | Base64-encoded 32-byte encryption key |
 | `CERTVAULT_MASTER_KEY_FILE` | Path to a file containing the Base64-encoded encryption key |
-| `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` | Break-glass UI token |
+| `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` | Break-glass UI token |
+| `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` | Path to a file containing the break-glass UI token |
 | `CERTVAULT_UI_DIR` | Built frontend directory |
 
 DNS provider environment entries may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.
@@ -128,6 +129,11 @@ Set either `CERTVAULT_MASTER_KEY` directly or `CERTVAULT_MASTER_KEY_FILE` to
 the path of a mounted secret. They cannot both be set. The file form is
 recommended for Docker because the key is not exposed in the container's
 environment metadata.
+
+The bootstrap administrator credential follows the same pattern: set either
+`CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` directly or
+`CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` to a secret file path, but not both. The
+file form remains recommended for Docker deployments.
 
 `server.log_level` and `CERTVAULT_LOG_LEVEL` accept `debug`, `info`, `warn`
 (`warning` is also accepted), `error`, and slog offsets such as `DEBUG+2`.

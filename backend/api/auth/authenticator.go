@@ -29,7 +29,7 @@ const (
 )
 
 func New(cfg *config.Config, repos *repository.Repositories) (*Authenticator, error) {
-	authenticator := &Authenticator{config: cfg, repos: repos}
+	authenticator := &Authenticator{config: cfg, repos: repos, bootstrap: cfg.Auth.BootstrapToken}
 	if cfg.Auth.BootstrapTokenFile != "" {
 		contents, err := os.ReadFile(cfg.Auth.BootstrapTokenFile)
 		if err != nil {

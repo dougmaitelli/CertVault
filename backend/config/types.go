@@ -13,6 +13,7 @@ type ACME struct {
 }
 
 type Auth struct {
+	BootstrapToken     string `yaml:"-"`
 	BootstrapTokenFile string `yaml:"bootstrap_token_file"`
 	OIDC               *OIDC  `yaml:"oidc"`
 }
