@@ -87,7 +87,7 @@ export function CreateAPIKeyDialog({
             </label>
           )}
         </fieldset>
-        <button>Create key</button>
+        <button className="action-button">Create key</button>
       </form>
     </Modal>
   );

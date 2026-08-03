@@ -61,7 +61,10 @@ export function APIKeysPage({
     <>
       <div className="bar">
         <p>Machine credentials are stored as hashes and shown only once.</p>
-        <button onClick={() => setShowCreateDialog(true)}>
+        <button
+          className="action-button"
+          onClick={() => setShowCreateDialog(true)}
+        >
           Create API key
         </button>
       </div>
@@ -70,7 +73,7 @@ export function APIKeysPage({
           <b>Copy this token now — it cannot be shown again.</b>
           <code>{token}</code>
           <button
-            className={copied ? "copied" : ""}
+            className={`action-button ${copied ? "copied" : ""}`}
             onClick={() => void copyToken()}
             aria-live="polite"
           >
@@ -103,7 +106,7 @@ export function APIKeysPage({
                 <td>
                   {!apiKey.revoked ? (
                     <button
-                      className="danger"
+                      className="action-button danger"
                       onClick={() => void revoke(apiKey.id)}
                     >
                       Revoke
@@ -112,7 +115,7 @@ export function APIKeysPage({
                     <div className="revoked-key-actions">
                       <span>Revoked</span>
                       <button
-                        className="danger"
+                        className="action-button danger"
                         onClick={() => void deleteKey(apiKey.id)}
                       >
                         Delete

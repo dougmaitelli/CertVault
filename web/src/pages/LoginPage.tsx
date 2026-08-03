@@ -37,7 +37,7 @@ export function LoginPage() {
             />
           </label>
           {error && <div className="error">{error}</div>}
-          <button>Sign in</button>
+          <button className="action-button">Sign in</button>
         </form>
         <a className="oidc" href="/auth/login">
           Sign in with OIDC

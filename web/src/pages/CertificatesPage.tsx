@@ -77,7 +77,7 @@ export function CertificatesPage({
                 Private key
               </CertificateDownloadLink>
               <button
-                className="success"
+                className="action-button success"
                 onClick={(event) => {
                   event.stopPropagation();
                   void renew(certificate.name);

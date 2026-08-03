@@ -16,6 +16,7 @@ export function CertificateDownloadLink({
 }: CertificateDownloadLinkProps) {
   return (
     <a
+      className="action-button"
       href={`/api/v1/certificates/${certificateName}/${artifact}`}
       download={`${certificateName}-${artifact}`}
       onClick={(event) => event.stopPropagation()}

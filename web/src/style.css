@@ -18,16 +18,21 @@ select {
 button {
   font-size: 0.9rem;
 }
-button:not(.close),
-.actions a {
-  position: relative;
+.action-button {
+  border: 1px solid #34444d;
+  border-radius: 6px;
   overflow: hidden;
+  padding: 7px 10px;
+  background: #172027;
+  color: #c5d1d7;
+  font-size: 0.8rem;
+  text-decoration: none;
+  position: relative;
   transition:
     filter 150ms ease,
     box-shadow 150ms ease;
 }
-button:not(.close)::after,
-.actions a::after {
+.action-button::after {
   position: absolute;
   inset: -100% -50%;
   content: "";
@@ -41,19 +46,16 @@ button:not(.close)::after,
   opacity: 0;
   transform: translateX(-65%);
 }
-button:not(.close):hover:not(:disabled),
-.actions a:hover {
+.action-button:hover:not(:disabled) {
   filter: brightness(1.1);
   box-shadow:
     0 0 0 1px #ffffff20,
     0 0 16px #4be0bd55;
 }
-button:not(.close):hover:not(:disabled)::after,
-.actions a:hover::after {
+.action-button:hover:not(:disabled)::after {
   animation: button-sparkle 700ms ease-out;
 }
-button:not(.close):active:not(:disabled),
-.actions a:active {
+.action-button:active:not(:disabled) {
   filter: brightness(0.95);
 }
 button:disabled {
@@ -61,12 +63,10 @@ button:disabled {
   opacity: 0.6;
 }
 @media (prefers-reduced-motion: reduce) {
-  button:not(.close),
-  .actions a {
+  .action-button {
     transition: none;
   }
-  button:not(.close)::after,
-  .actions a::after {
+  .action-button::after {
     display: none;
   }
 }
@@ -377,18 +377,6 @@ form button,
   display: flex;
   gap: 9px;
   flex-wrap: wrap;
-}
-.actions a,
-.actions button,
-.danger,
-.token button {
-  border: 1px solid #34444d;
-  background: #172027;
-  color: #c5d1d7;
-  text-decoration: none;
-  padding: 7px 10px;
-  border-radius: 6px;
-  font-size: 0.8rem;
 }
 .actions button {
   margin-left: auto;
