@@ -3,8 +3,8 @@ export const defaultPage = "certificates";
 export const pageRoutes = {
   certificates: "/certificates",
   history: "/history",
-  "api keys": "/api-keys",
   "audit logs": "/audit-logs",
+  "api keys": "/api-keys",
 } as const;
 
 export type Page = keyof typeof pageRoutes;
