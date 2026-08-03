@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 
+const allCertificatesAccess = "*";
+
 type Version = {
   id: number;
   not_before: string;
@@ -367,6 +369,10 @@ function Keys({
   const [show, setShow] = useState(false);
   const [token, setToken] = useState("");
   const [name, setName] = useState("");
+  const [anyCertificate, setAnyCertificate] = useState(false);
+  const [selectedCertificates, setSelectedCertificates] = useState<string[]>(
+    [],
+  );
   async function create(e: React.FormEvent) {
     e.preventDefault();
     const out = await api<APIKeyCreationResponse>("api-keys", {
@@ -374,7 +380,9 @@ function Keys({
       body: JSON.stringify({
         name,
         scopes: ["certificates:read", "private_keys:read"],
-        certificates: certs.map((c) => c.name),
+        certificates: anyCertificate
+          ? [allCertificatesAccess]
+          : selectedCertificates,
       }),
     });
     setToken(out.token);
@@ -458,10 +466,44 @@ function Keys({
                   placeholder="nas-01"
                 />
               </label>
-              <p>
-                This key can download certificates and private keys for all
-                configured certificates.
-              </p>
+              <fieldset className="certificate-access">
+                <legend>Certificate access</legend>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={anyCertificate}
+                    onChange={(event) =>
+                      setAnyCertificate(event.target.checked)
+                    }
+                    required={certs.length === 0}
+                  />
+                  Any certificate, including certificates added later
+                </label>
+                {certs.length > 0 && !anyCertificate && (
+                  <label>
+                    Certificates
+                    <select
+                      multiple
+                      required
+                      value={selectedCertificates}
+                      onChange={(event) =>
+                        setSelectedCertificates(
+                          Array.from(
+                            event.target.selectedOptions,
+                            (option) => option.value,
+                          ),
+                        )
+                      }
+                    >
+                      {certs.map((certificate) => (
+                        <option key={certificate.name} value={certificate.name}>
+                          {certificate.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </fieldset>
               <button>Create key</button>
             </form>
           </section>
