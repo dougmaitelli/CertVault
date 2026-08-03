@@ -183,7 +183,7 @@ function Console() {
       <main>
         <div className="top">
           <div>
-            <small>HOMELAB PKI</small>
+            <small>CertVault</small>
             <h1>{page}</h1>
           </div>
           <div className="health">

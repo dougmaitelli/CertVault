@@ -14,6 +14,9 @@ button,
 input {
   font: inherit;
 }
+button {
+  font-size: 0.9rem;
+}
 button,
 a {
   cursor: pointer;
