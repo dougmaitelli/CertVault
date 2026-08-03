@@ -1,11 +1,16 @@
+# Persistent application data, including SQLite and encrypted key material.
 data_dir: /data
 
 server:
   listen: 0.0.0.0:8080
   public_url: https://certvault.home.example.com
+  # debug, info, warn, warning, error, or a slog offset such as DEBUG+2.
   log_level: info
-  # Only trust forwarding headers from reverse proxies you operate.
-  # trusted_proxies: [172.18.0.0/16]
+  # Only trust forwarding headers from proxies you operate. Entries may be
+  # individual IP addresses or CIDR networks.
+  # trusted_proxies:
+  #   - 172.18.0.0/16
+  #   - 192.168.1.10
 
 acme:
   email: admin@example.com
@@ -13,21 +18,35 @@ acme:
   directory_url: https://acme-staging-v02.api.letsencrypt.org/directory
   accept_terms: true
 
+# Authentication is optional, but at least one UI login method is recommended.
 auth:
-  bootstrap_token_file: /run/secrets/admin_token
+  # Use CERTVAULT_BOOTSTRAP_ADMIN_TOKEN instead when secrets come from the
+  # environment.
+  # bootstrap_token_file: /run/secrets/admin_token
   # oidc:
-  #   issuer_url: https://auth.example.com
+  #   issuer_url: https://auth.example.com/realms/homelab
   #   client_id: certvault
-  #   # Or set CERTVAULT_OIDC_CLIENT_SECRET directly.
+  #   Use CERTVAULT_OIDC_CLIENT_SECRET instead when secrets come from the
+  #   environment.
   #   client_secret_file: /run/secrets/oidc_client_secret
-  #   allowed_groups: [cert-admins]
+  #   An empty list allows every successfully authenticated OIDC identity.
+  #   allowed_groups:
+  #     - cert-admins
 
+# Credential names are user-defined. Provider names and environment variables
+# are documented at https://go-acme.github.io/lego/dns/.
 dns_credentials:
   cloudflare_main:
     provider: cloudflare
     environment:
-      CLOUDFLARE_DNS_API_TOKEN_FILE: /run/secrets/cloudflare_token
+      # Empty means inherit CLOUDFLARE_DNS_API_TOKEN from the process.
+      CLOUDFLARE_DNS_API_TOKEN: ""
+      # Use a _FILE variable instead when mounting a secret file. Do not set
+      # both forms for the same provider credential.
+      # CLOUDFLARE_DNS_API_TOKEN_FILE: /run/secrets/cloudflare_token
 
+# Zones map certificate domains to DNS credentials. The most specific matching
+# zone is selected for each domain.
 zones:
   - name: example.com
     credential: cloudflare_main
@@ -37,13 +56,38 @@ certificates:
     domains:
       - example.com
       - "*.example.com"
+    # ec256, ec384, rsa2048, rsa3072, or rsa4096.
     key_type: ec256
     renew_before: 720h
+    enabled: true
+  # This disabled example demonstrates a certificate-level credential override.
+  - name: explicit-credential-example
+    domains:
+      - service.example.net
+    key_type: rsa2048
+    renew_before: 480h
+    credential: cloudflare_main
+    enabled: false
 
-hooks: []
+# Supported events are certificate.issued, certificate.renewed, and
+# certificate.failed. Hook timeout defaults to 15s.
+hooks:
   # - name: deploy-notification
   #   type: webhook
-  #   events: [certificate.issued, certificate.renewed, certificate.failed]
+  #   events:
+  #     - certificate.issued
+  #     - certificate.renewed
+  #     - certificate.failed
   #   url: https://automation.example.com/hooks/certvault
   #   secret_file: /run/secrets/webhook_secret
   #   timeout: 15s
+  # - name: deploy-locally
+  #   type: exec
+  #   events:
+  #     - certificate.issued
+  #     - certificate.renewed
+  #   command: /hooks/deploy-certificate
+  #   args:
+  #     - --reload
+  #     - nginx
+  #   timeout: 30s
