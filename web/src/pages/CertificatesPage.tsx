@@ -47,7 +47,9 @@ export function CertificatesPage({
                 {certificate.status}
               </span>
             </div>
-            <code>{certificate.domains.join(", ")}</code>
+            <code className="certificate-domains">
+              {certificate.domains.join(", ")}
+            </code>
             <dl>
               <div>
                 <dt>Expires</dt>

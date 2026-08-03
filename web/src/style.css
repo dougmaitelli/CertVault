@@ -305,14 +305,14 @@ form button,
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
 }
 .grid article {
   background: #111920;
   border: 1px solid #222e36;
   border-radius: 12px;
-  padding: 22px;
+  padding: 16px;
   transition: 0.2s;
 }
 .grid article:hover {
@@ -326,7 +326,7 @@ form button,
   justify-content: space-between;
 }
 .row h3 {
-  margin: 0 0 15px;
+  margin: 0;
 }
 .status {
   font-size: 0.72rem;
@@ -349,13 +349,17 @@ form button,
   color: #8ecbff;
   background: #172d3e;
 }
-.grid code {
-  color: #8ca0aa;
+.certificate-domains {
+  display: block;
+  margin-top: 8px;
+  color: #82dfcc;
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 .grid dl {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  margin: 25px 0;
+  margin: 14px 0;
 }
 .grid dl div {
   display: grid;
