@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api } from "../api/client";
 import type { Certificate } from "../api/types";
 import { CertificateDetails } from "../components/CertificateDetails";
+import { CertificateDownloadLink } from "../components/CertificateDownloadLink";
 import { Stat } from "../components/Stat";
 import { formatDate } from "../utils/date";
 
@@ -61,16 +62,18 @@ export function CertificatesPage({
               <p className="error">{certificate.last_error}</p>
             )}
             <div className="actions">
-              <a
-                href={`/api/v1/certificates/${certificate.name}/fullchain.pem`}
+              <CertificateDownloadLink
+                certificateName={certificate.name}
+                artifact="fullchain.pem"
               >
                 Full chain
-              </a>
-              <a
-                href={`/api/v1/certificates/${certificate.name}/private-key.pem`}
+              </CertificateDownloadLink>
+              <CertificateDownloadLink
+                certificateName={certificate.name}
+                artifact="private-key.pem"
               >
                 Private key
-              </a>
+              </CertificateDownloadLink>
               <button
                 onClick={(event) => {
                   event.stopPropagation();

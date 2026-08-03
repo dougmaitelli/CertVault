@@ -1,5 +1,6 @@
 import type { Certificate } from "../api/types";
 import { formatDate } from "../utils/date";
+import { CertificateDownloadLink } from "./CertificateDownloadLink";
 import { Modal } from "./Modal";
 
 type CertificateDetailsProps = {
@@ -40,16 +41,30 @@ export function CertificateDetails({
       )}
       <h4>Downloads</h4>
       <div className="actions">
-        <a href={`/api/v1/certificates/${certificate.name}/certificate.pem`}>
+        <CertificateDownloadLink
+          certificateName={certificate.name}
+          artifact="certificate.pem"
+        >
           Certificate
-        </a>
-        <a href={`/api/v1/certificates/${certificate.name}/chain.pem`}>Chain</a>
-        <a href={`/api/v1/certificates/${certificate.name}/fullchain.pem`}>
+        </CertificateDownloadLink>
+        <CertificateDownloadLink
+          certificateName={certificate.name}
+          artifact="chain.pem"
+        >
+          Chain
+        </CertificateDownloadLink>
+        <CertificateDownloadLink
+          certificateName={certificate.name}
+          artifact="fullchain.pem"
+        >
           Full chain
-        </a>
-        <a href={`/api/v1/certificates/${certificate.name}/private-key.pem`}>
+        </CertificateDownloadLink>
+        <CertificateDownloadLink
+          certificateName={certificate.name}
+          artifact="private-key.pem"
+        >
           Private key
-        </a>
+        </CertificateDownloadLink>
       </div>
     </Modal>
   );
