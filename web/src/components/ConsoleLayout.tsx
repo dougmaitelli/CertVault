@@ -4,6 +4,7 @@ import { pageRoutes, type Page } from "../routing/routes";
 type ConsoleLayoutProps = {
   children: ReactNode;
   error: string;
+  health: "checking" | "operational" | "warning" | "failed";
   page: Page;
   onNavigate: (page: Page) => void;
 };
@@ -11,6 +12,7 @@ type ConsoleLayoutProps = {
 export function ConsoleLayout({
   children,
   error,
+  health,
   page,
   onNavigate,
 }: ConsoleLayoutProps) {
@@ -54,8 +56,8 @@ export function ConsoleLayout({
             <small>CertVault</small>
             <h1>{page}</h1>
           </div>
-          <div className="health">
-            <i /> Operational
+          <div className={`health ${health}`} role="status" aria-live="polite">
+            <i /> {healthLabel(health)}
           </div>
         </div>
         {error && <div className="error">{error}</div>}
@@ -63,4 +65,17 @@ export function ConsoleLayout({
       </main>
     </div>
   );
+}
+
+function healthLabel(health: ConsoleLayoutProps["health"]): string {
+  switch (health) {
+    case "checking":
+      return "Checking";
+    case "warning":
+      return "Warning";
+    case "failed":
+      return "Failed";
+    default:
+      return "Operational";
+  }
 }

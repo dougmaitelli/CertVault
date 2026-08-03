@@ -223,6 +223,24 @@ form button,
   margin-right: 8px;
   box-shadow: 0 0 10px #4be0bd;
 }
+.health.checking i {
+  background: #8e9da6;
+  box-shadow: 0 0 10px #8e9da6;
+}
+.health.warning {
+  color: #ffd887;
+}
+.health.warning i {
+  background: #e5a93d;
+  box-shadow: 0 0 10px #e5a93d;
+}
+.health.failed {
+  color: #ff9a9a;
+}
+.health.failed i {
+  background: #ef6262;
+  box-shadow: 0 0 10px #ef6262;
+}
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
