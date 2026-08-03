@@ -24,7 +24,6 @@ type OIDC struct {
 	ClientID         string   `yaml:"client_id"`
 	ClientSecret     string   `yaml:"-"`
 	ClientSecretFile string   `yaml:"client_secret_file"`
-	RedirectURL      string   `yaml:"redirect_url"`
 	AllowedGroups    []string `yaml:"allowed_groups"`
 }
 

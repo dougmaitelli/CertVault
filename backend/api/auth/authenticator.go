@@ -64,7 +64,7 @@ func New(
 			ClientID:     cfg.Auth.OIDC.ClientID,
 			ClientSecret: secret,
 			Endpoint:     provider.Endpoint(),
-			RedirectURL:  cfg.Auth.OIDC.RedirectURL,
+			RedirectURL:  cfg.OIDCRedirectURL(),
 			Scopes:       []string{oidc.ScopeOpenID, "profile", "email", "groups"},
 		}
 	}

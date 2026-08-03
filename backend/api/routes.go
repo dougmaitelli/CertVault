@@ -2,6 +2,8 @@ package api
 
 import (
 	"net/http"
+
+	"github.com/certvault/certvault/config"
 )
 
 func (a *API) routes() http.Handler {
@@ -13,7 +15,7 @@ func (a *API) routes() http.Handler {
 		jsonResponse(w, http.StatusOK, map[string]string{"status": "ready"})
 	})
 	mux.HandleFunc("GET /auth/login", a.authenticator.Login)
-	mux.HandleFunc("GET /auth/callback", a.authenticator.Callback)
+	mux.HandleFunc("GET "+config.OIDCCallbackPath, a.authenticator.Callback)
 	mux.HandleFunc("POST /auth/bootstrap", a.authenticator.BootstrapLogin)
 	mux.HandleFunc("POST /auth/logout", a.authenticator.Logout)
 

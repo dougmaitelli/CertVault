@@ -38,7 +38,6 @@ acme:
 #   oidc:
 #     issuer_url: https://auth.example.com
 #     client_id: certvault
-#     redirect_url: http://localhost:8080/auth/callback
 #     allowed_groups: [cert-admins]
 
 dns_credentials:
@@ -150,8 +149,11 @@ Global values can be overridden with:
 | `CERTVAULT_MASTER_KEY_FILE` | Path to a file containing the Base64-encoded encryption key |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` | Break-glass UI token |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` | Path to a file containing the break-glass UI token |
+| `CERTVAULT_OIDC_ISSUER_URL` | OIDC issuer used for provider discovery |
+| `CERTVAULT_OIDC_CLIENT_ID` | OIDC client identifier |
 | `CERTVAULT_OIDC_CLIENT_SECRET` | OIDC client secret |
 | `CERTVAULT_OIDC_CLIENT_SECRET_FILE` | Path to a file containing the OIDC client secret |
+| `CERTVAULT_OIDC_ALLOWED_GROUPS` | Comma-separated administrator group allowlist |
 | `CERTVAULT_UI_DIR` | Built frontend directory |
 
 Some values may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.
@@ -164,7 +166,7 @@ Certificate key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and 
 
 ## OIDC
 
-Uncomment `auth.oidc` in the Quick Start and add `CERTVAULT_OIDC_CLIENT_SECRET` to `.env`. Register the exact `redirect_url` with the provider. The client secret may instead be supplied through `CERTVAULT_OIDC_CLIENT_SECRET_FILE`, but both forms cannot be set together. If `allowed_groups` is empty, any successfully authenticated identity is an administrator; setting an allowlist is strongly recommended. The bootstrap token remains available as break-glass access.
+Uncomment `auth.oidc` in the Quick Start and add `CERTVAULT_OIDC_CLIENT_SECRET` to `.env`. Register `{server.public_url}/auth/callback` with the provider. The client secret may instead be supplied through `CERTVAULT_OIDC_CLIENT_SECRET_FILE`, but both forms cannot be set together. If `allowed_groups` is empty, any successfully authenticated identity is an administrator; setting an allowlist is strongly recommended. The bootstrap token remains available as break-glass access.
 
 ## Hooks
 

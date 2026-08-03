@@ -25,6 +25,8 @@ type Config struct {
 	MasterKey      []byte                   `yaml:"-"`
 }
 
+const OIDCCallbackPath = "/auth/callback"
+
 func Load(path string) (*Config, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -91,8 +93,11 @@ func applyEnv(c *Config) error {
 		c.Auth.BootstrapToken = ""
 		c.Auth.BootstrapTokenFile = bootstrapTokenFile
 	}
+	oidcIssuerURL := os.Getenv(EnvOIDCIssuerURL)
+	oidcClientID := os.Getenv(EnvOIDCClientID)
 	oidcClientSecret := os.Getenv(EnvOIDCClientSecret)
 	oidcClientSecretFile := os.Getenv(EnvOIDCClientSecretFile)
+	oidcAllowedGroups := os.Getenv(EnvOIDCAllowedGroups)
 	if oidcClientSecret != "" && oidcClientSecretFile != "" {
 		return fmt.Errorf(
 			"%s and %s cannot both be set",
@@ -100,8 +105,19 @@ func applyEnv(c *Config) error {
 			EnvOIDCClientSecretFile,
 		)
 	}
-	if (oidcClientSecret != "" || oidcClientSecretFile != "") && c.Auth.OIDC == nil {
-		return errors.New("auth.oidc must be configured when an OIDC client secret is set")
+	if c.Auth.OIDC == nil && (oidcIssuerURL != "" || oidcClientID != "" ||
+		oidcClientSecret != "" || oidcClientSecretFile != "" ||
+		oidcAllowedGroups != "") {
+		c.Auth.OIDC = &OIDC{}
+	}
+	if c.Auth.OIDC == nil {
+		return nil
+	}
+	if oidcIssuerURL != "" {
+		c.Auth.OIDC.IssuerURL = oidcIssuerURL
+	}
+	if oidcClientID != "" {
+		c.Auth.OIDC.ClientID = oidcClientID
 	}
 	if oidcClientSecret != "" {
 		c.Auth.OIDC.ClientSecret = oidcClientSecret
@@ -111,7 +127,21 @@ func applyEnv(c *Config) error {
 		c.Auth.OIDC.ClientSecret = ""
 		c.Auth.OIDC.ClientSecretFile = oidcClientSecretFile
 	}
+	if oidcAllowedGroups != "" {
+		c.Auth.OIDC.AllowedGroups = splitCommaSeparated(oidcAllowedGroups)
+	}
 	return nil
+}
+
+func splitCommaSeparated(value string) []string {
+	parts := strings.Split(value, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			values = append(values, trimmed)
+		}
+	}
+	return values
 }
 
 func (c *Config) Validate() error {
@@ -128,14 +158,18 @@ func (c *Config) Validate() error {
 		return err
 	}
 	if c.Auth.OIDC != nil {
-		if c.Auth.OIDC.IssuerURL == "" || c.Auth.OIDC.ClientID == "" || c.Auth.OIDC.RedirectURL == "" {
-			return errors.New("auth.oidc requires issuer_url, client_id, and redirect_url")
+		if c.Auth.OIDC.IssuerURL == "" || c.Auth.OIDC.ClientID == "" {
+			return errors.New("auth.oidc requires issuer_url and client_id")
 		}
 		if c.Auth.OIDC.ClientSecret == "" && c.Auth.OIDC.ClientSecretFile == "" {
 			return errors.New("auth.oidc requires a client secret")
 		}
 		if c.Auth.OIDC.ClientSecret != "" && c.Auth.OIDC.ClientSecretFile != "" {
 			return errors.New("auth.oidc client secret and client secret file cannot both be set")
+		}
+		publicURL, err := url.Parse(c.Server.PublicURL)
+		if err != nil || publicURL.Scheme == "" || publicURL.Host == "" {
+			return errors.New("server.public_url must be an absolute URL when OIDC is enabled")
 		}
 	}
 	credentials := map[string]bool{}
@@ -178,6 +212,10 @@ func (c *Config) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (c *Config) OIDCRedirectURL() string {
+	return strings.TrimRight(c.Server.PublicURL, "/") + OIDCCallbackPath
 }
 
 func (c *Config) Certificate(name string) (Certificate, bool) {

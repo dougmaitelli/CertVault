@@ -20,7 +20,6 @@ auth:
   #   client_id: certvault
   #   # Or set CERTVAULT_OIDC_CLIENT_SECRET directly.
   #   client_secret_file: /run/secrets/oidc_client_secret
-  #   redirect_url: https://certvault.home.example.com/auth/callback
   #   allowed_groups: [cert-admins]
 
 dns_credentials:
