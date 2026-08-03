@@ -2,10 +2,7 @@ package service
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
@@ -170,45 +167,6 @@ func (m *Manager) client(ctx context.Context) (*lego.Client, error) {
 		}
 	}
 	return client, nil
-}
-
-func (m *Manager) loadUser() (*acmeUser, error) {
-	dir := filepath.Join(m.cfg.DataDir, "accounts")
-	if e := os.MkdirAll(dir, 0700); e != nil {
-		return nil, e
-	}
-	path := filepath.Join(dir, "account.json.enc")
-	b, e := os.ReadFile(path)
-	if os.IsNotExist(e) {
-		key, e := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		return &acmeUser{Email: m.cfg.ACME.Email, Key: key}, e
-	}
-	if e != nil {
-		return nil, e
-	}
-	plain, e := vault.Decrypt(m.cfg.MasterKey, b)
-	if e != nil {
-		return nil, e
-	}
-	var wire acmeUserWire
-	if e = json.Unmarshal(plain, &wire); e != nil {
-		return nil, e
-	}
-	key, e := x509.ParseECPrivateKey(wire.Key)
-	return &acmeUser{wire.Email, wire.Registration, key}, e
-}
-
-func (m *Manager) saveUser(u *acmeUser) error {
-	key, e := x509.MarshalECPrivateKey(u.Key)
-	if e != nil {
-		return e
-	}
-	plain, _ := json.Marshal(acmeUserWire{u.Email, key, u.Registration})
-	b, e := vault.Encrypt(m.cfg.MasterKey, plain)
-	if e != nil {
-		return e
-	}
-	return atomicWrite(filepath.Join(m.cfg.DataDir, "accounts", "account.json.enc"), b, 0600)
 }
 
 func (m *Manager) provider(c config.Certificate) (challenge.Provider, error) {
