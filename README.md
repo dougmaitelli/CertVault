@@ -147,6 +147,7 @@ Global values can be overridden with:
 | `CERTVAULT_PUBLIC_URL` | Browser-visible HTTPS origin |
 | `CERTVAULT_ACME_EMAIL` | ACME account email |
 | `CERTVAULT_ACME_DIRECTORY_URL` | ACME directory override |
+| `CERTVAULT_ACME_DNS_RESOLVERS` | Comma-separated recursive resolvers used for DNS-01 checks; defaults to `1.1.1.1:53,1.0.0.1:53` |
 | `CERTVAULT_MASTER_KEY` | Base64-encoded 32-byte encryption key |
 | `CERTVAULT_MASTER_KEY_FILE` | Path to a file containing the Base64-encoded encryption key |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` | Break-glass UI token |

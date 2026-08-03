@@ -29,6 +29,7 @@ import (
 	"github.com/go-acme/lego/v5/certcrypto"
 	"github.com/go-acme/lego/v5/certificate"
 	"github.com/go-acme/lego/v5/challenge"
+	"github.com/go-acme/lego/v5/challenge/dns01"
 	"github.com/go-acme/lego/v5/lego"
 	"github.com/go-acme/lego/v5/registration"
 )
@@ -107,6 +108,9 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 		result = e
 		return e
 	}
+	dns01.SetDefaultClient(dns01.NewClient(&dns01.Options{
+		RecursiveNameservers: m.cfg.ACME.DNSResolvers,
+	}))
 	if e = client.Challenge.SetDNS01Provider(provider); e != nil {
 		result = e
 		return e

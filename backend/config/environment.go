@@ -9,6 +9,7 @@ const (
 	EnvLogLevel                = "CERTVAULT_LOG_LEVEL"
 	EnvACMEEmail               = "CERTVAULT_ACME_EMAIL"
 	EnvACMEDirectoryURL        = "CERTVAULT_ACME_DIRECTORY_URL"
+	EnvACMEDNSResolvers        = "CERTVAULT_ACME_DNS_RESOLVERS"
 	EnvMasterKey               = "CERTVAULT_MASTER_KEY"
 	EnvMasterKeyFile           = "CERTVAULT_MASTER_KEY_FILE"
 	EnvBootstrapAdminToken     = "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN"
@@ -21,6 +22,11 @@ const (
 	EnvUIDir                   = "CERTVAULT_UI_DIR"
 	EnvEventJSON               = "CERTVAULT_EVENT_JSON"
 	EnvPath                    = "PATH"
+)
+
+const (
+	DefaultDNSResolverPrimary   = "1.1.1.1:53"
+	DefaultDNSResolverSecondary = "1.0.0.1:53"
 )
 
 // EnvFileSuffix marks a provider environment variable whose value is read

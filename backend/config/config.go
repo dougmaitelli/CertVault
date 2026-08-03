@@ -76,6 +76,15 @@ func applyEnv(c *Config) error {
 	if c.ACME.DirectoryURL == "" {
 		c.ACME.DirectoryURL = "https://acme-v02.api.letsencrypt.org/directory"
 	}
+	if v := os.Getenv(EnvACMEDNSResolvers); v != "" {
+		c.ACME.DNSResolvers = splitCommaSeparated(v)
+	}
+	if len(c.ACME.DNSResolvers) == 0 {
+		c.ACME.DNSResolvers = []string{
+			DefaultDNSResolverPrimary,
+			DefaultDNSResolverSecondary,
+		}
+	}
 	bootstrapToken := os.Getenv(EnvBootstrapAdminToken)
 	bootstrapTokenFile := os.Getenv(EnvBootstrapAdminTokenFile)
 	if bootstrapToken != "" && bootstrapTokenFile != "" {

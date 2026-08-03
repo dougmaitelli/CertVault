@@ -8,9 +8,10 @@ type Server struct {
 }
 
 type ACME struct {
-	Email        string `yaml:"email"`
-	DirectoryURL string `yaml:"directory_url"`
-	AcceptTerms  bool   `yaml:"accept_terms"`
+	Email        string   `yaml:"email"`
+	DirectoryURL string   `yaml:"directory_url"`
+	DNSResolvers []string `yaml:"dns_resolvers"`
+	AcceptTerms  bool     `yaml:"accept_terms"`
 }
 
 type Auth struct {

@@ -16,6 +16,11 @@ acme:
   email: admin@example.com
   # Start with staging. Change this only after staging issuance succeeds.
   directory_url: https://acme-staging-v02.api.letsencrypt.org/directory
+  # Public recursive resolvers keep DNS-01 checks independent of local or
+  # split-horizon DNS. Port 53 is assumed when omitted.
+  dns_resolvers:
+    - 1.1.1.1:53
+    - 1.0.0.1:53
   accept_terms: true
 
 # Authentication is optional, but at least one UI login method is recommended.
