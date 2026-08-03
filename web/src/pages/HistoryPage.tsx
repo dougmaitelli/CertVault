@@ -27,7 +27,13 @@ export function HistoryPage({ jobs }: HistoryPageProps) {
                 <span className={`status ${job.status}`}>{job.status}</span>
               </td>
               <td>{formatDate(job.started_at)}</td>
-              <td>{job.error ? job.error : formatDate(job.finished_at)}</td>
+              <td>
+                {job.error
+                  ? job.error
+                  : job.finished_at
+                    ? formatDate(job.finished_at)
+                    : "Pending"}
+              </td>
             </tr>
           ))}
         </tbody>
