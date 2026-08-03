@@ -185,23 +185,20 @@ func certificateNames(key database.APIKey) []string {
 	return names
 }
 
-func (r *APIKeyRepository) Revoke(ctx context.Context, id int64) error {
-	result := r.database.ORM().WithContext(ctx).
-		Model(&database.APIKey{}).
-		Where(&database.APIKey{ID: id}).
-		Update("revoked", true)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
+func (r *APIKeyRepository) Revoke(ctx context.Context, id int64) (string, error) {
+	var key database.APIKey
+	err := r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.First(&key, id).Error; err != nil {
+			return err
+		}
+		return tx.Model(&key).Update("revoked", true).Error
+	})
+	return key.Name, err
 }
 
-func (r *APIKeyRepository) Delete(ctx context.Context, id int64) error {
-	return r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var key database.APIKey
+func (r *APIKeyRepository) Delete(ctx context.Context, id int64) (string, error) {
+	var key database.APIKey
+	err := r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.First(&key, id).Error; err != nil {
 			return err
 		}
@@ -214,4 +211,5 @@ func (r *APIKeyRepository) Delete(ctx context.Context, id int64) error {
 		}
 		return tx.Delete(&key).Error
 	})
+	return key.Name, err
 }

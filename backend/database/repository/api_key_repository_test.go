@@ -51,8 +51,12 @@ func TestAPIKeyAuthenticationAndRevocation(t *testing.T) {
 	if len(keys) != 1 {
 		t.Fatal("key not listed")
 	}
-	if err = repository.Revoke(ctx, keys[0].ID); err != nil {
+	name, err := repository.Revoke(ctx, keys[0].ID)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if name != "node" {
+		t.Fatalf("revoked API key name = %q", name)
 	}
 	if _, err = repository.Authenticate(ctx, token, "127.0.0.1"); err == nil {
 		t.Fatal("revoked key authenticated")
@@ -85,14 +89,18 @@ func TestAPIKeyCanOnlyBeDeletedAfterRevocation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = repository.Delete(context.Background(), key.ID); !errors.Is(err, ErrAPIKeyNotRevoked) {
+	if _, err = repository.Delete(context.Background(), key.ID); !errors.Is(err, ErrAPIKeyNotRevoked) {
 		t.Fatalf("deleting active API key returned %v", err)
 	}
-	if err = repository.Revoke(context.Background(), key.ID); err != nil {
+	if _, err = repository.Revoke(context.Background(), key.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err = repository.Delete(context.Background(), key.ID); err != nil {
+	name, err := repository.Delete(context.Background(), key.ID)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if name != "node" {
+		t.Fatalf("deleted API key name = %q", name)
 	}
 	keys, err := repository.List(context.Background())
 	if err != nil {
