@@ -63,7 +63,7 @@ CLOUDFLARE_DNS_API_TOKEN=replace-with-cloudflare-token
 # CERTVAULT_OIDC_CLIENT_SECRET=replace-with-oidc-client-secret
 ```
 
-Create `compose.yaml` beside both files:
+Create `docker-compose.yaml` beside both files:
 
 ```yaml
 services:
