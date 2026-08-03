@@ -112,15 +112,12 @@ export function APIKeysPage({
                       Revoke
                     </button>
                   ) : (
-                    <div className="revoked-key-actions">
-                      <span>Revoked</span>
-                      <button
-                        className="action-button danger"
-                        onClick={() => void deleteKey(apiKey.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <button
+                      className="action-button delete"
+                      onClick={() => void deleteKey(apiKey.id)}
+                    >
+                      Delete
+                    </button>
                   )}
                 </td>
               </tr>
