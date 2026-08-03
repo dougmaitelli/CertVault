@@ -53,17 +53,18 @@ type APIKey struct {
 }
 
 type Principal struct {
-	KeyID        int64
-	Name         string
-	Scopes       []string
-	Certificates []string
+	KeyID           int64
+	Name            string
+	Scopes          []string
+	Certificates    []string
+	AllCertificates bool
 }
 
 func (p Principal) Allows(scope, certificate string) bool {
 	if !contains(p.Scopes, scope) && !contains(p.Scopes, "*") {
 		return false
 	}
-	return certificate == "" || contains(p.Certificates, certificate) || contains(p.Certificates, "*")
+	return certificate == "" || p.AllCertificates || contains(p.Certificates, certificate)
 }
 
 type Audit struct {

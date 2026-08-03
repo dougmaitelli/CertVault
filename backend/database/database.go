@@ -51,6 +51,7 @@ func (d *Database) migrate() error {
 		&CertificateVersion{},
 		&Job{},
 		&APIKey{},
+		&APIKeyCertificate{},
 		&AuditEvent{},
 		&Setting{},
 	); err != nil {

@@ -3,7 +3,8 @@ package database
 import "time"
 
 type Certificate struct {
-	Name               string    `gorm:"primaryKey"`
+	ID                 int64     `gorm:"primaryKey;autoIncrement"`
+	Name               string    `gorm:"not null;uniqueIndex"`
 	Domains            string    `gorm:"not null"`
 	KeyType            string    `gorm:"not null"`
 	RenewBeforeSeconds int64     `gorm:"not null"`
@@ -16,47 +17,59 @@ type Certificate struct {
 func (Certificate) TableName() string { return "certificates" }
 
 type CertificateVersion struct {
-	ID                int64     `gorm:"primaryKey;autoIncrement"`
-	CertificateName   string    `gorm:"not null;index:idx_versions_cert,priority:1"`
-	Path              string    `gorm:"not null"`
-	Domains           string    `gorm:"not null"`
-	Serial            string    `gorm:"not null"`
-	Issuer            string    `gorm:"not null"`
-	FingerprintSHA256 string    `gorm:"not null"`
-	NotBefore         time.Time `gorm:"not null"`
-	NotAfter          time.Time `gorm:"not null"`
-	CreatedAt         time.Time `gorm:"not null;index:idx_versions_cert,priority:2,sort:desc"`
+	ID                int64       `gorm:"primaryKey;autoIncrement"`
+	CertificateID     int64       `gorm:"not null;index:idx_versions_cert,priority:1"`
+	Certificate       Certificate `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Path              string      `gorm:"not null"`
+	Domains           string      `gorm:"not null"`
+	Serial            string      `gorm:"not null"`
+	Issuer            string      `gorm:"not null"`
+	FingerprintSHA256 string      `gorm:"not null"`
+	NotBefore         time.Time   `gorm:"not null"`
+	NotAfter          time.Time   `gorm:"not null"`
+	CreatedAt         time.Time   `gorm:"not null;index:idx_versions_cert,priority:2,sort:desc"`
 }
 
 func (CertificateVersion) TableName() string { return "certificate_versions" }
 
 type Job struct {
-	ID              int64     `gorm:"primaryKey;autoIncrement"`
-	CertificateName string    `gorm:"not null"`
-	Kind            string    `gorm:"not null"`
-	Status          string    `gorm:"not null"`
-	Error           string    `gorm:"not null;default:''"`
-	StartedAt       time.Time `gorm:"not null"`
-	FinishedAt      *time.Time
+	ID            int64       `gorm:"primaryKey;autoIncrement"`
+	CertificateID int64       `gorm:"not null;index"`
+	Certificate   Certificate `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Kind          string      `gorm:"not null"`
+	Status        string      `gorm:"not null"`
+	Error         string      `gorm:"not null;default:''"`
+	StartedAt     time.Time   `gorm:"not null"`
+	FinishedAt    *time.Time
 }
 
 func (Job) TableName() string { return "jobs" }
 
 type APIKey struct {
-	ID           int64     `gorm:"primaryKey;autoIncrement"`
-	Name         string    `gorm:"not null"`
-	Prefix       string    `gorm:"not null;uniqueIndex"`
-	SecretHash   string    `gorm:"not null"`
-	Scopes       string    `gorm:"not null"`
-	Certificates string    `gorm:"not null"`
-	CreatedAt    time.Time `gorm:"not null"`
-	LastUsedAt   *time.Time
-	LastUsedIP   string `gorm:"not null;default:''"`
-	ExpiresAt    *time.Time
-	Revoked      bool `gorm:"not null;default:false"`
+	ID                int64               `gorm:"primaryKey;autoIncrement"`
+	Name              string              `gorm:"not null"`
+	Prefix            string              `gorm:"not null;uniqueIndex"`
+	SecretHash        string              `gorm:"not null"`
+	Scopes            string              `gorm:"not null"`
+	AllCertificates   bool                `gorm:"not null;default:false"`
+	CertificateAccess []APIKeyCertificate `gorm:"foreignKey:APIKeyID"`
+	CreatedAt         time.Time           `gorm:"not null"`
+	LastUsedAt        *time.Time
+	LastUsedIP        string `gorm:"not null;default:''"`
+	ExpiresAt         *time.Time
+	Revoked           bool `gorm:"not null;default:false"`
 }
 
 func (APIKey) TableName() string { return "api_keys" }
+
+type APIKeyCertificate struct {
+	APIKeyID      int64       `gorm:"primaryKey"`
+	CertificateID int64       `gorm:"primaryKey"`
+	APIKey        APIKey      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Certificate   Certificate `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+}
+
+func (APIKeyCertificate) TableName() string { return "api_key_certificates" }
 
 type AuditEvent struct {
 	ID       int64     `gorm:"primaryKey;autoIncrement"`

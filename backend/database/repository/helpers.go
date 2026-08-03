@@ -13,6 +13,12 @@ func NotFound(err error) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
+func findCertificate(db *gorm.DB, name string) (database.Certificate, error) {
+	var certificate database.Certificate
+	err := db.Where(&database.Certificate{Name: name}).First(&certificate).Error
+	return certificate, err
+}
+
 func certificateFromModel(model database.Certificate) (Certificate, error) {
 	domains, err := decodeStrings(model.Domains)
 	if err != nil {
@@ -30,7 +36,7 @@ func versionFromModel(model database.CertificateVersion) (Version, error) {
 		return Version{}, err
 	}
 	return Version{
-		ID: model.ID, CertificateName: model.CertificateName, Path: model.Path,
+		ID: model.ID, CertificateName: model.Certificate.Name, Path: model.Path,
 		Serial: model.Serial, Issuer: model.Issuer, FingerprintSHA256: model.FingerprintSHA256,
 		NotBefore: model.NotBefore, NotAfter: model.NotAfter, CreatedAt: model.CreatedAt, Domains: domains,
 	}, nil

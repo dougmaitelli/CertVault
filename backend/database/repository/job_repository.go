@@ -14,11 +14,15 @@ type JobRepository struct {
 }
 
 func (r *JobRepository) Start(ctx context.Context, name, kind string) (int64, error) {
+	certificate, err := findCertificate(r.database.ORM().WithContext(ctx), name)
+	if err != nil {
+		return 0, err
+	}
 	model := database.Job{
-		CertificateName: name,
-		Kind:            kind,
-		Status:          "running",
-		StartedAt:       time.Now().UTC(),
+		CertificateID: certificate.ID,
+		Kind:          kind,
+		Status:        "running",
+		StartedAt:     time.Now().UTC(),
 	}
 	if err := r.database.ORM().WithContext(ctx).Create(&model).Error; err != nil {
 		return 0, err
@@ -48,11 +52,11 @@ func (r *JobRepository) Finish(ctx context.Context, id int64, jobErr error) erro
 			return nil
 		}
 		var job database.Job
-		if err := tx.First(&job, id).Error; err != nil {
+		if err := tx.Preload("Certificate").First(&job, id).Error; err != nil {
 			return err
 		}
 		return tx.Model(&database.Certificate{}).
-			Where(&database.Certificate{Name: job.CertificateName}).
+			Where(&database.Certificate{ID: job.CertificateID}).
 			Updates(map[string]any{
 				"status":     "error",
 				"last_error": message,
@@ -64,6 +68,7 @@ func (r *JobRepository) Finish(ctx context.Context, id int64, jobErr error) erro
 func (r *JobRepository) List(ctx context.Context, limit int) ([]Job, error) {
 	var models []database.Job
 	err := r.database.ORM().WithContext(ctx).
+		Preload("Certificate").
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "id"}, Desc: true}).
 		Limit(limit).
 		Find(&models).Error
@@ -74,7 +79,7 @@ func (r *JobRepository) List(ctx context.Context, limit int) ([]Job, error) {
 	for _, model := range models {
 		jobs = append(jobs, Job{
 			ID:              model.ID,
-			CertificateName: model.CertificateName,
+			CertificateName: model.Certificate.Name,
 			Kind:            model.Kind,
 			Status:          model.Status,
 			Error:           model.Error,

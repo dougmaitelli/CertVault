@@ -66,7 +66,7 @@ func (r *CertificateRepository) List(ctx context.Context) ([]Certificate, error)
 		if err != nil {
 			return nil, err
 		}
-		version, err := r.CurrentVersion(ctx, model.Name)
+		version, err := r.currentVersion(ctx, model.ID)
 		if err != nil && !NotFound(err) {
 			return nil, err
 		}
@@ -88,7 +88,7 @@ func (r *CertificateRepository) Get(ctx context.Context, name string) (Certifica
 	if err != nil {
 		return Certificate{}, err
 	}
-	version, err := r.CurrentVersion(ctx, name)
+	version, err := r.currentVersion(ctx, model.ID)
 	if err != nil && !NotFound(err) {
 		return Certificate{}, err
 	}
@@ -97,9 +97,18 @@ func (r *CertificateRepository) Get(ctx context.Context, name string) (Certifica
 }
 
 func (r *CertificateRepository) CurrentVersion(ctx context.Context, name string) (*Version, error) {
+	certificate, err := findCertificate(r.database.ORM().WithContext(ctx), name)
+	if err != nil {
+		return nil, err
+	}
+	return r.currentVersion(ctx, certificate.ID)
+}
+
+func (r *CertificateRepository) currentVersion(ctx context.Context, certificateID int64) (*Version, error) {
 	var model database.CertificateVersion
 	err := r.database.ORM().WithContext(ctx).
-		Where(&database.CertificateVersion{CertificateName: name}).
+		Preload("Certificate").
+		Where(&database.CertificateVersion{CertificateID: certificateID}).
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "created_at"}, Desc: true}).
 		First(&model).Error
 	if err != nil {
@@ -110,9 +119,14 @@ func (r *CertificateRepository) CurrentVersion(ctx context.Context, name string)
 }
 
 func (r *CertificateRepository) Versions(ctx context.Context, name string) ([]Version, error) {
+	certificate, err := findCertificate(r.database.ORM().WithContext(ctx), name)
+	if err != nil {
+		return nil, err
+	}
 	var models []database.CertificateVersion
-	err := r.database.ORM().WithContext(ctx).
-		Where(&database.CertificateVersion{CertificateName: name}).
+	err = r.database.ORM().WithContext(ctx).
+		Preload("Certificate").
+		Where(&database.CertificateVersion{CertificateID: certificate.ID}).
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "created_at"}, Desc: true}).
 		Find(&models).Error
 	if err != nil {
@@ -134,23 +148,27 @@ func (r *CertificateRepository) AddVersion(ctx context.Context, version Version)
 	if err != nil {
 		return err
 	}
-	model := database.CertificateVersion{
-		CertificateName:   version.CertificateName,
-		Path:              version.Path,
-		Domains:           domains,
-		Serial:            version.Serial,
-		Issuer:            version.Issuer,
-		FingerprintSHA256: version.FingerprintSHA256,
-		NotBefore:         version.NotBefore,
-		NotAfter:          version.NotAfter,
-		CreatedAt:         version.CreatedAt,
-	}
 	return r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		certificate, err := findCertificate(tx, version.CertificateName)
+		if err != nil {
+			return err
+		}
+		model := database.CertificateVersion{
+			CertificateID:     certificate.ID,
+			Path:              version.Path,
+			Domains:           domains,
+			Serial:            version.Serial,
+			Issuer:            version.Issuer,
+			FingerprintSHA256: version.FingerprintSHA256,
+			NotBefore:         version.NotBefore,
+			NotAfter:          version.NotAfter,
+			CreatedAt:         version.CreatedAt,
+		}
 		if err := tx.Create(&model).Error; err != nil {
 			return err
 		}
 		return tx.Model(&database.Certificate{}).
-			Where(&database.Certificate{Name: version.CertificateName}).
+			Where(&database.Certificate{ID: certificate.ID}).
 			Updates(map[string]any{
 				"status":     "valid",
 				"last_error": "",
