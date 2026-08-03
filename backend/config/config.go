@@ -59,7 +59,7 @@ type Zone struct {
 type Certificate struct {
 	Name        string   `yaml:"name"`
 	Domains     []string `yaml:"domains"`
-	KeyType     string   `yaml:"key_type"`
+	KeyType     KeyType  `yaml:"key_type"`
 	RenewBefore Duration `yaml:"renew_before"`
 	Credential  string   `yaml:"credential"`
 	Enabled     *bool    `yaml:"enabled"`
@@ -197,6 +197,9 @@ func (c *Config) Validate() error {
 		if len(cert.Domains) == 0 {
 			return fmt.Errorf("certificate %q has no domains", cert.Name)
 		}
+		if cert.KeyType != "" && !cert.KeyType.Valid() {
+			return fmt.Errorf("certificate %q has unsupported key type %q", cert.Name, cert.KeyType)
+		}
 		if cert.RenewBefore.Duration == 0 {
 			cert.RenewBefore.Duration = DefaultRenewBefore
 		}
@@ -229,7 +232,7 @@ func (c *Config) Certificate(name string) (Certificate, bool) {
 	for _, v := range c.Certificates {
 		if v.Name == name {
 			if v.KeyType == "" {
-				v.KeyType = "ec256"
+				v.KeyType = DefaultKeyType
 			}
 			if v.RenewBefore.Duration == 0 {
 				v.RenewBefore.Duration = DefaultRenewBefore

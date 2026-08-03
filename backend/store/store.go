@@ -22,13 +22,13 @@ type Store struct {
 }
 
 type Certificate struct {
-	Name               string   `json:"name"`
-	Domains            []string `json:"domains"`
-	KeyType            string   `json:"key_type"`
-	Status             string   `json:"status"`
-	RenewBeforeSeconds int64    `json:"renew_before_seconds"`
-	CurrentVersion     *Version `json:"current_version,omitempty"`
-	LastError          string   `json:"last_error,omitempty"`
+	Name               string         `json:"name"`
+	Domains            []string       `json:"domains"`
+	KeyType            config.KeyType `json:"key_type"`
+	Status             string         `json:"status"`
+	RenewBeforeSeconds int64          `json:"renew_before_seconds"`
+	CurrentVersion     *Version       `json:"current_version,omitempty"`
+	LastError          string         `json:"last_error,omitempty"`
 }
 
 type Version struct {
@@ -98,7 +98,7 @@ func (s *Store) Reconcile(ctx context.Context, cfg *config.Config) error {
 			}
 			keyType := definition.KeyType
 			if keyType == "" {
-				keyType = "ec256"
+				keyType = config.DefaultKeyType
 			}
 			domains, err := encodeStrings(definition.Domains)
 			if err != nil {
@@ -108,7 +108,7 @@ func (s *Store) Reconcile(ctx context.Context, cfg *config.Config) error {
 			model := database.Certificate{Name: definition.Name}
 			updates := database.Certificate{
 				Domains:            domains,
-				KeyType:            keyType,
+				KeyType:            string(keyType),
 				RenewBeforeSeconds: int64(renewBefore.Seconds()),
 				Enabled:            enabled,
 				UpdatedAt:          time.Now().UTC(),
@@ -476,7 +476,7 @@ func certificateFromModel(model database.Certificate) (Certificate, error) {
 		return Certificate{}, err
 	}
 	return Certificate{
-		Name: model.Name, Domains: domains, KeyType: model.KeyType, Status: model.Status,
+		Name: model.Name, Domains: domains, KeyType: config.KeyType(model.KeyType), Status: model.Status,
 		RenewBeforeSeconds: model.RenewBeforeSeconds, LastError: model.LastError,
 	}, nil
 }

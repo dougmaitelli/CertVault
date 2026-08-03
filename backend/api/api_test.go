@@ -28,7 +28,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 			{
 				Name:    "home",
 				Domains: []string{"example.com"},
-				KeyType: "ec256",
+				KeyType: config.KeyTypeEC256,
 			},
 		},
 	}

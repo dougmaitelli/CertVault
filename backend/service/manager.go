@@ -123,10 +123,15 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 		result = e
 		return e
 	}
+	keyType, e := certcrypto.ToKeyType(string(def.KeyType))
+	if e != nil {
+		result = fmt.Errorf("certificate %q key type: %w", name, e)
+		return result
+	}
 	request := certificate.ObtainRequest{
 		Domains: def.Domains,
 		Bundle:  true,
-		KeyType: certificateKeyType(def.KeyType),
+		KeyType: keyType,
 	}
 	resource, e := client.Certificate.Obtain(ctx, request)
 	if e != nil {
@@ -173,21 +178,6 @@ func (m *Manager) client(ctx context.Context) (*lego.Client, error) {
 		}
 	}
 	return client, nil
-}
-
-func certificateKeyType(keyType string) certcrypto.KeyType {
-	switch strings.ToLower(keyType) {
-	case "ec384":
-		return certcrypto.EC384
-	case "rsa2048":
-		return certcrypto.RSA2048
-	case "rsa3072":
-		return certcrypto.RSA3072
-	case "rsa4096":
-		return certcrypto.RSA4096
-	default:
-		return certcrypto.EC256
-	}
 }
 
 func (m *Manager) loadUser() (*acmeUser, error) {
