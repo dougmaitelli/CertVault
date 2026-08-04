@@ -45,4 +45,35 @@ certificates:
     key_type: rsa2048
     renew_before: 480h
     enabled: true
+  - name: media-services
+    domains:
+      - media.services.test
+      - jellyfin.services.test
+      - photos.services.test
+    key_type: ec384
+    renew_before: 720h
+    enabled: true
+  - name: network-infrastructure
+    domains:
+      - router.homelab.test
+      - switches.homelab.test
+      - wifi.homelab.test
+    key_type: rsa3072
+    renew_before: 360h
+    enabled: true
+  - name: monitoring-wildcard
+    domains:
+      - monitoring.homelab.test
+      - "*.monitoring.homelab.test"
+    key_type: ec256
+    renew_before: 720h
+    enabled: true
+  - name: backup-server
+    domains:
+      - backup.services.test
+    key_type: rsa4096
+    renew_before: 240h
+    credential: route53_dev
+    automatic_issuance: false
+    enabled: true
 hooks: []
