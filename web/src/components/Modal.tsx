@@ -3,13 +3,17 @@ import "./Modal.css";
 
 type ModalProps = {
   children: ReactNode;
+  className?: string;
   onClose: () => void;
 };
 
-export function Modal({ children, onClose }: ModalProps) {
+export function Modal({ children, className, onClose }: ModalProps) {
   return (
     <div className="modal" onClick={onClose}>
-      <section onClick={(event) => event.stopPropagation()}>
+      <section
+        className={className}
+        onClick={(event) => event.stopPropagation()}
+      >
         <button className="close" onClick={onClose} aria-label="Close">
           ×
         </button>

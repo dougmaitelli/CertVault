@@ -1,0 +1,38 @@
+.modal section.confirmation-modal {
+  width: min(440px, 90vw);
+}
+
+.confirmation-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  margin-bottom: 18px;
+  border: 1px solid var(--color-danger-border);
+  border-radius: 50%;
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.confirmation-content h2 {
+  margin: 0 0 10px;
+}
+
+.confirmation-content p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.confirmation-modal > .error {
+  margin-top: 18px;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 26px;
+}

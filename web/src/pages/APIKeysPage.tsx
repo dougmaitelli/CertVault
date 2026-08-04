@@ -3,10 +3,16 @@ import "./APIKeysPage.css";
 import { api } from "../api/client";
 import type { APIKey, APIKeyCreationResponse, Certificate } from "../api/types";
 import { APIUsageHelper } from "../components/APIUsageHelper";
+import { ConfirmationDialog } from "../dialogs/ConfirmationDialog";
 import { CreateAPIKeyDialog } from "../dialogs/CreateAPIKeyDialog";
 import { formatDate } from "../utils/date";
 
 const copyFeedbackDuration = 2000;
+
+type PendingKeyAction = {
+  apiKey: APIKey;
+  type: "revoke" | "delete";
+};
 
 type APIKeysPageProps = {
   apiKeys: APIKey[];
@@ -22,6 +28,7 @@ export function APIKeysPage({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createdKey, setCreatedKey] = useState<APIKeyCreationResponse>();
   const [copied, setCopied] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingKeyAction>();
   const copyFeedbackTimeout = useRef<number | null>(null);
 
   useEffect(
@@ -47,17 +54,13 @@ export function APIKeysPage({
   }
 
   async function revoke(id: number) {
-    if (confirm("Revoke this API key?")) {
-      await api(`api-keys/${id}/revoke`, { method: "POST" });
-      await reload();
-    }
+    await api(`api-keys/${id}/revoke`, { method: "POST" });
+    await reload();
   }
 
   async function deleteKey(id: number) {
-    if (confirm("Permanently delete this revoked API key?")) {
-      await api(`api-keys/${id}`, { method: "DELETE" });
-      await reload();
-    }
+    await api(`api-keys/${id}`, { method: "DELETE" });
+    await reload();
   }
 
   return (
@@ -121,14 +124,18 @@ export function APIKeysPage({
                   {!apiKey.revoked ? (
                     <button
                       className="action-button danger"
-                      onClick={() => void revoke(apiKey.id)}
+                      onClick={() =>
+                        setPendingAction({ apiKey, type: "revoke" })
+                      }
                     >
                       Revoke
                     </button>
                   ) : (
                     <button
                       className="action-button delete"
-                      onClick={() => void deleteKey(apiKey.id)}
+                      onClick={() =>
+                        setPendingAction({ apiKey, type: "delete" })
+                      }
                     >
                       Delete
                     </button>
@@ -148,6 +155,29 @@ export function APIKeysPage({
             setShowCreateDialog(false);
             await reload();
           }}
+        />
+      )}
+      {pendingAction && (
+        <ConfirmationDialog
+          title={
+            pendingAction.type === "revoke"
+              ? "Revoke API key?"
+              : "Permanently delete API key?"
+          }
+          message={
+            pendingAction.type === "revoke"
+              ? `Requests using “${pendingAction.apiKey.name}” will immediately stop working. Its metadata will remain available until you delete it.`
+              : `This will permanently remove “${pendingAction.apiKey.name}” and its usage metadata. This action cannot be undone.`
+          }
+          confirmLabel={
+            pendingAction.type === "revoke" ? "Revoke key" : "Delete key"
+          }
+          onClose={() => setPendingAction(undefined)}
+          onConfirm={() =>
+            pendingAction.type === "revoke"
+              ? revoke(pendingAction.apiKey.id)
+              : deleteKey(pendingAction.apiKey.id)
+          }
         />
       )}
     </>
