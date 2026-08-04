@@ -87,12 +87,15 @@ input[type="checkbox"],
 .shell header span {
   display: inline-grid;
   place-items: center;
-  width: 45px;
-  height: 45px;
-  border-radius: 12px;
   color: #07100e;
   background: #4be0bd;
   font-weight: 900;
+  line-height: 1;
+}
+.brand {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
 }
 .login h1 {
   margin-bottom: 4px;
@@ -272,7 +275,7 @@ form > .action-button {
 .shell header span {
   width: 34px;
   height: 34px;
-  border-radius: 9px;
+  border-radius: 8px;
 }
 .shell nav {
   display: grid;
