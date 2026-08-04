@@ -85,7 +85,9 @@ export function APIUsageHelper({ certificates, token }: APIUsageHelperProps) {
       <div className="api-usage-heading">
         <div>
           <h2>Automatic download</h2>
-          <p>Run this once on the client to install a recurring sync job.</p>
+          <p>
+            Run this on the client to install or update a recurring sync job.
+          </p>
         </div>
         <div className="api-usage-options">
           <label>
