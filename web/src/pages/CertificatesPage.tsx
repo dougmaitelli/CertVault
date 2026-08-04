@@ -139,7 +139,7 @@ export function CertificatesPage({
             {certificate.last_error && (
               <p className="error">{certificate.last_error}</p>
             )}
-            <div className="actions">
+            <div className="action-buttons">
               <CertificateDownloadLink
                 certificateName={certificate.name}
                 artifact="fullchain.pem"

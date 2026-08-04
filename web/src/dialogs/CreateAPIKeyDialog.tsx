@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { APIKeyCreationResponse, Certificate } from "../api/types";
+import { Checkbox } from "../components/Checkbox";
 import { Modal } from "../components/Modal";
+import { MultiSelect } from "../components/MultiSelect";
 
 const allCertificatesAccess = "*";
 const certificateReadScopes = ["certificates:read", "private_keys:read"];
@@ -53,38 +55,23 @@ export function CreateAPIKeyDialog({
         </label>
         <fieldset className="certificate-access">
           <legend>Certificate access</legend>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={anyCertificate}
-              onChange={(event) => setAnyCertificate(event.target.checked)}
-              required={certificates.length === 0}
-            />
+          <Checkbox
+            checked={anyCertificate}
+            onChange={(event) => setAnyCertificate(event.target.checked)}
+            required={certificates.length === 0}
+          >
             Any certificate, including certificates added later
-          </label>
+          </Checkbox>
           {certificates.length > 0 && !anyCertificate && (
-            <label>
-              Certificates
-              <select
-                multiple
-                required
-                value={selectedCertificates}
-                onChange={(event) =>
-                  setSelectedCertificates(
-                    Array.from(
-                      event.target.selectedOptions,
-                      (option) => option.value,
-                    ),
-                  )
-                }
-              >
-                {certificates.map((certificate) => (
-                  <option key={certificate.name} value={certificate.name}>
-                    {certificate.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <MultiSelect
+              label="Certificates"
+              options={certificates.map((certificate) => ({
+                label: certificate.name,
+                value: certificate.name,
+              }))}
+              selected={selectedCertificates}
+              onChange={setSelectedCertificates}
+            />
           )}
         </fieldset>
         <button className="action-button success">Create key</button>

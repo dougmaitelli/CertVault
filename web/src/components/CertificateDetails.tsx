@@ -40,7 +40,7 @@ export function CertificateDetails({
         </>
       )}
       <h4>Downloads</h4>
-      <div className="actions">
+      <div className="action-buttons">
         <CertificateDownloadLink
           certificateName={certificate.name}
           artifact="certificate.pem"
