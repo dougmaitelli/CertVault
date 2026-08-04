@@ -26,6 +26,11 @@ func (a *API) listAudits(w http.ResponseWriter, r *http.Request) {
 	respond(w, audits, err)
 }
 
+func (a *API) listACMEAccounts(w http.ResponseWriter, _ *http.Request) {
+	accounts, err := a.manager.ListAccounts()
+	respond(w, accounts, err)
+}
+
 func (a *API) listAPIKeys(w http.ResponseWriter, r *http.Request) {
 	keys, err := a.repos.APIKeys.List(r.Context())
 	respond(w, keys, err)

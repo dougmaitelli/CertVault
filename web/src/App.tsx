@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { api } from "./api/client";
-import type { APIKey, Audit, Certificate, Job, Session } from "./api/types";
+import type {
+  ACMEAccount,
+  APIKey,
+  Audit,
+  Certificate,
+  Job,
+  Session,
+} from "./api/types";
 import { ConsoleLayout } from "./components/ConsoleLayout";
 import { APIKeysPage } from "./pages/APIKeysPage";
+import { ACMEAccountsPage } from "./pages/ACMEAccountsPage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { CertificatesPage } from "./pages/CertificatesPage";
 import { HistoryPage } from "./pages/HistoryPage";
@@ -35,6 +43,7 @@ function Console() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
+  const [acmeAccounts, setACMEAccounts] = useState<ACMEAccount[]>([]);
   const [audits, setAudits] = useState<Audit[]>([]);
   const [error, setError] = useState("");
   const [infrastructureHealthy, setInfrastructureHealthy] = useState<
@@ -46,15 +55,25 @@ function Console() {
       api<Certificate[]>("certificates"),
       api<Job[]>("jobs"),
       api<APIKey[]>("api-keys"),
+      api<ACMEAccount[]>("acme-accounts"),
       api<Audit[]>("audit"),
     ])
-      .then(([loadedCertificates, loadedJobs, loadedAPIKeys, loadedAudits]) => {
-        setCertificates(loadedCertificates);
-        setJobs(loadedJobs);
-        setAPIKeys(loadedAPIKeys);
-        setAudits(loadedAudits);
-        setError("");
-      })
+      .then(
+        ([
+          loadedCertificates,
+          loadedJobs,
+          loadedAPIKeys,
+          loadedACMEAccounts,
+          loadedAudits,
+        ]) => {
+          setCertificates(loadedCertificates);
+          setJobs(loadedJobs);
+          setAPIKeys(loadedAPIKeys);
+          setACMEAccounts(loadedACMEAccounts);
+          setAudits(loadedAudits);
+          setError("");
+        },
+      )
       .catch((caught) => setError(String(caught)));
 
   useEffect(() => {
@@ -66,6 +85,9 @@ function Console() {
       void Promise.all([api("health"), api("ready")])
         .then(() => setInfrastructureHealthy(true))
         .catch(() => setInfrastructureHealthy(false));
+      void api<ACMEAccount[]>("acme-accounts")
+        .then(setACMEAccounts)
+        .catch(() => {});
     };
 
     checkInfrastructure();
@@ -128,6 +150,7 @@ function Console() {
         />
       )}
       {page === "history" && <HistoryPage jobs={jobs} />}
+      {page === "ACME accounts" && <ACMEAccountsPage accounts={acmeAccounts} />}
       {page === "api keys" && (
         <APIKeysPage
           apiKeys={apiKeys}

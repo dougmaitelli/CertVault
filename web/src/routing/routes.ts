@@ -3,6 +3,7 @@ export const defaultPage = "certificates";
 export const pageRoutes = {
   certificates: "/certificates",
   history: "/history",
+  "ACME accounts": "/acme-accounts",
   "audit logs": "/audit-logs",
   "api keys": "/api-keys",
 } as const;

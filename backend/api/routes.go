@@ -40,6 +40,7 @@ func (a *API) routes() http.Handler {
 		)
 	}
 	apiMux.HandleFunc("GET /api/v1/jobs", a.requireScope(scopeCertificatesRead, "", a.listJobs))
+	apiMux.HandleFunc("GET /api/v1/acme-accounts", requireAdministrator(a.listACMEAccounts))
 	apiMux.HandleFunc("GET /api/v1/api-keys", requireAdministrator(a.listAPIKeys))
 	apiMux.HandleFunc("POST /api/v1/api-keys", requireAdministrator(a.createAPIKey))
 	apiMux.HandleFunc("POST /api/v1/api-keys/{id}/revoke", requireAdministrator(a.revokeAPIKey))
