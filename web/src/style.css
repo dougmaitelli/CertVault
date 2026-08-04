@@ -21,39 +21,21 @@ button {
 .action-button {
   border: 1px solid #34444d;
   border-radius: 6px;
-  overflow: hidden;
   padding: 7px 10px;
   background: #172027;
   color: #c5d1d7;
   font-size: 0.8rem;
   text-decoration: none;
-  position: relative;
   transition:
     filter 150ms ease,
     box-shadow 150ms ease;
 }
-.action-button::after {
-  position: absolute;
-  inset: -100% -50%;
-  content: "";
-  pointer-events: none;
-  background: linear-gradient(
-    115deg,
-    transparent 42%,
-    #ffffff90 50%,
-    transparent 58%
-  );
-  opacity: 0;
-  transform: translateX(-65%);
-}
 .action-button:hover:not(:disabled) {
-  filter: brightness(1.1);
+  filter: brightness(1.15);
   box-shadow:
-    0 0 0 1px #ffffff20,
-    0 0 16px #4be0bd55;
-}
-.action-button:hover:not(:disabled)::after {
-  animation: button-sparkle 700ms ease-out;
+    0 0 0 1px #ffffff35,
+    0 0 9px #4be0bd88,
+    0 0 24px #4be0bd66;
 }
 .action-button:active:not(:disabled) {
   filter: brightness(0.95);
@@ -65,22 +47,6 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .action-button {
     transition: none;
-  }
-  .action-button::after {
-    display: none;
-  }
-}
-@keyframes button-sparkle {
-  0% {
-    opacity: 0;
-    transform: translateX(-65%);
-  }
-  25% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(65%);
   }
 }
 button,
@@ -411,11 +377,16 @@ form button,
   border: 1px solid #222e36;
   border-radius: 12px;
   padding: 16px;
-  transition: 0.2s;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 .grid article:hover {
-  border-color: #3a5756;
-  transform: translateY(-2px);
+  z-index: 1;
+  border-color: #3dbb9d;
+  box-shadow: 0 10px 22px #0006;
+  transform: translateY(-4px) scale(1.008);
 }
 .row,
 .bar {
