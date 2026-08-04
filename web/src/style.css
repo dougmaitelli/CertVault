@@ -346,6 +346,43 @@ form button,
   gap: 14px;
   margin-bottom: 24px;
 }
+.certificate-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.layout-picker {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid #2b3942;
+  border-radius: 7px;
+  background: #0d141a;
+}
+.layout-picker button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-right: 1px solid #2b3942;
+  padding: 7px 10px;
+  background: transparent;
+  color: #82919a;
+}
+.layout-picker button:last-child {
+  border-right: 0;
+}
+.layout-picker button:hover {
+  color: #dce4ea;
+}
+.layout-picker button.active {
+  background: #153229;
+  color: #59dfbe;
+}
+.layout-picker svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
 .stats > div {
   background: #111920;
   border: 1px solid #222e36;
@@ -363,6 +400,9 @@ form button,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 12px;
+}
+.certificate-list.list {
+  grid-template-columns: 1fr;
 }
 .grid article {
   display: flex;
