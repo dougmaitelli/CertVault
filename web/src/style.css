@@ -95,6 +95,16 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
+.source-link {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  text-decoration: none;
+}
+
+.source-link:hover {
+  color: var(--color-accent-text);
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.6;

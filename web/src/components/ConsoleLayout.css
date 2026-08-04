@@ -54,6 +54,11 @@
   margin-top: auto;
 }
 
+.shell .source-link {
+  display: block;
+  padding: 0 10px 8px;
+}
+
 .shell main {
   min-width: 0;
   padding: 42px 5vw;

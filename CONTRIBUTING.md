@@ -67,6 +67,10 @@ Use `make screenshots-docker` when a local Playwright browser is unavailable.
 - Use reserved example domains such as `example.com`; never use private or personally operated domains in fixtures.
 - Keep the branch current with `master` and ensure CI passes.
 
+## Licensing
+
+By submitting a contribution, you agree to license it under the [GNU Affero General Public License v3.0](LICENSE), the same license that applies to CertVault.
+
 ## Commits
 
 Use concise imperative commit subjects, such as `Prevent deletion of current ACME account`. Release notes are generated from commit messages, so user-facing commits should describe the observable change clearly.

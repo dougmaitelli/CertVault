@@ -260,3 +260,9 @@ Frontend commands can also be run independently from `web/` with `npm run format
 Regenerate the README screenshots from deterministic mocked API data with `make screenshots`. This requires Playwright's Chromium browser (`cd web && npx playwright install chromium`). To use Playwright's prebuilt browser container instead, run `make screenshots-docker` with Docker available.
 
 The API outline is in [`docs/openapi.yaml`](docs/openapi.yaml).
+
+## License
+
+CertVault is free software licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+Copyright 2026 Douglas Maitelli.
