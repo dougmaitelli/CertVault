@@ -1,11 +1,11 @@
 .domain {
   display: block;
   margin: 6px 0;
-  color: #82dfcc;
+  color: var(--color-accent-text);
 }
 
 .version-message {
-  color: #8e9da6;
+  color: var(--color-text-secondary);
 }
 
 .version-timeline {
@@ -31,7 +31,7 @@
   top: 20px;
   bottom: -5px;
   left: -20px;
-  border-left: 1px solid #34424b;
+  border-left: 1px solid var(--color-border-strong);
   content: "";
 }
 
@@ -41,18 +41,18 @@
   left: -27px;
   width: 11px;
   height: 11px;
-  border: 2px solid #121b22;
+  border: 2px solid var(--color-surface-raised);
   border-radius: 50%;
-  background: #56656e;
-  box-shadow: 0 0 0 1px #56656e;
+  background: var(--color-text-muted);
+  box-shadow: 0 0 0 1px var(--color-text-muted);
   content: "";
 }
 
 .version-timeline li.current::before {
-  background: #4be0bd;
+  background: var(--color-accent);
   box-shadow:
-    0 0 0 1px #4be0bd,
-    0 0 10px #4be0bd66;
+    0 0 0 1px var(--color-accent),
+    0 0 10px color-mix(in srgb, var(--color-accent) 40%, transparent);
 }
 
 .version-heading {
@@ -63,30 +63,30 @@
 }
 
 .version-heading strong {
-  color: #dce4ea;
+  color: var(--color-text);
   font-size: 0.85rem;
 }
 
 .version-heading time {
-  color: #71808a;
+  color: var(--color-text-muted);
   font-size: 0.72rem;
 }
 
 .version-timeline p {
   margin: 7px 0;
-  color: #a9b6bd;
+  color: var(--color-text-soft);
   font-size: 0.78rem;
 }
 
 .version-timeline span,
 .version-timeline code {
   display: block;
-  color: #71808a;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
 }
 
 .version-timeline code {
   margin-top: 5px;
-  color: #82dfcc;
+  color: var(--color-accent-text);
   overflow-wrap: anywhere;
 }

@@ -4,17 +4,17 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: #020608cc;
+  background: var(--color-overlay);
 }
 
 .modal section {
   position: relative;
   width: min(580px, 90vw);
   padding: 30px;
-  border: 1px solid #34424b;
+  border: 1px solid var(--color-border-strong);
   border-radius: 13px;
-  background: #121b22;
-  box-shadow: 0 30px 90px #000;
+  background: var(--color-surface-raised);
+  box-shadow: 0 30px 90px black;
 }
 
 .modal .close {
@@ -23,16 +23,16 @@
   right: 16px;
   border: 0;
   background: none;
-  color: #8e9da6;
+  color: var(--color-text-secondary);
   font-size: 1.8rem;
 }
 
 .modal small {
-  color: #4be0bd;
+  color: var(--color-accent);
   letter-spacing: 0.15em;
 }
 
 .modal h4 {
   margin: 25px 0 10px;
-  color: #82919a;
+  color: var(--color-text-muted);
 }

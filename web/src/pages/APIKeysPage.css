@@ -6,7 +6,7 @@
 }
 
 .bar p {
-  color: #8e9da6;
+  color: var(--color-text-secondary);
 }
 
 .bar > .action-button {
@@ -21,21 +21,21 @@
   padding: 18px;
   align-items: center;
   gap: 15px;
-  border: 1px solid #a97724;
+  border: 1px solid var(--color-warning-border);
   border-radius: 8px;
-  background: #302817;
+  background: var(--color-warning-subtle);
 }
 
 .token code {
   flex: 1;
   overflow: auto;
-  color: #ffd887;
+  color: var(--color-warning);
 }
 
 .token button.copied {
-  border-color: #4be0bd;
-  background: #153229;
-  color: #59dfbe;
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
 }
 
 .api-key-table th:last-child,

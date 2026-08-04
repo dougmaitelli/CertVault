@@ -2,15 +2,19 @@
   display: grid;
   min-height: 100vh;
   place-items: center;
-  background: radial-gradient(circle at 50% 20%, #12302c, #0b1015 48%);
+  background: radial-gradient(
+    circle at 50% 20%,
+    var(--color-accent-subtle),
+    var(--color-background) 48%
+  );
 }
 
 .login section {
   width: 390px;
   padding: 42px;
-  border: 1px solid #26323a;
+  border: 1px solid var(--color-border);
   border-radius: 18px;
-  background: #111920;
+  background: var(--color-surface);
   box-shadow: 0 24px 80px #0008;
   text-align: center;
 }
@@ -26,11 +30,11 @@
 }
 
 .login p {
-  color: #91a0aa;
+  color: var(--color-text-secondary);
 }
 
 .oidc {
   display: block;
   margin-top: 22px;
-  color: #82e6d0;
+  color: var(--color-accent-text);
 }

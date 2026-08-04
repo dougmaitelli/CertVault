@@ -1,8 +1,8 @@
 .stats > div {
   padding: 22px;
-  border: 1px solid #222e36;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  background: #111920;
+  background: var(--color-surface);
 }
 
 .stats strong {
@@ -11,5 +11,5 @@
 }
 
 .stats span {
-  color: #8998a2;
+  color: var(--color-text-secondary);
 }

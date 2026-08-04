@@ -13,14 +13,14 @@
 .account-list article,
 .empty-state {
   padding: 20px;
-  border: 1px solid #222e36;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  background: #111920;
+  background: var(--color-surface);
 }
 
 .account-list article.current {
-  border-color: #329d80;
-  box-shadow: 0 0 18px #4be0bd18;
+  border-color: var(--color-accent-border);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--color-accent) 9%, transparent);
 }
 
 .account-list h3 {
@@ -36,7 +36,7 @@
 
 .account-list dt {
   margin-bottom: 6px;
-  color: #71808a;
+  color: var(--color-text-muted);
   font-size: 0.72rem;
   text-transform: uppercase;
 }
@@ -47,11 +47,11 @@
 }
 
 .account-list code {
-  color: #82dfcc;
+  color: var(--color-accent-text);
 }
 
 .empty-state {
-  color: #8e9da6;
+  color: var(--color-text-secondary);
 }
 
 @media (max-width: 800px) {

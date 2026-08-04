@@ -7,9 +7,9 @@
 .layout-picker {
   display: inline-flex;
   overflow: hidden;
-  border: 1px solid #2b3942;
+  border: 1px solid var(--color-border-strong);
   border-radius: 7px;
-  background: #0d141a;
+  background: var(--color-background);
 }
 
 .layout-picker button {
@@ -18,9 +18,9 @@
   align-items: center;
   gap: 6px;
   border: 0;
-  border-right: 1px solid #2b3942;
+  border-right: 1px solid var(--color-border-strong);
   background: transparent;
-  color: #82919a;
+  color: var(--color-text-muted);
 }
 
 .layout-picker button:last-child {
@@ -28,12 +28,12 @@
 }
 
 .layout-picker button:hover {
-  color: #dce4ea;
+  color: var(--color-text);
 }
 
 .layout-picker button.active {
-  background: #153229;
-  color: #59dfbe;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
 }
 
 .layout-picker svg {
@@ -63,9 +63,9 @@
   display: flex;
   padding: 16px;
   flex-direction: column;
-  border: 1px solid #222e36;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  background: #111920;
+  background: var(--color-surface);
   cursor: pointer;
   transition:
     transform 180ms ease,
@@ -75,7 +75,7 @@
 
 .grid article:hover {
   z-index: 1;
-  border-color: #3dbb9d;
+  border-color: var(--color-accent-border);
   box-shadow: 0 10px 22px #0006;
   transform: translateY(-4px) scale(1.008);
 }
@@ -93,7 +93,7 @@
 .certificate-domains {
   display: block;
   margin-top: 8px;
-  color: #82dfcc;
+  color: var(--color-accent-text);
   font-size: 0.78rem;
   line-height: 1.4;
 }
@@ -110,7 +110,7 @@
 }
 
 .grid dt {
-  color: #71808a;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   text-transform: uppercase;
 }
