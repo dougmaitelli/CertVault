@@ -1,4 +1,5 @@
 import type { Job } from "../api/types";
+import { StatusBadge } from "../components/StatusBadge";
 import { formatDate } from "../utils/date";
 
 type HistoryPageProps = {
@@ -24,7 +25,7 @@ export function HistoryPage({ jobs }: HistoryPageProps) {
               <td>{job.certificate_name}</td>
               <td>{job.kind}</td>
               <td>
-                <span className={`status ${job.status}`}>{job.status}</span>
+                <StatusBadge status={job.status} />
               </td>
               <td>{formatDate(job.started_at)}</td>
               <td>

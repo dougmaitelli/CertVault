@@ -1,3 +1,5 @@
+import "./Stat.css";
+
 type StatProps = {
   value: number;
   label: string;

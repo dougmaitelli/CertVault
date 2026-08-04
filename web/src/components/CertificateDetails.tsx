@@ -1,5 +1,6 @@
 import type { Certificate } from "../api/types";
 import { formatDate, formatRemainingValidity } from "../utils/date";
+import "./CertificateDetails.css";
 import { CertificateDownloadLink } from "./CertificateDownloadLink";
 import { Modal } from "./Modal";
 

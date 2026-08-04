@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import "./LoginPage.css";
 
 type LoginPageProps = {
   onAuthenticated: () => Promise<void>;
@@ -27,7 +28,7 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
   return (
     <main className="login">
       <section>
-        <div className="brand">CV</div>
+        <div className="brand-logo">CV</div>
         <h1>CertVault</h1>
         <p>Central certificate management for your network.</p>
         <form onSubmit={(event) => void submit(event)}>

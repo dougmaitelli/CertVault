@@ -1,0 +1,13 @@
+.certificate-access {
+  display: grid;
+  gap: 14px;
+  margin: 22px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.certificate-access legend {
+  margin-bottom: 10px;
+  color: #abb7bf;
+  font-size: 0.85rem;
+}

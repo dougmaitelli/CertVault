@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
+import "./Checkbox.css";
 
 type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
   children: ReactNode;

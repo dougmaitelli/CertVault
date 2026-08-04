@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import "./ConsoleLayout.css";
 import type { Session } from "../api/types";
 import { navigationRoutes } from "../routing/routes";
+import { UserSummary } from "./UserSummary";
 
 type ConsoleLayoutProps = {
   error: string;
@@ -24,7 +26,7 @@ export function ConsoleLayout({
     <div className="shell">
       <aside>
         <header>
-          <span>CV</span>
+          <span className="brand-logo">CV</span>
           <b>CertVault</b>
         </header>
         <nav>
@@ -39,46 +41,7 @@ export function ConsoleLayout({
           ))}
         </nav>
         <footer>
-          <div className="user-profile">
-            {session.picture ? (
-              <img src={session.picture} alt="" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="user-avatar" aria-hidden="true">
-                {session.name.charAt(0).toUpperCase()}
-              </span>
-            )}
-            <div>
-              <strong>{session.name}</strong>
-              {session.email && session.email !== session.name && (
-                <small>{session.email}</small>
-              )}
-            </div>
-            <button
-              aria-label="Sign out"
-              title="Sign out"
-              onClick={() => {
-                void fetch("/auth/logout", { method: "POST" }).then(
-                  (response) => {
-                    if (response.ok) onLogout();
-                  },
-                );
-              }}
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M10 17l5-5-5-5" />
-                <path d="M15 12H3" />
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-              </svg>
-            </button>
-          </div>
+          <UserSummary session={session} onLogout={onLogout} />
         </footer>
       </aside>
       <main>
