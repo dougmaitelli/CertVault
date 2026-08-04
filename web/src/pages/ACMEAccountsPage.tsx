@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { api } from "../api/client";
 import type { ACMEAccount } from "../api/types";
 import { StatusBadge, StatusBadgeGroup } from "../components/StatusBadge";
+import { ConfirmationDialog } from "../dialogs/ConfirmationDialog";
 import "./ACMEAccountsPage.css";
 
 type ACMEAccountsPageProps = {
@@ -9,14 +11,9 @@ type ACMEAccountsPageProps = {
 };
 
 export function ACMEAccountsPage({ accounts, reload }: ACMEAccountsPageProps) {
+  const [accountToDelete, setAccountToDelete] = useState<ACMEAccount>();
+
   async function deleteAccount(account: ACMEAccount) {
-    if (
-      !confirm(
-        `Delete the ACME account for ${accountHost(account.directory_url)}?`,
-      )
-    ) {
-      return;
-    }
     await api(`acme-accounts/${encodeURIComponent(account.id)}`, {
       method: "DELETE",
     });
@@ -33,51 +30,65 @@ export function ACMEAccountsPage({ accounts, reload }: ACMEAccountsPageProps) {
   }
 
   return (
-    <div className="account-list">
-      {accounts.map((account) => (
-        <article className={account.current ? "current" : ""} key={account.id}>
-          <div className="row">
-            <h3>{accountHost(account.directory_url)}</h3>
-            <div className="account-actions">
-              <StatusBadgeGroup>
-                {account.current && (
-                  <StatusBadge status="valid" label="Current" />
+    <>
+      <div className="account-list">
+        {accounts.map((account) => (
+          <article
+            className={account.current ? "current" : ""}
+            key={account.id}
+          >
+            <div className="row">
+              <h3>{accountHost(account.directory_url)}</h3>
+              <div className="account-actions">
+                <StatusBadgeGroup>
+                  {account.current && (
+                    <StatusBadge status="valid" label="Current" />
+                  )}
+                  <StatusBadge status={account.status} />
+                </StatusBadgeGroup>
+                {!account.current && (
+                  <button
+                    className="action-button delete"
+                    onClick={() => setAccountToDelete(account)}
+                  >
+                    Delete
+                  </button>
                 )}
-                <StatusBadge status={account.status} />
-              </StatusBadgeGroup>
-              {!account.current && (
-                <button
-                  className="action-button delete"
-                  onClick={() => void deleteAccount(account)}
-                >
-                  Delete
-                </button>
-              )}
+              </div>
             </div>
-          </div>
-          <dl>
-            <div>
-              <dt>Email</dt>
-              <dd>{account.email}</dd>
-            </div>
-            <div>
-              <dt>Directory URL</dt>
-              <dd>
-                <code>
-                  {account.directory_url ?? "Unknown (legacy account)"}
-                </code>
-              </dd>
-            </div>
-            <div>
-              <dt>Registration URL</dt>
-              <dd>
-                <code>{account.registration_url ?? "Not registered"}</code>
-              </dd>
-            </div>
-          </dl>
-        </article>
-      ))}
-    </div>
+            <dl>
+              <div>
+                <dt>Email</dt>
+                <dd>{account.email}</dd>
+              </div>
+              <div>
+                <dt>Directory URL</dt>
+                <dd>
+                  <code>
+                    {account.directory_url ?? "Unknown (legacy account)"}
+                  </code>
+                </dd>
+              </div>
+              <div>
+                <dt>Registration URL</dt>
+                <dd>
+                  <code>{account.registration_url ?? "Not registered"}</code>
+                </dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </div>
+      {accountToDelete && (
+        <ConfirmationDialog
+          title="Permanently delete ACME account?"
+          message={`This will remove the locally stored registration and private account key for ${accountHost(accountToDelete.directory_url)}. Existing certificates will remain unchanged. This action cannot be undone.`}
+          confirmLabel="Delete account"
+          onClose={() => setAccountToDelete(undefined)}
+          onConfirm={() => deleteAccount(accountToDelete)}
+        />
+      )}
+    </>
   );
 }
 
