@@ -18,6 +18,7 @@ export function CertificatesPage({
   reload,
 }: CertificatesPageProps) {
   const [selected, setSelected] = useState<Certificate>();
+  const [layout, setLayout] = useState<"list" | "grid">("list");
   const [requestedRenewals, setRequestedRenewals] = useState<
     Partial<Record<string, number>>
   >({});
@@ -64,6 +65,34 @@ export function CertificatesPage({
 
   return (
     <>
+      <div className="certificate-toolbar">
+        <div
+          className="layout-picker"
+          role="group"
+          aria-label="Certificate layout"
+        >
+          <button
+            className={layout === "list" ? "active" : ""}
+            aria-pressed={layout === "list"}
+            onClick={() => setLayout("list")}
+          >
+            <svg aria-hidden="true" viewBox="0 0 16 16">
+              <path d="M2 3h2v2H2zm4 0h8v2H6zM2 7h2v2H2zm4 0h8v2H6zm-4 4h2v2H2zm4 0h8v2H6z" />
+            </svg>
+            List
+          </button>
+          <button
+            className={layout === "grid" ? "active" : ""}
+            aria-pressed={layout === "grid"}
+            onClick={() => setLayout("grid")}
+          >
+            <svg aria-hidden="true" viewBox="0 0 16 16">
+              <path d="M2 2h5v5H2zm7 0h5v5H9zM2 9h5v5H2zm7 0h5v5H9z" />
+            </svg>
+            Grid
+          </button>
+        </div>
+      </div>
       <div className="stats">
         <Stat value={certificates.length} label="Managed certificates" />
         <Stat
@@ -75,7 +104,7 @@ export function CertificatesPage({
           label="Needs attention"
         />
       </div>
-      <div className="grid">
+      <div className={`grid certificate-list ${layout}`}>
         {certificates.map((certificate) => (
           <article
             key={certificate.name}
