@@ -64,6 +64,10 @@ func (m *Manager) reconcile(ctx context.Context) {
 		return
 	}
 	for _, c := range certs {
+		definition, ok := m.cfg.Certificate(c.Name)
+		if !ok || !m.cfg.ShouldAutomaticallyIssue(definition) {
+			continue
+		}
 		due := c.CurrentVersion == nil || time.Until(c.CurrentVersion.NotAfter) < time.Duration(c.RenewBeforeSeconds)*time.Second
 		if due {
 			go func(name string) {

@@ -22,6 +22,7 @@ acme:
     - 1.1.1.1:53
     - 1.0.0.1:53
   accept_terms: true
+  automatic_issuance: true
 
 # Authentication is optional, but at least one UI login method is recommended.
 auth:
@@ -64,6 +65,8 @@ certificates:
     # ec256, ec384, rsa2048, rsa3072, or rsa4096.
     key_type: ec256
     renew_before: 720h
+    # Optional override; omitted values inherit acme.automatic_issuance.
+    automatic_issuance: true
     enabled: true
   # This disabled example demonstrates a certificate-level credential override.
   - name: explicit-credential-example
@@ -72,6 +75,7 @@ certificates:
     key_type: rsa2048
     renew_before: 480h
     credential: cloudflare_main
+    automatic_issuance: false
     enabled: false
 
 # Supported events are certificate.issued, certificate.renewed, and

@@ -32,7 +32,7 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	var c Config
+	c := Config{ACME: ACME{AutomaticIssuance: true}}
 	if err := yaml.Unmarshal(b, &c); err != nil {
 		return nil, err
 	}
@@ -241,6 +241,23 @@ func (c *Config) Certificate(name string) (Certificate, bool) {
 		}
 	}
 	return Certificate{}, false
+}
+
+func (c *Config) ShouldAutomaticallyIssue(certificate Certificate) bool {
+	if certificate.AutomaticIssuance != nil {
+		return *certificate.AutomaticIssuance
+	}
+	return c.ACME.AutomaticIssuance
+}
+
+func (c *Config) HasAutomaticIssuance() bool {
+	for _, certificate := range c.Certificates {
+		enabled := certificate.Enabled == nil || *certificate.Enabled
+		if enabled && c.ShouldAutomaticallyIssue(certificate) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Config) CredentialForDomain(cert Certificate, domain string) (string, DNSCredential, bool) {

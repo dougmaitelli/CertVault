@@ -60,7 +60,11 @@ func main() {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-	go manager.Run(ctx)
+	if cfg.HasAutomaticIssuance() {
+		go manager.Run(ctx)
+	} else {
+		log.Info("automatic certificate issuance disabled")
+	}
 
 	handler, err := api.New(cfg, db, repositories, manager)
 	if err != nil {

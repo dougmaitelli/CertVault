@@ -8,10 +8,11 @@ type Server struct {
 }
 
 type ACME struct {
-	Email        string   `yaml:"email"`
-	DirectoryURL string   `yaml:"directory_url"`
-	DNSResolvers []string `yaml:"dns_resolvers"`
-	AcceptTerms  bool     `yaml:"accept_terms"`
+	Email             string   `yaml:"email"`
+	DirectoryURL      string   `yaml:"directory_url"`
+	DNSResolvers      []string `yaml:"dns_resolvers"`
+	AcceptTerms       bool     `yaml:"accept_terms"`
+	AutomaticIssuance bool     `yaml:"automatic_issuance"`
 }
 
 type Auth struct {
@@ -39,12 +40,13 @@ type Zone struct {
 }
 
 type Certificate struct {
-	Name        string   `yaml:"name"`
-	Domains     []string `yaml:"domains"`
-	KeyType     KeyType  `yaml:"key_type"`
-	RenewBefore Duration `yaml:"renew_before"`
-	Credential  string   `yaml:"credential"`
-	Enabled     *bool    `yaml:"enabled"`
+	Name              string   `yaml:"name"`
+	Domains           []string `yaml:"domains"`
+	KeyType           KeyType  `yaml:"key_type"`
+	RenewBefore       Duration `yaml:"renew_before"`
+	Credential        string   `yaml:"credential"`
+	Enabled           *bool    `yaml:"enabled"`
+	AutomaticIssuance *bool    `yaml:"automatic_issuance"`
 }
 
 type Hook struct {
