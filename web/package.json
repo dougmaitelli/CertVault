@@ -9,7 +9,7 @@
     "lint:fix": "eslint src --fix",
     "format": "prettier --write src eslint.config.mjs package.json tsconfig.json vite.config.ts index.html",
     "format:check": "prettier --check src eslint.config.mjs package.json tsconfig.json vite.config.ts index.html",
-    "test": "npm run typecheck",
+    "test": "npm run typecheck && sh scripts/test-client-installer.sh",
     "check": "npm run format:check && npm run lint && npm run test && npm run build"
   },
   "dependencies": {

@@ -12,7 +12,7 @@ const certificateReadScopes = ["certificates:read", "private_keys:read"];
 type CreateAPIKeyDialogProps = {
   certificates: Certificate[];
   onClose: () => void;
-  onCreated: (token: string) => Promise<void>;
+  onCreated: (result: APIKeyCreationResponse) => Promise<void>;
 };
 
 export function CreateAPIKeyDialog({
@@ -38,7 +38,7 @@ export function CreateAPIKeyDialog({
           : selectedCertificates,
       }),
     });
-    await onCreated(output.token);
+    await onCreated(output);
   }
 
   return (

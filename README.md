@@ -135,6 +135,8 @@ curl --fail --silent --show-error \
 
 Downloads include an `ETag`, so clients may use `If-None-Match`. A machine key needs `certificates:read` for public certificate files and the separately privileged `private_keys:read` scope for private keys.
 
+The API Keys page can also generate a one-time command that installs an automatic download job through `/client/install.sh`. The installer requires a Linux or Unix-like client with `curl`, `crontab`, and `install`. It stores the API key in a mode `0600` file, downloads through an atomic temporary file, installs the selected cron schedule, immediately performs the first download, and replaces an existing job for the same certificate artifact instead of creating duplicates.
+
 ## Configuration
 
 Global values can be overridden with:
