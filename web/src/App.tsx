@@ -165,7 +165,7 @@ function Console({ session, onLogout }: ConsoleProps) {
         />
         <Route
           path={appRoutes.acmeAccounts.path}
-          element={<ACMEAccountsPage accounts={acmeAccounts} />}
+          element={<ACMEAccountsPage accounts={acmeAccounts} reload={load} />}
         />
         <Route
           path={appRoutes.auditLogs.path}

@@ -10,6 +10,12 @@
   justify-content: space-between;
 }
 
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .account-list article,
 .empty-state {
   padding: 20px;

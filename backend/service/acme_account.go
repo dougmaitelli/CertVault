@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +19,12 @@ import (
 )
 
 const encryptedAccountFileSuffix = ".json.enc"
+
+var (
+	ErrACMEAccountNotFound  = errors.New("ACME account not found")
+	ErrCurrentACMEAccount   = errors.New("current ACME account cannot be deleted")
+	ErrInvalidACMEAccountID = errors.New("invalid ACME account ID")
+)
 
 func (m *Manager) loadUser() (*acmeUser, error) {
 	dir := filepath.Join(m.cfg.DataDir, "accounts")
@@ -115,6 +122,33 @@ func (m *Manager) ListAccounts() ([]ACMEAccount, error) {
 		return accounts[i].DirectoryURL < accounts[j].DirectoryURL
 	})
 	return accounts, nil
+}
+
+func (m *Manager) DeleteAccount(id string) (ACMEAccount, error) {
+	digest, err := hex.DecodeString(id)
+	if err != nil || len(digest) != sha256.Size {
+		return ACMEAccount{}, ErrInvalidACMEAccountID
+	}
+	if id == strings.TrimSuffix(filepath.Base(m.accountPath()), encryptedAccountFileSuffix) {
+		return ACMEAccount{}, ErrCurrentACMEAccount
+	}
+
+	path := filepath.Join(m.cfg.DataDir, "accounts", id+encryptedAccountFileSuffix)
+	account, err := m.readAccount(path)
+	if os.IsNotExist(err) {
+		return ACMEAccount{}, ErrACMEAccountNotFound
+	}
+	if err != nil {
+		return ACMEAccount{}, err
+	}
+	account.ID = id
+	if err = os.Remove(path); err != nil {
+		if os.IsNotExist(err) {
+			return ACMEAccount{}, ErrACMEAccountNotFound
+		}
+		return ACMEAccount{}, err
+	}
+	return account, nil
 }
 
 func (m *Manager) readAccount(path string) (ACMEAccount, error) {

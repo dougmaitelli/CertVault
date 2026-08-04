@@ -46,3 +46,16 @@ paths:
       summary: Queue a renewal
       parameters: [{name: name, in: path, required: true, schema: {type: string}}]
       responses: {"202": {description: Queued}}
+  /acme-accounts:
+    get:
+      summary: List ACME accounts
+      responses: {"200": {description: ACME account list}, "403": {description: Administrator access required}}
+  /acme-accounts/{id}:
+    delete:
+      summary: Delete a non-current ACME account
+      parameters: [{name: id, in: path, required: true, schema: {type: string}}]
+      responses:
+        "204": {description: Deleted}
+        "403": {description: Administrator access required}
+        "404": {description: ACME account not found}
+        "409": {description: Current ACME accounts cannot be deleted}
