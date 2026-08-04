@@ -72,7 +72,7 @@ form > .action-button {
     box-shadow 150ms ease;
 }
 
-.action-button:hover:not(:disabled) {
+.action-button:hover {
   filter: brightness(1.1);
   box-shadow:
     0 0 0 1px #ffffff28,
@@ -80,8 +80,16 @@ form > .action-button {
     0 0 16px #4be0bd45;
 }
 
-.action-button:active:not(:disabled) {
+.action-button:active {
   filter: brightness(0.95);
+}
+
+.action-button:disabled,
+.action-button[aria-disabled="true"] {
+  cursor: default;
+  filter: none;
+  box-shadow: none;
+  opacity: 0.6;
 }
 
 .action-button.success {

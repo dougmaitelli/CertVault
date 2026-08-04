@@ -76,24 +76,28 @@ export function CertificateDetails({
         <CertificateDownloadLink
           certificateName={certificate.name}
           artifact="certificate.pem"
+          disabled={!certificate.current_version}
         >
           Certificate
         </CertificateDownloadLink>
         <CertificateDownloadLink
           certificateName={certificate.name}
           artifact="chain.pem"
+          disabled={!certificate.current_version}
         >
           Chain
         </CertificateDownloadLink>
         <CertificateDownloadLink
           certificateName={certificate.name}
           artifact="fullchain.pem"
+          disabled={!certificate.current_version}
         >
           Full chain
         </CertificateDownloadLink>
         <CertificateDownloadLink
           certificateName={certificate.name}
           artifact="private-key.pem"
+          disabled={!certificate.current_version}
         >
           Private key
         </CertificateDownloadLink>
