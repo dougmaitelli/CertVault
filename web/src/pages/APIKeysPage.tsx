@@ -62,7 +62,7 @@ export function APIKeysPage({
       <div className="bar">
         <p>Machine credentials are stored as hashes and shown only once.</p>
         <button
-          className="action-button"
+          className="action-button success"
           onClick={() => setShowCreateDialog(true)}
         >
           Create API key

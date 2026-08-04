@@ -41,7 +41,7 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
             />
           </label>
           {error && <div className="error">{error}</div>}
-          <button className="action-button">Sign in</button>
+          <button className="action-button success">Sign in</button>
         </form>
         <a className="oidc" href="/auth/login">
           Sign in with OIDC

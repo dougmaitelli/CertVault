@@ -40,6 +40,12 @@ button {
 .action-button:active:not(:disabled) {
   filter: brightness(0.95);
 }
+.action-button.success {
+  border-color: #329d80;
+  background: #1b604f;
+  color: #e4fff8;
+  font-weight: 800;
+}
 button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -125,28 +131,116 @@ select[multiple] {
   color: #abb7bf;
   font-size: 0.85rem;
 }
-.certificate-access .checkbox {
+.checkbox {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 9px;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
 }
-.certificate-access .checkbox input {
-  width: 1rem;
-  height: 1rem;
+.checkbox input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+.checkbox-control {
+  display: grid;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1px solid #465761;
+  border-radius: 6px;
+  background: #0b1116;
+  color: #07110f;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.checkbox-control svg {
+  width: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  opacity: 0;
+  transform: scale(0.65);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+.checkbox:hover .checkbox-control {
+  border-color: #5e756f;
+}
+.checkbox input:focus-visible + .checkbox-control {
+  box-shadow: 0 0 0 3px #4be0bd35;
+}
+.checkbox input:checked + .checkbox-control {
+  border-color: #4be0bd;
+  background: #4be0bd;
+}
+.checkbox input:checked + .checkbox-control svg {
+  opacity: 1;
+  transform: scale(1);
+}
+.checkbox-label {
+  padding-top: 1px;
+  line-height: 1.4;
+}
+.multi-select {
+  min-width: 0;
   padding: 0;
-  accent-color: #4be0bd;
+  border: 1px solid #2d3a42;
+  border-radius: 10px;
+  background: #0b1116;
+  overflow: hidden;
 }
-.login button,
-form button,
-.bar > button {
+.multi-select-header {
+  display: flex;
+  width: 100%;
+  padding: 11px 13px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #253139;
+  color: #c7d1d7;
+  background: #121a20;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.multi-select-count {
+  color: #6edfc5;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.multi-select-options {
+  display: grid;
+  max-height: 190px;
+  padding: 6px;
+  gap: 2px;
+  overflow-y: auto;
+}
+.multi-select-options .checkbox {
+  padding: 9px;
+  border-radius: 7px;
+  color: #c7d1d7;
+  transition: background-color 150ms ease;
+}
+.multi-select-options .checkbox:hover {
+  background: #172128;
+}
+.multi-select-options .checkbox:has(input:checked) {
+  color: #ddfff7;
+  background: #17302c;
+}
+form > .action-button {
   margin-top: 20px;
   width: 100%;
-  border: 0;
   border-radius: 8px;
   padding: 12px;
-  background: #4be0bd;
-  color: #07110f;
-  font-weight: 800;
 }
 .oidc {
   display: block;
@@ -462,21 +556,16 @@ form button,
 .grid dd {
   margin: 0;
 }
-.actions {
+.action-buttons {
   display: flex;
   gap: 9px;
   flex-wrap: wrap;
 }
-.grid article > .actions {
+.grid article > .action-buttons {
   margin-top: auto;
 }
-.actions button {
+.action-buttons button {
   margin-left: auto;
-}
-.actions button.success {
-  border-color: #329d80;
-  background: #1b604f;
-  color: #e4fff8;
 }
 .table {
   border: 1px solid #222e36;
@@ -551,9 +640,10 @@ th {
 .bar p {
   color: #8e9da6;
 }
-.bar > button {
-  width: auto;
+.bar > .action-button {
   margin: 0;
+  padding: 12px;
+  border-radius: 8px;
 }
 .danger {
   color: #ff9090;
