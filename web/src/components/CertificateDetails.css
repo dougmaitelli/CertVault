@@ -3,3 +3,81 @@
   margin: 6px 0;
   color: #82dfcc;
 }
+
+.version-message {
+  color: #8e9da6;
+}
+
+.version-timeline {
+  max-height: 320px;
+  margin: 0 0 0 7px;
+  padding: 0 0 0 20px;
+  border-left: 1px solid #34424b;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.version-timeline li {
+  position: relative;
+  padding: 0 0 22px 4px;
+}
+
+.version-timeline li:last-child {
+  padding-bottom: 0;
+}
+
+.version-timeline li::before {
+  position: absolute;
+  top: 5px;
+  left: -27px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #121b22;
+  border-radius: 50%;
+  background: #56656e;
+  box-shadow: 0 0 0 1px #56656e;
+  content: "";
+}
+
+.version-timeline li.current::before {
+  background: #4be0bd;
+  box-shadow:
+    0 0 0 1px #4be0bd,
+    0 0 10px #4be0bd66;
+}
+
+.version-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.version-heading strong {
+  color: #dce4ea;
+  font-size: 0.85rem;
+}
+
+.version-heading time {
+  color: #71808a;
+  font-size: 0.72rem;
+}
+
+.version-timeline p {
+  margin: 7px 0;
+  color: #a9b6bd;
+  font-size: 0.78rem;
+}
+
+.version-timeline span,
+.version-timeline code {
+  display: block;
+  color: #71808a;
+  font-size: 0.75rem;
+}
+
+.version-timeline code {
+  margin-top: 5px;
+  color: #82dfcc;
+  overflow-wrap: anywhere;
+}

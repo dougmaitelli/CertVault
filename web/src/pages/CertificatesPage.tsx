@@ -171,6 +171,7 @@ export function CertificatesPage({
       </div>
       {selected && (
         <CertificateDetails
+          key={selected.name}
           certificate={selected}
           onClose={() => setSelected(undefined)}
         />
