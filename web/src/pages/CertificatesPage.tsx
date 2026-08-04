@@ -4,7 +4,7 @@ import type { Certificate, Job } from "../api/types";
 import { CertificateDetails } from "../components/CertificateDetails";
 import { CertificateDownloadLink } from "../components/CertificateDownloadLink";
 import { Stat } from "../components/Stat";
-import { formatDate } from "../utils/date";
+import { formatDate, formatRemainingValidity } from "../utils/date";
 
 type CertificatesPageProps = {
   certificates: Certificate[];
@@ -129,7 +129,12 @@ export function CertificatesPage({
             <dl>
               <div>
                 <dt>Expires</dt>
-                <dd>{formatDate(certificate.current_version?.not_after)}</dd>
+                <dd>
+                  {formatDate(certificate.current_version?.not_after)}{" "}
+                  {formatRemainingValidity(
+                    certificate.current_version?.not_after,
+                  )}
+                </dd>
               </div>
               <div>
                 <dt>Key</dt>
