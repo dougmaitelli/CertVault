@@ -1,12 +1,28 @@
+import { api } from "../api/client";
 import type { ACMEAccount } from "../api/types";
 import { StatusBadge, StatusBadgeGroup } from "../components/StatusBadge";
 import "./ACMEAccountsPage.css";
 
 type ACMEAccountsPageProps = {
   accounts: ACMEAccount[];
+  reload: () => Promise<void>;
 };
 
-export function ACMEAccountsPage({ accounts }: ACMEAccountsPageProps) {
+export function ACMEAccountsPage({ accounts, reload }: ACMEAccountsPageProps) {
+  async function deleteAccount(account: ACMEAccount) {
+    if (
+      !confirm(
+        `Delete the ACME account for ${accountHost(account.directory_url)}?`,
+      )
+    ) {
+      return;
+    }
+    await api(`acme-accounts/${encodeURIComponent(account.id)}`, {
+      method: "DELETE",
+    });
+    await reload();
+  }
+
   if (accounts.length === 0) {
     return (
       <div className="empty-state">
@@ -22,12 +38,22 @@ export function ACMEAccountsPage({ accounts }: ACMEAccountsPageProps) {
         <article className={account.current ? "current" : ""} key={account.id}>
           <div className="row">
             <h3>{accountHost(account.directory_url)}</h3>
-            <StatusBadgeGroup>
-              {account.current && (
-                <StatusBadge status="valid" label="Current" />
+            <div className="account-actions">
+              <StatusBadgeGroup>
+                {account.current && (
+                  <StatusBadge status="valid" label="Current" />
+                )}
+                <StatusBadge status={account.status} />
+              </StatusBadgeGroup>
+              {!account.current && (
+                <button
+                  className="action-button delete"
+                  onClick={() => void deleteAccount(account)}
+                >
+                  Delete
+                </button>
               )}
-              <StatusBadge status={account.status} />
-            </StatusBadgeGroup>
+            </div>
           </div>
           <dl>
             <div>
