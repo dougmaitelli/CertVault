@@ -8,8 +8,10 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/certvault/certvault/vault"
@@ -39,7 +41,16 @@ func (m *Manager) loadUser() (*acmeUser, error) {
 		return nil, err
 	}
 	key, err := x509.ParseECPrivateKey(wire.Key)
-	return &acmeUser{wire.Email, wire.Registration, key}, err
+	if err != nil {
+		return nil, err
+	}
+	user := &acmeUser{wire.Email, wire.Registration, key}
+	if wire.DirectoryURL == "" {
+		if err = m.saveUser(user); err != nil {
+			return nil, err
+		}
+	}
+	return user, nil
 }
 
 func (m *Manager) saveUser(user *acmeUser) error {
@@ -47,7 +58,12 @@ func (m *Manager) saveUser(user *acmeUser) error {
 	if err != nil {
 		return err
 	}
-	plain, err := json.Marshal(acmeUserWire{user.Email, key, user.Registration})
+	plain, err := json.Marshal(acmeUserWire{
+		DirectoryURL: normalizedDirectoryURL(m.cfg.ACME.DirectoryURL),
+		Email:        user.Email,
+		Key:          key,
+		Registration: user.Registration,
+	})
 	if err != nil {
 		return err
 	}
@@ -59,8 +75,76 @@ func (m *Manager) saveUser(user *acmeUser) error {
 }
 
 func (m *Manager) accountPath() string {
-	directoryURL := strings.TrimRight(m.cfg.ACME.DirectoryURL, "/")
+	directoryURL := normalizedDirectoryURL(m.cfg.ACME.DirectoryURL)
 	digest := sha256.Sum256([]byte(directoryURL))
 	filename := hex.EncodeToString(digest[:]) + encryptedAccountFileSuffix
 	return filepath.Join(m.cfg.DataDir, "accounts", filename)
+}
+
+func (m *Manager) ListAccounts() ([]ACMEAccount, error) {
+	directory := filepath.Join(m.cfg.DataDir, "accounts")
+	entries, err := os.ReadDir(directory)
+	if os.IsNotExist(err) {
+		return []ACMEAccount{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	currentFilename := filepath.Base(m.accountPath())
+	accounts := make([]ACMEAccount, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), encryptedAccountFileSuffix) {
+			continue
+		}
+		account, readErr := m.readAccount(filepath.Join(directory, entry.Name()))
+		if readErr != nil {
+			return nil, fmt.Errorf("read ACME account %q: %w", entry.Name(), readErr)
+		}
+		account.ID = strings.TrimSuffix(entry.Name(), encryptedAccountFileSuffix)
+		account.Current = entry.Name() == currentFilename
+		if account.DirectoryURL == "" && account.Current {
+			account.DirectoryURL = normalizedDirectoryURL(m.cfg.ACME.DirectoryURL)
+		}
+		accounts = append(accounts, account)
+	}
+	sort.Slice(accounts, func(i, j int) bool {
+		if accounts[i].Current != accounts[j].Current {
+			return accounts[i].Current
+		}
+		return accounts[i].DirectoryURL < accounts[j].DirectoryURL
+	})
+	return accounts, nil
+}
+
+func (m *Manager) readAccount(path string) (ACMEAccount, error) {
+	encrypted, err := os.ReadFile(path)
+	if err != nil {
+		return ACMEAccount{}, err
+	}
+	plain, err := vault.Decrypt(m.cfg.MasterKey, encrypted)
+	if err != nil {
+		return ACMEAccount{}, err
+	}
+	var wire acmeUserWire
+	if err = json.Unmarshal(plain, &wire); err != nil {
+		return ACMEAccount{}, err
+	}
+	account := ACMEAccount{
+		DirectoryURL: wire.DirectoryURL,
+		Email:        wire.Email,
+		Status:       "unregistered",
+	}
+	if wire.Registration != nil {
+		account.Status = wire.Registration.Status
+		if account.Status == "" {
+			account.Status = "registered"
+		}
+		account.RegistrationURL = wire.Registration.Location
+	}
+	return account, nil
+}
+
+func normalizedDirectoryURL(directoryURL string) string {
+	return strings.TrimRight(directoryURL, "/")
 }

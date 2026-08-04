@@ -411,6 +411,46 @@ form button,
   border-radius: 10px;
   overflow-x: auto;
 }
+.account-grid {
+  display: grid;
+  gap: 14px;
+}
+.account-grid article,
+.empty-state {
+  border: 1px solid #222e36;
+  border-radius: 10px;
+  padding: 20px;
+  background: #111920;
+}
+.account-grid article.current {
+  border-color: #329d80;
+  box-shadow: 0 0 18px #4be0bd18;
+}
+.account-grid h3 {
+  margin: 0;
+}
+.account-grid dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin: 20px 0 0;
+}
+.account-grid dt {
+  margin-bottom: 6px;
+  color: #71808a;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+.account-grid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.account-grid code {
+  color: #82dfcc;
+}
+.empty-state {
+  color: #8e9da6;
+}
 table {
   width: 100%;
   border-collapse: collapse;
@@ -507,6 +547,9 @@ th {
   color: #82919a;
 }
 @media (max-width: 800px) {
+  .account-grid dl {
+    grid-template-columns: 1fr;
+  }
   .shell {
     grid-template-columns: 1fr;
   }

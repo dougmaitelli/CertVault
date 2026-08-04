@@ -15,9 +15,19 @@ type acmeUser struct {
 }
 
 type acmeUserWire struct {
+	DirectoryURL string
 	Email        string
 	Key          []byte
 	Registration *acme.ExtendedAccount
+}
+
+type ACMEAccount struct {
+	ID              string `json:"id"`
+	DirectoryURL    string `json:"directory_url,omitempty"`
+	Email           string `json:"email"`
+	Status          string `json:"status"`
+	RegistrationURL string `json:"registration_url,omitempty"`
+	Current         bool   `json:"current"`
 }
 
 var _ registration.User = (*acmeUser)(nil)

@@ -29,6 +29,15 @@ export type APIKey = {
   revoked: boolean;
 };
 
+export type ACMEAccount = {
+  id: string;
+  directory_url?: string;
+  email: string;
+  status: string;
+  registration_url?: string;
+  current: boolean;
+};
+
 export type APIKeyCreationResponse = {
   api_key: APIKey;
   token: string;
