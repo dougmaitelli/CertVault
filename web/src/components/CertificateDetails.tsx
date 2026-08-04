@@ -1,5 +1,5 @@
 import type { Certificate } from "../api/types";
-import { formatDate } from "../utils/date";
+import { formatDate, formatRemainingValidity } from "../utils/date";
 import { CertificateDownloadLink } from "./CertificateDownloadLink";
 import { Modal } from "./Modal";
 
@@ -25,7 +25,8 @@ export function CertificateDetails({
       <h4>Validity</h4>
       <p>
         {formatDate(certificate.current_version?.not_before)} —{" "}
-        {formatDate(certificate.current_version?.not_after)}
+        {formatDate(certificate.current_version?.not_after)}{" "}
+        {formatRemainingValidity(certificate.current_version?.not_after)}
       </p>
       {certificate.current_version && (
         <>
