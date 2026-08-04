@@ -55,12 +55,20 @@ export function APIKeysPage({
 
   async function revoke(id: number) {
     await api(`api-keys/${id}/revoke`, { method: "POST" });
+    clearCreatedKey(id);
     await reload();
   }
 
   async function deleteKey(id: number) {
     await api(`api-keys/${id}`, { method: "DELETE" });
+    clearCreatedKey(id);
     await reload();
+  }
+
+  function clearCreatedKey(id: number) {
+    setCreatedKey((current) =>
+      current?.api_key.id === id ? undefined : current,
+    );
   }
 
   return (
