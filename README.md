@@ -8,6 +8,11 @@
 
 CertVault is a self-hosted ACME certificate controller for homelabs. It obtains wildcard and multi-domain certificates through DNS-01, renews them automatically, stores private material encrypted, and exposes scoped download endpoints for other machines on the local network. The web console shows certificate health, issuance history, and API-key usage.
 
+## Project documentation
+
+- [Security policy](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
+
 ## Screenshots
 
 <table>
@@ -166,7 +171,7 @@ curl --fail --silent --show-error \
 
 Downloads include an `ETag`, so clients may use `If-None-Match`. A machine key needs `certificates:read` for public certificate files and the separately privileged `private_keys:read` scope for private keys.
 
-The API Keys page can also generate a one-time command that installs an automatic download job through `/client/install.sh`. The installer requires a Linux or Unix-like client with `curl`, `crontab`, and `install`. It stores the API key in a mode `0600` file, downloads through an atomic temporary directory, installs the selected cron schedule, immediately performs the first download, and replaces an existing job for the same certificate files instead of creating duplicates. The default bundle installs `fullchain.pem` and `private-key.pem` together into a certificate-specific destination directory.
+The API Keys page can also generate a one-time command that installs an automatic download job through `/client/install.sh`. The installer requires a Linux or Unix-like client with `curl`, `crontab`, and `install`. It stores the API key in a mode `0600` file, downloads through an atomic temporary directory, installs the selected cron schedule, immediately performs the first download, and replaces an existing job for the same certificate files instead of creating duplicates. The default bundle installs `fullchain.pem` and `private-key.pem` together into a certificate-specific destination directory. The client stores each file's `ETag` and uses conditional requests on later runs; unchanged files return `304 Not Modified`, are not rewritten, and do not create certificate-download audit events.
 
 ## Configuration
 
