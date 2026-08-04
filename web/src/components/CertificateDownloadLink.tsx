@@ -7,19 +7,28 @@ type CertificateDownloadLinkProps = {
   artifact: CertificateArtifact;
   certificateName: string;
   children: ReactNode;
+  disabled?: boolean;
 };
 
 export function CertificateDownloadLink({
   artifact,
   certificateName,
   children,
+  disabled = false,
 }: CertificateDownloadLinkProps) {
+  const path = `/api/v1/certificates/${encodeURIComponent(certificateName)}/${artifact}`;
+
   return (
     <a
       className="action-button"
-      href={`/api/v1/certificates/${certificateName}/${artifact}`}
+      href={disabled ? undefined : path}
       download={`${certificateName}-${artifact}`}
-      onClick={(event) => event.stopPropagation()}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : undefined}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (disabled) event.preventDefault();
+      }}
     >
       {children}
     </a>
