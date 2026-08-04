@@ -38,3 +38,8 @@
   margin-top: 22px;
   color: var(--color-accent-text);
 }
+
+.login .source-link {
+  display: block;
+  margin-top: 14px;
+}

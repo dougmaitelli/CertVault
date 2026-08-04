@@ -47,6 +47,14 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
         <a className="oidc" href="/auth/login">
           Sign in with OIDC
         </a>
+        <a
+          className="source-link"
+          href="https://github.com/dougmaitelli/CertVault"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Source · AGPL-3.0
+        </a>
       </section>
     </main>
   );
