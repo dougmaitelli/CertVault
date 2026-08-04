@@ -18,7 +18,7 @@ import (
 
 const contentSecurityPolicy = "default-src 'self'; " +
 	"style-src 'self' 'unsafe-inline'; " +
-	"img-src 'self' data:; " +
+	"img-src 'self' data: https:; " +
 	"connect-src 'self'"
 
 func New(

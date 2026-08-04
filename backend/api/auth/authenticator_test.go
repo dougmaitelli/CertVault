@@ -17,7 +17,13 @@ import (
 func TestSessionRoundTrip(t *testing.T) {
 	authenticator := &Authenticator{config: &config.Config{MasterKey: make([]byte, 32)}}
 	recorder := httptest.NewRecorder()
-	authenticator.setSession(recorder, "admin@example.com")
+	authenticator.setSession(recorder, sessionPayload{
+		Name:                 "admin@example.com",
+		DisplayName:          "Certificate Admin",
+		Email:                "admin@example.com",
+		Picture:              "https://id.example.com/avatar.png",
+		AuthenticationMethod: authMethodOIDC,
+	})
 
 	response := recorder.Result()
 	defer func() { _ = response.Body.Close() }()
@@ -25,9 +31,12 @@ func TestSessionRoundTrip(t *testing.T) {
 	if len(cookies) != 1 {
 		t.Fatalf("cookies = %d, want 1", len(cookies))
 	}
-	name, ok := authenticator.verifySession(cookies[0].Value)
-	if !ok || name != "admin@example.com" {
-		t.Fatalf("verified session = %q, %v", name, ok)
+	identity, ok := authenticator.verifySession(cookies[0].Value)
+	if !ok || identity.Name != "admin@example.com" ||
+		identity.DisplayName != "Certificate Admin" ||
+		identity.Picture != "https://id.example.com/avatar.png" ||
+		identity.AuthenticationMethod != authMethodOIDC {
+		t.Fatalf("verified session = %#v, %v", identity, ok)
 	}
 }
 

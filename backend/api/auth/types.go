@@ -22,9 +22,13 @@ type Authenticator struct {
 }
 
 type Identity struct {
-	Admin     bool
-	Name      string
-	Principal repository.Principal
+	Admin                bool
+	Name                 string
+	DisplayName          string
+	Email                string
+	Picture              string
+	AuthenticationMethod string
+	Principal            repository.Principal
 }
 
 type oidcState struct {
@@ -38,9 +42,20 @@ type bootstrapLoginRequest struct {
 }
 
 type oidcClaims struct {
-	Email  string   `json:"email"`
-	Sub    string   `json:"sub"`
-	Groups []string `json:"groups"`
+	Email   string   `json:"email"`
+	Name    string   `json:"name"`
+	Picture string   `json:"picture"`
+	Sub     string   `json:"sub"`
+	Groups  []string `json:"groups"`
+}
+
+type sessionPayload struct {
+	Name                 string `json:"name"`
+	DisplayName          string `json:"display_name,omitempty"`
+	Email                string `json:"email,omitempty"`
+	Picture              string `json:"picture,omitempty"`
+	AuthenticationMethod string `json:"authentication_method"`
+	ExpiresAt            int64  `json:"expires_at"`
 }
 
 type contextKey string

@@ -1,13 +1,20 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import type { Session } from "../api/types";
 import { navigationRoutes } from "../routing/routes";
 
 type ConsoleLayoutProps = {
   error: string;
   health: "checking" | "operational" | "warning" | "failed";
+  session: Session;
   onLogout: () => void;
 };
 
-export function ConsoleLayout({ error, health, onLogout }: ConsoleLayoutProps) {
+export function ConsoleLayout({
+  error,
+  health,
+  session,
+  onLogout,
+}: ConsoleLayoutProps) {
   const currentLocation = useLocation();
   const pageTitle =
     navigationRoutes.find((route) => route.path === currentLocation.pathname)
@@ -32,6 +39,21 @@ export function ConsoleLayout({ error, health, onLogout }: ConsoleLayoutProps) {
           ))}
         </nav>
         <footer>
+          <div className="user-profile">
+            {session.picture ? (
+              <img src={session.picture} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="user-avatar" aria-hidden="true">
+                {session.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <div>
+              <strong>{session.name}</strong>
+              {session.email && session.email !== session.name && (
+                <small>{session.email}</small>
+              )}
+            </div>
+          </div>
           <button
             onClick={() => {
               void fetch("/auth/logout", { method: "POST" }).then(

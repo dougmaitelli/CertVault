@@ -65,5 +65,8 @@ export type Audit = {
 
 export type Session = {
   name: string;
+  email?: string;
+  picture?: string;
+  authentication_method?: string;
   admin: boolean;
 };
