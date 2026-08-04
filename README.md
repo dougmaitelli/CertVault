@@ -203,7 +203,7 @@ To run the UI and API locally without configuring DNS or issuing certificates:
 make dev
 ```
 
-Open `http://localhost:8081` and use `certvault-dev-admin` as the bootstrap token. Development data and generated secrets are stored under the ignored `.cache/dev` directory. The development configuration contains no certificates, so the ACME manager has nothing to issue or renew.
+Open `http://localhost:8081` and use `certvault-dev-admin` as the bootstrap token. Development data and generated secrets are stored under the ignored `.cache/dev` directory. The development configuration enables the mock ACME issuer, so the configured certificates can be issued and renewed from the UI without making ACME or DNS-provider requests. These locally signed certificates are untrusted and intended only for testing CertVault's workflows.
 
 The main quality commands are:
 

@@ -7,9 +7,10 @@ server:
 
 acme:
   email: dev@localhost
-  directory_url: https://acme-staging-v02.api.letsencrypt.org/directory
+  directory_url: https://acme.mock/directory
   accept_terms: true
   automatic_issuance: false
+  mock: true
 
 auth: {}
 dns_credentials:

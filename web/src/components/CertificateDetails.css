@@ -10,9 +10,8 @@
 
 .version-timeline {
   max-height: 320px;
-  margin: 0 0 0 7px;
-  padding: 0 0 0 20px;
-  border-left: 1px solid #34424b;
+  margin: 0;
+  padding: 0 0 0 28px;
   list-style: none;
   overflow-y: auto;
 }
@@ -24,6 +23,15 @@
 
 .version-timeline li:last-child {
   padding-bottom: 0;
+}
+
+.version-timeline li:not(:last-child)::after {
+  position: absolute;
+  top: 20px;
+  bottom: -5px;
+  left: -20px;
+  border-left: 1px solid #34424b;
+  content: "";
 }
 
 .version-timeline li::before {

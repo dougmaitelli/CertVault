@@ -80,6 +80,10 @@ func (m *Manager) reconcile(ctx context.Context) {
 }
 
 func (m *Manager) Issue(ctx context.Context, name, kind string) error {
+	def, ok := m.cfg.Certificate(name)
+	if !ok {
+		return errors.New("unknown certificate")
+	}
 	lockAny, _ := m.locks.LoadOrStore(name, &sync.Mutex{})
 	lock, ok := lockAny.(*sync.Mutex)
 	if !ok {
@@ -87,46 +91,13 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 	}
 	lock.Lock()
 	defer lock.Unlock()
-	def, ok := m.cfg.Certificate(name)
-	if !ok {
-		return errors.New("unknown certificate")
-	}
 	job, e := m.repos.Jobs.Start(ctx, name, kind)
 	if e != nil {
 		return e
 	}
 	var result error
 	defer func() { _ = m.repos.Jobs.Finish(context.Background(), job, result) }()
-	m.issueMu.Lock()
-	defer m.issueMu.Unlock() // provider constructors consume process environment
-	client, e := m.client(ctx)
-	if e != nil {
-		result = e
-		return e
-	}
-	provider, e := m.provider(def)
-	if e != nil {
-		result = e
-		return e
-	}
-	dns01.SetDefaultClient(dns01.NewClient(&dns01.Options{
-		RecursiveNameservers: m.cfg.ACME.DNSResolvers,
-	}))
-	if e = client.Challenge.SetDNS01Provider(provider); e != nil {
-		result = e
-		return e
-	}
-	keyType, e := certcrypto.ToKeyType(string(def.KeyType))
-	if e != nil {
-		result = fmt.Errorf("certificate %q key type: %w", name, e)
-		return result
-	}
-	request := certificate.ObtainRequest{
-		Domains: def.Domains,
-		Bundle:  true,
-		KeyType: keyType,
-	}
-	resource, e := client.Certificate.Obtain(ctx, request)
+	resource, e := m.obtain(ctx, def)
 	if e != nil {
 		result = e
 		m.fireHooks(context.Background(), "certificate.failed", name, nil, e)
@@ -147,6 +118,42 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 		m.fireHooks(context.Background(), "certificate.renewed", name, &v, nil)
 	}
 	return nil
+}
+
+func (m *Manager) obtain(ctx context.Context, def config.Certificate) (*certificate.Resource, error) {
+	if m.cfg.ACME.Mock {
+		return mockCertificate(def)
+	}
+	m.issueMu.Lock()
+	defer m.issueMu.Unlock() // provider constructors consume process environment
+	client, e := m.client(ctx)
+	if e != nil {
+		return nil, e
+	}
+	provider, e := m.provider(def)
+	if e != nil {
+		return nil, e
+	}
+	dns01.SetDefaultClient(dns01.NewClient(&dns01.Options{
+		RecursiveNameservers: m.cfg.ACME.DNSResolvers,
+	}))
+	if e = client.Challenge.SetDNS01Provider(provider); e != nil {
+		return nil, e
+	}
+	keyType, e := certcrypto.ToKeyType(string(def.KeyType))
+	if e != nil {
+		return nil, fmt.Errorf("certificate %q key type: %w", def.Name, e)
+	}
+	request := certificate.ObtainRequest{
+		Domains: def.Domains,
+		Bundle:  true,
+		KeyType: keyType,
+	}
+	resource, e := client.Certificate.Obtain(ctx, request)
+	if e != nil {
+		return nil, e
+	}
+	return resource, nil
 }
 
 func (m *Manager) client(ctx context.Context) (*lego.Client, error) {
@@ -193,7 +200,7 @@ func (m *Manager) save(name string, r *certificate.Resource) (repository.Version
 		return repository.Version{}, e
 	}
 	now := time.Now().UTC()
-	version := now.Format("20060102T150405Z")
+	version := now.Format("20060102T150405.000000000Z")
 	rel := filepath.Join("certificates", name, "versions", version)
 	dir := filepath.Join(m.cfg.DataDir, rel)
 	if e = os.MkdirAll(dir, 0700); e != nil {

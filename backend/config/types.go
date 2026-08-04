@@ -13,6 +13,7 @@ type ACME struct {
 	DNSResolvers      []string `yaml:"dns_resolvers"`
 	AcceptTerms       bool     `yaml:"accept_terms"`
 	AutomaticIssuance bool     `yaml:"automatic_issuance"`
+	Mock              bool     `yaml:"mock"`
 }
 
 type Auth struct {
