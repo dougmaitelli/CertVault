@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from "react";
 
-export function LoginPage() {
+type LoginPageProps = {
+  onAuthenticated: () => Promise<void>;
+};
+
+export function LoginPage({ onAuthenticated }: LoginPageProps) {
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
 
@@ -14,7 +18,7 @@ export function LoginPage() {
       }).then((response) => {
         if (!response.ok) throw Error("Invalid token");
       });
-      location.reload();
+      await onAuthenticated();
     } catch (caught) {
       setError(String(caught));
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { api } from "./api/client";
 import type {
   ACMEAccount,
@@ -15,7 +16,7 @@ import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { CertificatesPage } from "./pages/CertificatesPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { LoginPage } from "./pages/LoginPage";
-import { pageFromPath, pageRoutes, type Page } from "./routing/routes";
+import { appRoutes } from "./routing/routes";
 
 const statusRefreshInterval = 30_000;
 const taskRefreshInterval = 2_000;
@@ -23,6 +24,7 @@ const taskRefreshInterval = 2_000;
 export function App() {
   const [session, setSession] = useState<Session>();
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     api<Session>("session")
@@ -32,14 +34,22 @@ export function App() {
   }, []);
 
   if (loading) return <div className="splash">CertVault</div>;
-  if (!session) return <LoginPage />;
-  return <Console />;
+  if (!session) {
+    if (location.pathname !== "/") return <Navigate to="/" replace />;
+    return (
+      <LoginPage
+        onAuthenticated={async () => setSession(await api<Session>("session"))}
+      />
+    );
+  }
+  return <Console onLogout={() => setSession(undefined)} />;
 }
 
-function Console() {
-  const [page, setPage] = useState<Page>(() =>
-    pageFromPath(window.location.pathname),
-  );
+type ConsoleProps = {
+  onLogout: () => void;
+};
+
+function Console({ onLogout }: ConsoleProps) {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
@@ -112,20 +122,6 @@ function Console() {
     return () => window.clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const updatePage = () => setPage(pageFromPath(window.location.pathname));
-    window.addEventListener("popstate", updatePage);
-    return () => window.removeEventListener("popstate", updatePage);
-  }, []);
-
-  const navigate = (nextPage: Page) => {
-    const path = pageRoutes[nextPage];
-    if (window.location.pathname !== path) {
-      window.history.pushState({}, "", path);
-    }
-    setPage(nextPage);
-  };
-
   const health =
     infrastructureHealthy === undefined
       ? "checking"
@@ -136,29 +132,53 @@ function Console() {
           : "operational";
 
   return (
-    <ConsoleLayout
-      page={page}
-      error={error}
-      health={health}
-      onNavigate={navigate}
-    >
-      {page === "certificates" && (
-        <CertificatesPage
-          certificates={certificates}
-          jobs={jobs}
-          reload={load}
+    <Routes>
+      <Route
+        element={
+          <ConsoleLayout error={error} health={health} onLogout={onLogout} />
+        }
+      >
+        <Route
+          index
+          element={<Navigate to={appRoutes.certificates.path} replace />}
         />
-      )}
-      {page === "history" && <HistoryPage jobs={jobs} />}
-      {page === "ACME accounts" && <ACMEAccountsPage accounts={acmeAccounts} />}
-      {page === "api keys" && (
-        <APIKeysPage
-          apiKeys={apiKeys}
-          certificates={certificates}
-          reload={load}
+        <Route
+          path={appRoutes.certificates.path}
+          element={
+            <CertificatesPage
+              certificates={certificates}
+              jobs={jobs}
+              reload={load}
+            />
+          }
         />
-      )}
-      {page === "audit logs" && <AuditLogsPage audits={audits} />}
-    </ConsoleLayout>
+        <Route
+          path={appRoutes.history.path}
+          element={<HistoryPage jobs={jobs} />}
+        />
+        <Route
+          path={appRoutes.acmeAccounts.path}
+          element={<ACMEAccountsPage accounts={acmeAccounts} />}
+        />
+        <Route
+          path={appRoutes.auditLogs.path}
+          element={<AuditLogsPage audits={audits} />}
+        />
+        <Route
+          path={appRoutes.apiKeys.path}
+          element={
+            <APIKeysPage
+              apiKeys={apiKeys}
+              certificates={certificates}
+              reload={load}
+            />
+          }
+        />
+        <Route
+          path="*"
+          element={<Navigate to={appRoutes.certificates.path} replace />}
+        />
+      </Route>
+    </Routes>
   );
 }

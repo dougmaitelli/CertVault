@@ -1,18 +1,9 @@
-export const defaultPage = "certificates";
-
-export const pageRoutes = {
-  certificates: "/certificates",
-  history: "/history",
-  "ACME accounts": "/acme-accounts",
-  "audit logs": "/audit-logs",
-  "api keys": "/api-keys",
+export const appRoutes = {
+  certificates: { label: "certificates", path: "/certificates" },
+  history: { label: "history", path: "/history" },
+  acmeAccounts: { label: "ACME accounts", path: "/acme-accounts" },
+  auditLogs: { label: "audit logs", path: "/audit-logs" },
+  apiKeys: { label: "api keys", path: "/api-keys" },
 } as const;
 
-export type Page = keyof typeof pageRoutes;
-
-export function pageFromPath(path: string): Page {
-  return (
-    (Object.entries(pageRoutes).find(([, route]) => route === path)?.[0] as
-      Page | undefined) ?? defaultPage
-  );
-}
+export const navigationRoutes = Object.values(appRoutes);
