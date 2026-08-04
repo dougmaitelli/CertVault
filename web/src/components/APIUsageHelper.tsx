@@ -49,13 +49,14 @@ export function APIUsageHelper({ certificates, token }: APIUsageHelperProps) {
     const installer = `${window.location.origin}/client/install.sh`;
     const executor = `sudo env CERTVAULT_API_KEY=${shellQuote(token)} sh`;
     return [
-      `curl -fsSL ${shellQuote(installer)} | ${executor} -s --`,
+      `curl -fsSL ${shellQuote(installer)}`,
+      `| ${executor} -s --`,
       `--server ${shellQuote(window.location.origin)}`,
       `--certificate ${shellQuote(certificate)}`,
       `--files ${shellQuote(files)}`,
       `--destination ${shellQuote(destination)}`,
       `--schedule ${shellQuote(schedule)}`,
-    ].join(" ");
+    ].join(" \\\n  ");
   }, [certificate, destination, files, schedule, token]);
 
   function selectCertificate(nextCertificate: string) {
