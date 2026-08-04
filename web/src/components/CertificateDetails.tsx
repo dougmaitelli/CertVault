@@ -1,4 +1,6 @@
-import type { Certificate } from "../api/types";
+import { useEffect, useState } from "react";
+import { api } from "../api/client";
+import type { Certificate, CertificateVersion } from "../api/types";
 import { formatDate, formatRemainingValidity } from "../utils/date";
 import "./CertificateDetails.css";
 import { CertificateDownloadLink } from "./CertificateDownloadLink";
@@ -13,6 +15,34 @@ export function CertificateDetails({
   certificate,
   onClose,
 }: CertificateDetailsProps) {
+  const [versions, setVersions] = useState<CertificateVersion[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(true);
+  const [versionsError, setVersionsError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void api<CertificateVersion[]>(
+      `certificates/${encodeURIComponent(certificate.name)}/versions`,
+      { signal: controller.signal },
+    )
+      .then(setVersions)
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setVersionsError(
+            error instanceof Error ? error.message : "Unable to load versions",
+          );
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setVersionsLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [certificate.name]);
+
   return (
     <Modal onClose={onClose}>
       <small>CERTIFICATE DETAILS</small>
@@ -68,6 +98,38 @@ export function CertificateDetails({
           Private key
         </CertificateDownloadLink>
       </div>
+      <h4>Version history</h4>
+      {versionsLoading && <p className="version-message">Loading versions…</p>}
+      {versionsError && <p className="error">{versionsError}</p>}
+      {!versionsLoading && !versionsError && versions.length === 0 && (
+        <p className="version-message">No certificate versions stored.</p>
+      )}
+      {versions.length > 0 && (
+        <ol className="version-timeline">
+          {versions.map((version) => {
+            const current = version.id === certificate.current_version?.id;
+            return (
+              <li className={current ? "current" : ""} key={version.id}>
+                <div className="version-heading">
+                  <strong>
+                    {current ? "Current version" : "Previous version"}
+                  </strong>
+                  <time dateTime={version.created_at}>
+                    {formatDate(version.created_at)}
+                  </time>
+                </div>
+                <p>
+                  Valid {formatDate(version.not_before)} —{" "}
+                  {formatDate(version.not_after)}{" "}
+                  {formatRemainingValidity(version.not_after)}
+                </p>
+                <span>{version.issuer}</span>
+                <code>{version.domains.join(", ")}</code>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </Modal>
   );
 }
