@@ -95,6 +95,13 @@ install -d -m 755 "$destination"
 printf '%s\n' "$token" >"$token_file"
 chmod 600 "$token_file"
 
+# Installing again replaces the job configuration. Discard validators from the
+# previous configuration so the immediate sync populates a changed destination
+# instead of treating its files as already current.
+for file in certificate.pem chain.pem fullchain.pem private-key.pem; do
+  rm -f "$etag_dir/$file"
+done
+
 cat >"$sync_script" <<'EOF'
 #!/bin/sh
 set -eu
