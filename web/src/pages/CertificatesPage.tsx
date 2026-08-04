@@ -1,9 +1,11 @@
 import { useState } from "react";
+import "./CertificatesPage.css";
 import { api } from "../api/client";
 import type { Certificate, Job } from "../api/types";
 import { CertificateDetails } from "../components/CertificateDetails";
 import { CertificateDownloadLink } from "../components/CertificateDownloadLink";
 import { Stat } from "../components/Stat";
+import { StatusBadge, StatusBadgeGroup } from "../components/StatusBadge";
 import { formatDate, formatRemainingValidity } from "../utils/date";
 
 type CertificatesPageProps = {
@@ -65,6 +67,17 @@ export function CertificatesPage({
 
   return (
     <>
+      <div className="stats">
+        <Stat value={certificates.length} label="Managed certificates" />
+        <Stat
+          value={certificates.filter((item) => item.status === "valid").length}
+          label="Healthy"
+        />
+        <Stat
+          value={certificates.filter((item) => item.status === "error").length}
+          label="Needs attention"
+        />
+      </div>
       <div className="certificate-toolbar">
         <div
           className="layout-picker"
@@ -93,17 +106,6 @@ export function CertificatesPage({
           </button>
         </div>
       </div>
-      <div className="stats">
-        <Stat value={certificates.length} label="Managed certificates" />
-        <Stat
-          value={certificates.filter((item) => item.status === "valid").length}
-          label="Healthy"
-        />
-        <Stat
-          value={certificates.filter((item) => item.status === "error").length}
-          label="Needs attention"
-        />
-      </div>
       <div className={`grid certificate-list ${layout}`}>
         {certificates.map((certificate) => (
           <article
@@ -112,16 +114,12 @@ export function CertificatesPage({
           >
             <div className="row">
               <h3>{certificate.name}</h3>
-              <div className="certificate-statuses">
+              <StatusBadgeGroup>
                 {taskRunning(certificate.name) && (
-                  <span className="status running task-running">
-                    <i /> Running
-                  </span>
+                  <StatusBadge status="running" label="Running" active />
                 )}
-                <span className={`status ${certificate.status}`}>
-                  {certificate.status}
-                </span>
-              </div>
+                <StatusBadge status={certificate.status} />
+              </StatusBadgeGroup>
             </div>
             <code className="certificate-domains">
               {certificate.domains.join(", ")}

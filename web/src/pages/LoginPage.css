@@ -1,0 +1,36 @@
+.login {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: radial-gradient(circle at 50% 20%, #12302c, #0b1015 48%);
+}
+
+.login section {
+  width: 390px;
+  padding: 42px;
+  border: 1px solid #26323a;
+  border-radius: 18px;
+  background: #111920;
+  box-shadow: 0 24px 80px #0008;
+  text-align: center;
+}
+
+.login .brand-logo {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+}
+
+.login h1 {
+  margin-bottom: 4px;
+}
+
+.login p {
+  color: #91a0aa;
+}
+
+.oidc {
+  display: block;
+  margin-top: 22px;
+  color: #82e6d0;
+}

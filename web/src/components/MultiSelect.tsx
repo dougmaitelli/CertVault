@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { Checkbox } from "./Checkbox";
+import "./MultiSelect.css";
 
 export type MultiSelectOption = {
   label: string;

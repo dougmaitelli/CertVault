@@ -1,0 +1,39 @@
+.bar {
+  display: flex;
+  margin-bottom: 20px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bar p {
+  color: #8e9da6;
+}
+
+.bar > .action-button {
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.token {
+  display: flex;
+  margin-bottom: 20px;
+  padding: 18px;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid #a97724;
+  border-radius: 8px;
+  background: #302817;
+}
+
+.token code {
+  flex: 1;
+  overflow: auto;
+  color: #ffd887;
+}
+
+.token button.copied {
+  border-color: #4be0bd;
+  background: #153229;
+  color: #59dfbe;
+}

@@ -1,0 +1,148 @@
+.shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.shell aside {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100vh;
+  padding: 28px 18px;
+  flex-direction: column;
+  border-right: 1px solid #202a31;
+  background: #0d141a;
+}
+
+.shell header {
+  display: flex;
+  padding: 0 8px 32px;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.1rem;
+}
+
+.shell header .brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+}
+
+.shell nav {
+  display: grid;
+  gap: 5px;
+}
+
+.shell nav a {
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #8d9ba4;
+  text-align: left;
+  text-decoration: none;
+  text-transform: capitalize;
+}
+
+.shell nav a.active {
+  background: #17252a;
+  color: #56d9bc;
+}
+
+.shell footer {
+  margin-top: auto;
+}
+
+.shell main {
+  padding: 42px 5vw;
+}
+
+.top {
+  display: flex;
+  margin-bottom: 35px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.top h1 {
+  margin: 4px 0;
+  text-transform: capitalize;
+}
+
+.top small {
+  color: #4be0bd;
+  letter-spacing: 0.15em;
+}
+
+.health {
+  color: #9cafb7;
+}
+
+.health i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #4be0bd;
+  box-shadow: 0 0 10px #4be0bd;
+}
+
+.health.checking i {
+  background: #8e9da6;
+  box-shadow: 0 0 10px #8e9da6;
+}
+
+.health.warning {
+  color: #ffd887;
+}
+
+.health.warning i {
+  background: #e5a93d;
+  box-shadow: 0 0 10px #e5a93d;
+}
+
+.health.failed {
+  color: #ff9a9a;
+}
+
+.health.failed i {
+  background: #ef6262;
+  box-shadow: 0 0 10px #ef6262;
+}
+
+@media (max-width: 800px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .shell aside {
+    position: static;
+    height: auto;
+    padding: 12px;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .shell aside header {
+    padding: 0;
+  }
+
+  .shell aside header b {
+    display: none;
+  }
+
+  .shell nav {
+    display: flex;
+    margin-left: auto;
+  }
+
+  .shell footer {
+    margin: 0;
+  }
+
+  .shell main {
+    padding: 25px 16px;
+  }
+}

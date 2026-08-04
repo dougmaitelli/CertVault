@@ -1,0 +1,15 @@
+.stats > div {
+  padding: 22px;
+  border: 1px solid #222e36;
+  border-radius: 10px;
+  background: #111920;
+}
+
+.stats strong {
+  display: block;
+  font-size: 2rem;
+}
+
+.stats span {
+  color: #8998a2;
+}

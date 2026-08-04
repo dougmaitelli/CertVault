@@ -1,0 +1,69 @@
+.user-summary {
+  display: flex;
+  padding: 10px;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-summary img,
+.user-summary-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+}
+
+.user-summary img {
+  object-fit: cover;
+}
+
+.user-summary-avatar {
+  display: grid;
+  place-items: center;
+  background: #153229;
+  color: #59dfbe;
+  font-weight: 800;
+}
+
+.user-summary-identity {
+  min-width: 0;
+  flex: 1;
+}
+
+.user-summary strong,
+.user-summary small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-summary strong {
+  color: #dce4ea;
+  font-size: 0.82rem;
+}
+
+.user-summary small {
+  margin-top: 2px;
+  color: #71808a;
+  font-size: 0.7rem;
+}
+
+.user-summary button {
+  flex: 0 0 auto;
+  padding: 6px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #ff9090;
+}
+
+.user-summary button:hover {
+  color: #ffb0b0;
+}
+
+.user-summary button svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}

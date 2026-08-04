@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import "./App.css";
 import { api } from "./api/client";
 import type {
   ACMEAccount,

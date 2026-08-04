@@ -1,4 +1,6 @@
 import type { ACMEAccount } from "../api/types";
+import { StatusBadge, StatusBadgeGroup } from "../components/StatusBadge";
+import "./ACMEAccountsPage.css";
 
 type ACMEAccountsPageProps = {
   accounts: ACMEAccount[];
@@ -15,17 +17,17 @@ export function ACMEAccountsPage({ accounts }: ACMEAccountsPageProps) {
   }
 
   return (
-    <div className="account-grid">
+    <div className="account-list">
       {accounts.map((account) => (
         <article className={account.current ? "current" : ""} key={account.id}>
           <div className="row">
             <h3>{accountHost(account.directory_url)}</h3>
-            <div className="certificate-statuses">
-              {account.current && <span className="status valid">Current</span>}
-              <span className={`status ${account.status}`}>
-                {account.status}
-              </span>
-            </div>
+            <StatusBadgeGroup>
+              {account.current && (
+                <StatusBadge status="valid" label="Current" />
+              )}
+              <StatusBadge status={account.status} />
+            </StatusBadgeGroup>
           </div>
           <dl>
             <div>
