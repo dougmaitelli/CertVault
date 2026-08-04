@@ -189,7 +189,7 @@ form button,
 }
 .shell {
   display: grid;
-  grid-template-columns: 230px 1fr;
+  grid-template-columns: 260px 1fr;
   min-height: 100vh;
 }
 .shell aside {
@@ -240,7 +240,6 @@ form button,
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
   padding: 10px;
 }
 .user-profile img,
@@ -260,8 +259,9 @@ form button,
   color: #59dfbe;
   font-weight: 800;
 }
-.user-profile div {
+.user-profile > div {
   min-width: 0;
+  flex: 1;
 }
 .user-profile strong,
 .user-profile small {
@@ -278,6 +278,19 @@ form button,
   margin-top: 2px;
   color: #71808a;
   font-size: 0.7rem;
+}
+.shell footer .user-profile button {
+  flex: 0 0 auto;
+  padding: 6px;
+  color: #ff9090;
+}
+.shell footer .user-profile button:hover {
+  color: #ffb0b0;
+}
+.user-profile button svg {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 .shell main {
   padding: 42px 5vw;
