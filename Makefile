@@ -3,7 +3,7 @@ GOLANGCI_LINT := $(CURDIR)/.bin/golangci-lint
 GOLANGCI_LINT_CACHE := $(CURDIR)/.cache/golangci-lint
 export GOLANGCI_LINT_CACHE
 
-.PHONY: dependencies dependencies-backend dependencies-frontend \
+.PHONY: dependencies dependencies-backend dependencies-frontend screenshots screenshots-docker \
 	build build-backend build-frontend test test-backend test-frontend \
 	format format-backend format-frontend format-check \
 	format-check-backend format-check-frontend lint lint-backend lint-frontend \
@@ -78,6 +78,12 @@ clean:
 	rm -f certvault
 	rm -rf web/dist
 	rm -rf .cache
+
+screenshots:
+	cd web && npm run screenshots
+
+screenshots-docker:
+	cd web && npm run screenshots:docker
 
 docker:
 	docker compose build

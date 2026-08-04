@@ -1,7 +1,10 @@
 .domain {
   display: block;
+  max-width: 100%;
   margin: 6px 0;
   color: var(--color-accent-text);
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .version-message {
