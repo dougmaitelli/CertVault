@@ -86,10 +86,11 @@ job=$(printf '%s-%s' "$certificate" "$files" | tr -c 'A-Za-z0-9._-' '-')
 config_dir=${CERTVAULT_CLIENT_CONFIG_DIR:-"$HOME/.config/certvault"}
 script_dir=${CERTVAULT_CLIENT_SCRIPT_DIR:-"$HOME/.local/libexec"}
 token_file="$config_dir/$job.token"
+etag_dir="$config_dir/$job.etags"
 sync_script="$script_dir/certvault-sync"
 job_script="$script_dir/certvault-$job"
 
-install -d -m 700 "$config_dir" "$script_dir"
+install -d -m 700 "$config_dir" "$script_dir" "$etag_dir"
 install -d -m 755 "$destination"
 printf '%s\n' "$token" >"$token_file"
 chmod 600 "$token_file"
@@ -101,20 +102,54 @@ token_file=$1
 server=$2
 certificate=$3
 destination=$4
-shift 4
+etag_dir=$5
+shift 5
 token=$(cat "$token_file")
 temporary=$(mktemp -d "$destination/.certvault.tmp.XXXXXX")
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 for file in "$@"; do
   url="${server%/}/api/v1/certificates/$certificate/$file"
-  curl -fsSL -H "Authorization: Bearer $token" "$url" -o "$temporary/$file"
+  headers="$temporary/$file.headers"
+  etag_file="$etag_dir/$file"
+  if [ -s "$etag_file" ]; then
+    etag=$(cat "$etag_file")
+    status=$(curl -fsSL -D "$headers" -w '%{http_code}' \
+      -H "Authorization: Bearer $token" -H "If-None-Match: $etag" \
+      "$url" -o "$temporary/$file")
+  else
+    status=$(curl -fsSL -D "$headers" -w '%{http_code}' \
+      -H "Authorization: Bearer $token" \
+      "$url" -o "$temporary/$file")
+  fi
+  case "$status" in
+    200) ;;
+    304)
+      rm -f "$temporary/$file" "$headers"
+      continue
+      ;;
+    *)
+      printf 'Unexpected HTTP status %s for %s\n' "$status" "$file" >&2
+      exit 1
+      ;;
+  esac
   case "$file" in
     private-key.pem) chmod 600 "$temporary/$file" ;;
     *) chmod 644 "$temporary/$file" ;;
   esac
+  awk 'tolower($1) == "etag:" { sub(/\r$/, "", $2); value = $2 } END { if (value != "") print value }' \
+    "$headers" >"$temporary/$file.etag"
+  rm -f "$headers"
 done
 for file in "$@"; do
-  mv -f "$temporary/$file" "$destination/$file"
+  if [ -f "$temporary/$file" ]; then
+    mv -f "$temporary/$file" "$destination/$file"
+    if [ -s "$temporary/$file.etag" ]; then
+      mv -f "$temporary/$file.etag" "$etag_dir/$file"
+      chmod 600 "$etag_dir/$file"
+    else
+      rm -f "$temporary/$file.etag" "$etag_dir/$file"
+    fi
+  fi
 done
 rmdir "$temporary"
 trap - EXIT HUP INT TERM
@@ -136,6 +171,8 @@ shell_quote() {
   shell_quote "$certificate"
   printf ' '
   shell_quote "$destination"
+  printf ' '
+  shell_quote "$etag_dir"
   old_ifs=$IFS
   IFS=,
   set -- $files
