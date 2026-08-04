@@ -4,8 +4,8 @@ set -eu
 default_schedule="17 3 * * *"
 server=""
 certificate=""
-artifact="fullchain.pem"
-output=""
+files="fullchain.pem,private-key.pem"
+destination=""
 schedule="$default_schedule"
 
 usage() {
@@ -13,9 +13,11 @@ usage() {
 Install a recurring CertVault certificate download.
 
 Usage:
-  install.sh --server URL --certificate NAME --artifact FILE --output PATH [--schedule CRON]
+  install.sh --server URL --certificate NAME --files FILES --destination DIRECTORY [--schedule CRON]
 
 The API token is read from CERTVAULT_API_KEY or prompted for securely.
+FILES is a comma-separated list of certificate.pem, chain.pem, fullchain.pem,
+or private-key.pem. It defaults to fullchain.pem,private-key.pem.
 EOF
 }
 
@@ -23,23 +25,33 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --server) server=${2-}; shift 2 ;;
     --certificate) certificate=${2-}; shift 2 ;;
-    --artifact) artifact=${2-}; shift 2 ;;
-    --output) output=${2-}; shift 2 ;;
+    --files) files=${2-}; shift 2 ;;
+    --destination) destination=${2-}; shift 2 ;;
     --schedule) schedule=${2-}; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
 done
 
-if [ -z "$server" ] || [ -z "$certificate" ] || [ -z "$output" ]; then
+if [ -z "$server" ] || [ -z "$certificate" ] || [ -z "$destination" ]; then
   usage >&2
   exit 2
 fi
 
-case "$artifact" in
-  certificate.pem|chain.pem|fullchain.pem|private-key.pem) ;;
-  *) printf 'Unsupported artifact: %s\n' "$artifact" >&2; exit 2 ;;
-esac
+old_ifs=$IFS
+IFS=,
+set -- $files
+IFS=$old_ifs
+if [ "$#" -eq 0 ]; then
+  printf 'At least one file is required\n' >&2
+  exit 2
+fi
+for file in "$@"; do
+  case "$file" in
+    certificate.pem|chain.pem|fullchain.pem|private-key.pem) ;;
+    *) printf 'Unsupported file: %s\n' "$file" >&2; exit 2 ;;
+  esac
+done
 
 case "$schedule" in
   *[!A-Za-z0-9,'*/?_-\ ']*|*'
@@ -70,16 +82,15 @@ if [ -z "$token" ]; then
   exit 2
 fi
 
-job=$(printf '%s-%s' "$certificate" "$artifact" | tr -c 'A-Za-z0-9._-' '-')
+job=$(printf '%s-%s' "$certificate" "$files" | tr -c 'A-Za-z0-9._-' '-')
 config_dir=${CERTVAULT_CLIENT_CONFIG_DIR:-"$HOME/.config/certvault"}
 script_dir=${CERTVAULT_CLIENT_SCRIPT_DIR:-"$HOME/.local/libexec"}
 token_file="$config_dir/$job.token"
 sync_script="$script_dir/certvault-sync"
 job_script="$script_dir/certvault-$job"
-url="${server%/}/api/v1/certificates/$certificate/$artifact"
 
 install -d -m 700 "$config_dir" "$script_dir"
-install -d -m 755 "$(dirname "$output")"
+install -d -m 755 "$destination"
 printf '%s\n' "$token" >"$token_file"
 chmod 600 "$token_file"
 
@@ -87,18 +98,25 @@ cat >"$sync_script" <<'EOF'
 #!/bin/sh
 set -eu
 token_file=$1
-url=$2
-output=$3
-artifact=$4
+server=$2
+certificate=$3
+destination=$4
+shift 4
 token=$(cat "$token_file")
-temporary=$(mktemp "${output}.tmp.XXXXXX")
-trap 'rm -f "$temporary"' EXIT HUP INT TERM
-curl -fsSL -H "Authorization: Bearer $token" "$url" -o "$temporary"
-case "$artifact" in
-  private-key.pem) chmod 600 "$temporary" ;;
-  *) chmod 644 "$temporary" ;;
-esac
-mv -f "$temporary" "$output"
+temporary=$(mktemp -d "$destination/.certvault.tmp.XXXXXX")
+trap 'rm -rf "$temporary"' EXIT HUP INT TERM
+for file in "$@"; do
+  url="${server%/}/api/v1/certificates/$certificate/$file"
+  curl -fsSL -H "Authorization: Bearer $token" "$url" -o "$temporary/$file"
+  case "$file" in
+    private-key.pem) chmod 600 "$temporary/$file" ;;
+    *) chmod 644 "$temporary/$file" ;;
+  esac
+done
+for file in "$@"; do
+  mv -f "$temporary/$file" "$destination/$file"
+done
+rmdir "$temporary"
 trap - EXIT HUP INT TERM
 EOF
 chmod 700 "$sync_script"
@@ -113,11 +131,19 @@ shell_quote() {
   printf ' '
   shell_quote "$token_file"
   printf ' '
-  shell_quote "$url"
+  shell_quote "$server"
   printf ' '
-  shell_quote "$output"
+  shell_quote "$certificate"
   printf ' '
-  shell_quote "$artifact"
+  shell_quote "$destination"
+  old_ifs=$IFS
+  IFS=,
+  set -- $files
+  IFS=$old_ifs
+  for file in "$@"; do
+    printf ' '
+    shell_quote "$file"
+  done
   printf '\n'
 } >"$job_script"
 chmod 700 "$job_script"
@@ -132,4 +158,4 @@ existing=$(crontab -l 2>/dev/null || true)
 } | crontab -
 
 "$job_script"
-printf 'Installed CertVault sync job %s -> %s\n' "$job" "$output"
+printf 'Installed CertVault sync job %s -> %s\n' "$job" "$destination"

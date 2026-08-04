@@ -4,7 +4,11 @@ import "./APIUsageHelper.css";
 
 const copyFeedbackDuration = 2000;
 
-const artifacts = [
+const fileOptions = [
+  {
+    value: "fullchain.pem,private-key.pem",
+    label: "Full chain + private key",
+  },
   { value: "fullchain.pem", label: "Full chain" },
   { value: "certificate.pem", label: "Certificate" },
   { value: "chain.pem", label: "CA chain" },
@@ -24,9 +28,9 @@ type APIUsageHelperProps = {
 
 export function APIUsageHelper({ certificates, token }: APIUsageHelperProps) {
   const [certificate, setCertificate] = useState(certificates[0]?.name ?? "");
-  const [artifact, setArtifact] = useState<string>(artifacts[0].value);
-  const [output, setOutput] = useState(() =>
-    defaultOutput(certificates[0]?.name ?? "", artifacts[0].value),
+  const [files, setFiles] = useState<string>(fileOptions[0].value);
+  const [destination, setDestination] = useState(() =>
+    defaultDestination(certificates[0]?.name ?? ""),
   );
   const [schedule, setSchedule] = useState<string>(schedules[0].value);
   const [copied, setCopied] = useState(false);
@@ -48,28 +52,18 @@ export function APIUsageHelper({ certificates, token }: APIUsageHelperProps) {
       `curl -fsSL ${shellQuote(installer)} | ${executor} -s --`,
       `--server ${shellQuote(window.location.origin)}`,
       `--certificate ${shellQuote(certificate)}`,
-      `--artifact ${shellQuote(artifact)}`,
-      `--output ${shellQuote(output)}`,
+      `--files ${shellQuote(files)}`,
+      `--destination ${shellQuote(destination)}`,
       `--schedule ${shellQuote(schedule)}`,
     ].join(" ");
-  }, [artifact, certificate, output, schedule, token]);
+  }, [certificate, destination, files, schedule, token]);
 
   function selectCertificate(nextCertificate: string) {
-    const previousDefault = defaultOutput(certificate, artifact);
+    const previousDefault = defaultDestination(certificate);
     setCertificate(nextCertificate);
-    setOutput((current) =>
+    setDestination((current) =>
       current === previousDefault
-        ? defaultOutput(nextCertificate, artifact)
-        : current,
-    );
-  }
-
-  function selectArtifact(nextArtifact: string) {
-    const previousDefault = defaultOutput(certificate, artifact);
-    setArtifact(nextArtifact);
-    setOutput((current) =>
-      current === previousDefault
-        ? defaultOutput(certificate, nextArtifact)
+        ? defaultDestination(nextCertificate)
         : current,
     );
   }
@@ -108,12 +102,12 @@ export function APIUsageHelper({ certificates, token }: APIUsageHelperProps) {
             </select>
           </label>
           <label>
-            File
+            Files
             <select
-              value={artifact}
-              onChange={(event) => selectArtifact(event.target.value)}
+              value={files}
+              onChange={(event) => setFiles(event.target.value)}
             >
-              {artifacts.map((item) => (
+              {fileOptions.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
@@ -136,10 +130,10 @@ export function APIUsageHelper({ certificates, token }: APIUsageHelperProps) {
         </div>
       </div>
       <label className="api-usage-output">
-        Destination on client
+        Destination folder on client
         <input
-          value={output}
-          onChange={(event) => setOutput(event.target.value)}
+          value={destination}
+          onChange={(event) => setDestination(event.target.value)}
           required
         />
       </label>
@@ -161,6 +155,6 @@ function shellQuote(value: string): string {
   return `'${value.replaceAll("'", `'"'"'`)}'`;
 }
 
-function defaultOutput(certificate: string, artifact: string): string {
-  return `/etc/ssl/certvault/${certificate}-${artifact}`;
+function defaultDestination(certificate: string): string {
+  return `/etc/ssl/certvault/${certificate}`;
 }

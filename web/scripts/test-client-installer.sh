@@ -31,7 +31,7 @@ esac
 EOF
 chmod 700 "$test_dir/bin/crontab"
 
-output="$test_dir/output/private-key.pem"
+destination="$test_dir/output"
 run_installer() {
   PATH="$test_dir/bin:$PATH" \
     HOME="$test_dir/home" \
@@ -40,15 +40,17 @@ run_installer() {
     sh public/client/install.sh \
       --server "https://certvault.example" \
       --certificate "homelab" \
-      --artifact "private-key.pem" \
-      --output "$output" \
+      --files "fullchain.pem,private-key.pem" \
+      --destination "$destination" \
       --schedule "17 3 * * *"
 }
 
 run_installer
 run_installer
 
-[ "$(cat "$output")" = "mock certificate material" ]
-[ "$(stat -c '%a' "$output")" = "600" ]
-[ "$(stat -c '%a' "$test_dir/home/.config/certvault/homelab-private-key.pem.token")" = "600" ]
-[ "$(grep -c '# certvault:homelab-private-key.pem' "$test_dir/crontab")" = "1" ]
+[ "$(cat "$destination/fullchain.pem")" = "mock certificate material" ]
+[ "$(cat "$destination/private-key.pem")" = "mock certificate material" ]
+[ "$(stat -c '%a' "$destination/fullchain.pem")" = "644" ]
+[ "$(stat -c '%a' "$destination/private-key.pem")" = "600" ]
+[ "$(stat -c '%a' "$test_dir/home/.config/certvault/homelab-fullchain.pem-private-key.pem.token")" = "600" ]
+[ "$(grep -c '# certvault:homelab-fullchain.pem-private-key.pem' "$test_dir/crontab")" = "1" ]
