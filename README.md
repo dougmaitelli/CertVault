@@ -1,6 +1,37 @@
-# CertVault
+<p align="center">
+  <img src="assets/logo.svg" alt="CertVault — centrally managed TLS certificates" width="900">
+</p>
+
+[![CI](https://github.com/dougmaitelli/CertVault/actions/workflows/ci.yml/badge.svg)](https://github.com/dougmaitelli/CertVault/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/dougmaitelli/CertVault)](https://github.com/dougmaitelli/CertVault/releases)
+[![GHCR](https://img.shields.io/badge/container-ghcr.io-blue)](https://github.com/dougmaitelli/CertVault/pkgs/container/certvault)
 
 CertVault is a self-hosted ACME certificate controller for homelabs. It obtains wildcard and multi-domain certificates through DNS-01, renews them automatically, stores private material encrypted, and exposes scoped download endpoints for other machines on the local network. The web console shows certificate health, issuance history, and API-key usage.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="50%">
+<a href="screenshots/certificates.png"><img src="screenshots/certificates.png" alt="Certificate management dashboard"></a>
+<p><em>Certificate inventory — current health, validity, domains, key types, downloads, and manual renewal controls.</em></p>
+</td>
+<td width="50%">
+<a href="screenshots/certificate-details.png"><img src="screenshots/certificate-details.png" alt="Certificate details and version history"></a>
+<p><em>Certificate inspection — identity, validity, downloadable artifacts, and an immutable version timeline.</em></p>
+</td>
+</tr>
+<tr>
+<td width="50%">
+<a href="screenshots/acme-accounts.png"><img src="screenshots/acme-accounts.png" alt="ACME account management"></a>
+<p><em>ACME accounts — separate registrations and status for every certificate authority directory.</em></p>
+</td>
+<td width="50%">
+<a href="screenshots/api-keys.png"><img src="screenshots/api-keys.png" alt="Scoped API key management"></a>
+<p><em>Machine access — scoped, revocable API keys with certificate allowlists and usage visibility.</em></p>
+</td>
+</tr>
+</table>
 
 ## Features
 
@@ -220,5 +251,7 @@ make check         # run every non-mutating verification above
 ```
 
 Frontend commands can also be run independently from `web/` with `npm run format`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, or `npm run check`.
+
+Regenerate the README screenshots from deterministic mocked API data with `make screenshots`. This requires Playwright's Chromium browser (`cd web && npx playwright install chromium`). To use Playwright's prebuilt browser container instead, run `make screenshots-docker` with Docker available.
 
 The API outline is in [`docs/openapi.yaml`](docs/openapi.yaml).

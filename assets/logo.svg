@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title description">
+  <title id="title">CertVault</title>
+  <desc id="description">CertVault logo and centrally managed TLS certificates tagline</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101c19" />
+      <stop offset="1" stop-color="#07100e" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6cf0ce" />
+      <stop offset="1" stop-color="#2bcaa5" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18" />
+    </filter>
+  </defs>
+  <rect width="1200" height="360" rx="32" fill="url(#background)" />
+  <circle cx="210" cy="180" r="115" fill="#4be0bd" opacity=".13" filter="url(#glow)" />
+  <rect x="100" y="70" width="220" height="220" rx="28" fill="url(#accent)" />
+  <text x="210" y="185" fill="#07100e" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="900" text-anchor="middle" dominant-baseline="central">CV</text>
+  <text x="380" y="170" fill="#f1f7f5" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800">CertVault</text>
+  <text x="386" y="225" fill="#92aaa4" font-family="Arial, Helvetica, sans-serif" font-size="28" letter-spacing="3">CENTRALLY MANAGED TLS CERTIFICATES</text>
+</svg>
