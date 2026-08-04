@@ -37,3 +37,10 @@
   background: #153229;
   color: #59dfbe;
 }
+
+.api-key-table th:last-child,
+.api-key-table td:last-child {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}

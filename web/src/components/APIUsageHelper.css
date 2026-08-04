@@ -1,0 +1,99 @@
+.api-usage-helper {
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid #26343d;
+  border-radius: 10px;
+  background: #111920;
+}
+
+.api-usage-heading {
+  display: flex;
+  margin-bottom: 15px;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.api-usage-heading h2 {
+  margin: 0 0 5px;
+  font-size: 1rem;
+}
+
+.api-usage-heading p {
+  margin: 0;
+  color: #8e9da6;
+  font-size: 0.8rem;
+}
+
+.api-usage-options {
+  display: flex;
+  gap: 10px;
+}
+
+.api-usage-options label {
+  display: grid;
+  gap: 5px;
+  color: #82919a;
+  font-size: 0.72rem;
+}
+
+.api-usage-options select {
+  min-width: 145px;
+  padding: 7px 9px;
+  font-size: 0.78rem;
+}
+
+.api-usage-output {
+  display: grid;
+  margin-bottom: 12px;
+  gap: 5px;
+  color: #82919a;
+  font-size: 0.72rem;
+}
+
+.api-usage-output input {
+  padding: 8px 10px;
+  font-size: 0.8rem;
+}
+
+.api-command {
+  display: flex;
+  min-width: 0;
+  padding: 10px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #2c3941;
+  border-radius: 8px;
+  background: #090e12;
+}
+
+.api-command code {
+  flex: 1;
+  overflow-x: auto;
+  color: #82dfcc;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.api-command button {
+  flex: 0 0 auto;
+}
+
+.api-command button.copied {
+  border-color: #4be0bd;
+  background: #153229;
+  color: #59dfbe;
+}
+
+@media (max-width: 800px) {
+  .api-usage-heading,
+  .api-usage-options {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .api-command {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

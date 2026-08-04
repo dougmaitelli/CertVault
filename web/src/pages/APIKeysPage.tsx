@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import "./APIKeysPage.css";
 import { api } from "../api/client";
-import type { APIKey, Certificate } from "../api/types";
+import type { APIKey, APIKeyCreationResponse, Certificate } from "../api/types";
+import { APIUsageHelper } from "../components/APIUsageHelper";
 import { CreateAPIKeyDialog } from "../dialogs/CreateAPIKeyDialog";
 import { formatDate } from "../utils/date";
 
@@ -19,7 +20,7 @@ export function APIKeysPage({
   reload,
 }: APIKeysPageProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [token, setToken] = useState("");
+  const [createdKey, setCreatedKey] = useState<APIKeyCreationResponse>();
   const [copied, setCopied] = useState(false);
   const copyFeedbackTimeout = useRef<number | null>(null);
 
@@ -33,7 +34,8 @@ export function APIKeysPage({
   );
 
   async function copyToken() {
-    await navigator.clipboard.writeText(token);
+    if (!createdKey) return;
+    await navigator.clipboard.writeText(createdKey.token);
     setCopied(true);
     if (copyFeedbackTimeout.current !== null) {
       window.clearTimeout(copyFeedbackTimeout.current);
@@ -69,10 +71,10 @@ export function APIKeysPage({
           Create API key
         </button>
       </div>
-      {token && (
+      {createdKey && (
         <div className="token">
           <b>Copy this token now — it cannot be shown again.</b>
-          <code>{token}</code>
+          <code>{createdKey.token}</code>
           <button
             className={`action-button ${copied ? "copied" : ""}`}
             onClick={() => void copyToken()}
@@ -82,7 +84,18 @@ export function APIKeysPage({
           </button>
         </div>
       )}
-      <div className="table">
+      {createdKey && certificates.length > 0 && (
+        <APIUsageHelper
+          key={createdKey.api_key.id}
+          certificates={certificates.filter(
+            (certificate) =>
+              createdKey.api_key.certificates.includes("*") ||
+              createdKey.api_key.certificates.includes(certificate.name),
+          )}
+          token={createdKey.token}
+        />
+      )}
+      <div className="table api-key-table">
         <table>
           <thead>
             <tr>
@@ -130,8 +143,8 @@ export function APIKeysPage({
         <CreateAPIKeyDialog
           certificates={certificates}
           onClose={() => setShowCreateDialog(false)}
-          onCreated={async (createdToken) => {
-            setToken(createdToken);
+          onCreated={async (result) => {
+            setCreatedKey(result);
             setShowCreateDialog(false);
             await reload();
           }}
