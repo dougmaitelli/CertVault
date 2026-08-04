@@ -42,14 +42,15 @@ export function App() {
       />
     );
   }
-  return <Console onLogout={() => setSession(undefined)} />;
+  return <Console session={session} onLogout={() => setSession(undefined)} />;
 }
 
 type ConsoleProps = {
+  session: Session;
   onLogout: () => void;
 };
 
-function Console({ onLogout }: ConsoleProps) {
+function Console({ session, onLogout }: ConsoleProps) {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
@@ -135,7 +136,12 @@ function Console({ onLogout }: ConsoleProps) {
     <Routes>
       <Route
         element={
-          <ConsoleLayout error={error} health={health} onLogout={onLogout} />
+          <ConsoleLayout
+            error={error}
+            health={health}
+            session={session}
+            onLogout={onLogout}
+          />
         }
       >
         <Route

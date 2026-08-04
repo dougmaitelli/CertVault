@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -76,8 +75,8 @@ func New(
 func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if cookie, err := r.Cookie(sessionCookie); err == nil {
-			if name, ok := a.verifySession(cookie.Value); ok {
-				next.ServeHTTP(w, withIdentity(r, Identity{Admin: true, Name: name}))
+			if identity, ok := a.verifySession(cookie.Value); ok {
+				next.ServeHTTP(w, withIdentity(r, identity))
 				return
 			}
 		}
@@ -99,7 +98,11 @@ func (a *Authenticator) BootstrapLogin(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusUnauthorized, "unauthorized", "Invalid bootstrap token")
 		return
 	}
-	a.setSession(w, "bootstrap-admin")
+	a.setSession(w, sessionPayload{
+		Name:                 "bootstrap-admin",
+		DisplayName:          "Bootstrap administrator",
+		AuthenticationMethod: authMethodBootstrap,
+	})
 	a.repos.Audits.Record(
 		r.Context(),
 		"bootstrap-admin",
@@ -159,12 +162,22 @@ func (a *Authenticator) Callback(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusForbidden, "forbidden", "OIDC group is not allowed")
 		return
 	}
-	name := claims.Email
-	if name == "" {
-		name = claims.Sub
+	actor := claims.Email
+	if actor == "" {
+		actor = claims.Sub
 	}
-	a.setSession(w, name)
-	a.repos.Audits.Record(r.Context(), name, "auth.login", "ui", authMethodOIDC, a.remoteIP(r))
+	displayName := claims.Name
+	if displayName == "" {
+		displayName = actor
+	}
+	a.setSession(w, sessionPayload{
+		Name:                 actor,
+		DisplayName:          displayName,
+		Email:                claims.Email,
+		Picture:              claims.Picture,
+		AuthenticationMethod: authMethodOIDC,
+	})
+	a.repos.Audits.Record(r.Context(), actor, "auth.login", "ui", authMethodOIDC, a.remoteIP(r))
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -190,11 +203,10 @@ func withIdentity(r *http.Request, identity Identity) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), identityKey, identity))
 }
 
-func (a *Authenticator) setSession(w http.ResponseWriter, name string) {
-	expiresAt := time.Now().Add(sessionDuration)
-	payload := base64.RawURLEncoding.EncodeToString(
-		[]byte(name + "\n" + strconv.FormatInt(expiresAt.Unix(), 10)),
-	)
+func (a *Authenticator) setSession(w http.ResponseWriter, session sessionPayload) {
+	session.ExpiresAt = time.Now().Add(sessionDuration).Unix()
+	contents, _ := json.Marshal(session)
+	payload := base64.RawURLEncoding.EncodeToString(contents)
 	mac := hmac.New(sha256.New, a.config.MasterKey)
 	_, _ = mac.Write([]byte(payload))
 	value := payload + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
@@ -209,24 +221,33 @@ func (a *Authenticator) setSession(w http.ResponseWriter, name string) {
 	})
 }
 
-func (a *Authenticator) verifySession(value string) (string, bool) {
+func (a *Authenticator) verifySession(value string) (Identity, bool) {
 	parts := strings.Split(value, ".")
 	if len(parts) != 2 {
-		return "", false
+		return Identity{}, false
 	}
 	mac := hmac.New(sha256.New, a.config.MasterKey)
 	_, _ = mac.Write([]byte(parts[0]))
 	signature, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil || !hmac.Equal(signature, mac.Sum(nil)) {
-		return "", false
+		return Identity{}, false
 	}
 	raw, err := base64.RawURLEncoding.DecodeString(parts[0])
-	fields := strings.Split(string(raw), "\n")
-	if err != nil || len(fields) != 2 {
-		return "", false
+	if err != nil {
+		return Identity{}, false
 	}
-	expiry, err := strconv.ParseInt(fields[1], 10, 64)
-	return fields[0], err == nil && time.Now().Unix() < expiry
+	var session sessionPayload
+	if err = json.Unmarshal(raw, &session); err != nil || time.Now().Unix() >= session.ExpiresAt {
+		return Identity{}, false
+	}
+	return Identity{
+		Admin:                true,
+		Name:                 session.Name,
+		DisplayName:          session.DisplayName,
+		Email:                session.Email,
+		Picture:              session.Picture,
+		AuthenticationMethod: session.AuthenticationMethod,
+	}, true
 }
 
 func decode(r *http.Request, value any) error {

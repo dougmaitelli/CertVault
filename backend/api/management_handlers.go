@@ -13,7 +13,17 @@ func (a *API) session(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]any{"name": id.Name, "admin": id.Admin})
+	name := id.DisplayName
+	if name == "" {
+		name = id.Name
+	}
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"name":                  name,
+		"email":                 id.Email,
+		"picture":               id.Picture,
+		"authentication_method": id.AuthenticationMethod,
+		"admin":                 id.Admin,
+	})
 }
 
 func (a *API) listJobs(w http.ResponseWriter, r *http.Request) {

@@ -236,6 +236,49 @@ form button,
 .shell footer {
   margin-top: auto;
 }
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 10px;
+}
+.user-profile img,
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+}
+.user-profile img {
+  object-fit: cover;
+}
+.user-avatar {
+  display: grid;
+  place-items: center;
+  background: #153229;
+  color: #59dfbe;
+  font-weight: 800;
+}
+.user-profile div {
+  min-width: 0;
+}
+.user-profile strong,
+.user-profile small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-profile strong {
+  color: #dce4ea;
+  font-size: 0.82rem;
+}
+.user-profile small {
+  margin-top: 2px;
+  color: #71808a;
+  font-size: 0.7rem;
+}
 .shell main {
   padding: 42px 5vw;
 }
