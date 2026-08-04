@@ -365,6 +365,8 @@ form button,
   gap: 12px;
 }
 .grid article {
+  display: flex;
+  flex-direction: column;
   background: #111920;
   border: 1px solid #222e36;
   border-radius: 12px;
@@ -453,6 +455,9 @@ form button,
   display: flex;
   gap: 9px;
   flex-wrap: wrap;
+}
+.grid article > .actions {
+  margin-top: auto;
 }
 .actions button {
   margin-left: auto;
