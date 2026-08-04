@@ -13,8 +13,8 @@ const artifacts = [
 
 const schedules = [
   { value: "17 3 * * *", label: "Daily at 03:17" },
-  { value: "17 * * * *", label: "Every hour" },
-  { value: "17 3 * * 0", label: "Weekly on Sunday" },
+  { value: "17 * * * *", label: "Hourly at :17" },
+  { value: "17 3 * * 0", label: "Sunday at 03:17" },
 ] as const;
 
 type APIUsageHelperProps = {
