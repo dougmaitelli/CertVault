@@ -1,21 +1,18 @@
-import type { ReactNode } from "react";
-import { pageRoutes, type Page } from "../routing/routes";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { navigationRoutes } from "../routing/routes";
 
 type ConsoleLayoutProps = {
-  children: ReactNode;
   error: string;
   health: "checking" | "operational" | "warning" | "failed";
-  page: Page;
-  onNavigate: (page: Page) => void;
+  onLogout: () => void;
 };
 
-export function ConsoleLayout({
-  children,
-  error,
-  health,
-  page,
-  onNavigate,
-}: ConsoleLayoutProps) {
+export function ConsoleLayout({ error, health, onLogout }: ConsoleLayoutProps) {
+  const currentLocation = useLocation();
+  const pageTitle =
+    navigationRoutes.find((route) => route.path === currentLocation.pathname)
+      ?.label ?? "CertVault";
+
   return (
     <div className="shell">
       <aside>
@@ -24,25 +21,23 @@ export function ConsoleLayout({
           <b>CertVault</b>
         </header>
         <nav>
-          {(Object.keys(pageRoutes) as Page[]).map((item) => (
-            <a
-              className={page === item ? "active" : ""}
-              href={pageRoutes[item]}
-              onClick={(event) => {
-                event.preventDefault();
-                onNavigate(item);
-              }}
-              key={item}
+          {navigationRoutes.map((route) => (
+            <NavLink
+              className={({ isActive }) => (isActive ? "active" : "")}
+              to={route.path}
+              key={route.path}
             >
-              {item}
-            </a>
+              {route.label}
+            </NavLink>
           ))}
         </nav>
         <footer>
           <button
             onClick={() => {
-              void fetch("/auth/logout", { method: "POST" }).then(() =>
-                location.reload(),
+              void fetch("/auth/logout", { method: "POST" }).then(
+                (response) => {
+                  if (response.ok) onLogout();
+                },
               );
             }}
           >
@@ -54,14 +49,14 @@ export function ConsoleLayout({
         <div className="top">
           <div>
             <small>CertVault</small>
-            <h1>{page}</h1>
+            <h1>{pageTitle}</h1>
           </div>
           <div className={`health ${health}`} role="status" aria-live="polite">
             <i /> {healthLabel(health)}
           </div>
         </div>
         {error && <div className="error">{error}</div>}
-        {children}
+        <Outlet />
       </main>
     </div>
   );
