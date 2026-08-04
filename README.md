@@ -167,6 +167,8 @@ The bootstrap administrator credential follows the same pattern: set either `CER
 
 Certificate key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `rsa4096`. `renew_before` uses Go duration syntax; `720h` is 30 days.
 
+Set `acme.automatic_issuance` to control initial issuance and scheduled renewal globally. A certificate can set its own `automatic_issuance` value to override the global setting; omitted values inherit it. Manual renewal requests remain available regardless of these settings.
+
 ## OIDC
 
 Uncomment `auth.oidc` in the Quick Start and add `CERTVAULT_OIDC_CLIENT_SECRET` to `.env`. Register `{server.public_url}/auth/callback` with the provider. The client secret may instead be supplied through `CERTVAULT_OIDC_CLIENT_SECRET_FILE`, but both forms cannot be set together. If `allowed_groups` is empty, any successfully authenticated identity is an administrator; setting an allowlist is strongly recommended. The bootstrap token remains available as break-glass access.

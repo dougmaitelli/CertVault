@@ -9,9 +9,40 @@ acme:
   email: dev@localhost
   directory_url: https://acme-staging-v02.api.letsencrypt.org/directory
   accept_terms: true
+  automatic_issuance: false
 
 auth: {}
-dns_credentials: {}
-zones: []
-certificates: []
+dns_credentials:
+  cloudflare_dev:
+    provider: cloudflare
+    environment:
+      CLOUDFLARE_DNS_API_TOKEN: ""
+  route53_dev:
+    provider: route53
+    environment:
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
+
+zones:
+  - name: homelab.test
+    credential: cloudflare_dev
+  - name: services.test
+    credential: route53_dev
+
+certificates:
+  - name: homelab-wildcard
+    domains:
+      - homelab.test
+      - "*.homelab.test"
+    key_type: ec256
+    renew_before: 720h
+    enabled: true
+  - name: internal-services
+    domains:
+      - services.test
+      - dashboard.services.test
+      - monitoring.services.test
+    key_type: rsa2048
+    renew_before: 480h
+    enabled: true
 hooks: []
