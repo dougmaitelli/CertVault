@@ -48,21 +48,41 @@ func New(
 
 func (a *API) frontend(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(filepath.Clean(r.URL.Path), "/")
-	if path == "." || path == "" {
-		path = "index.html"
-	}
 	root := os.Getenv(config.EnvUIDir)
 	if root == "" {
 		root = "/app/ui"
 	}
+	if path == "." || path == "" {
+		serveFrontendIndex(w, r, root)
+		return
+	}
 	full := filepath.Join(root, path)
-	if _, e := os.Stat(full); e != nil {
-		full = filepath.Join(root, "index.html")
+	info, err := os.Stat(full)
+	if err != nil || info.IsDir() {
+		serveFrontendIndex(w, r, root)
+		return
 	}
 	if t := mime.TypeByExtension(filepath.Ext(full)); t != "" {
 		w.Header().Set("Content-Type", t)
 	}
 	http.ServeFile(w, r, full)
+}
+
+func serveFrontendIndex(w http.ResponseWriter, r *http.Request, root string) {
+	indexPath := filepath.Join(root, "index.html")
+	index, err := os.Open(indexPath)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer func() { _ = index.Close() }()
+	info, err := index.Stat()
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	http.ServeContent(w, r, "index.html", info.ModTime(), index)
 }
 
 func decode(r *http.Request, v any) error {
