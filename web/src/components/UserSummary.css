@@ -20,8 +20,8 @@
 .user-summary-avatar {
   display: grid;
   place-items: center;
-  background: #153229;
-  color: #59dfbe;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
   font-weight: 800;
 }
 
@@ -39,13 +39,13 @@
 }
 
 .user-summary strong {
-  color: #dce4ea;
+  color: var(--color-text);
   font-size: 0.82rem;
 }
 
 .user-summary small {
   margin-top: 2px;
-  color: #71808a;
+  color: var(--color-text-muted);
   font-size: 0.7rem;
 }
 
@@ -55,11 +55,11 @@
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: #ff9090;
+  color: var(--color-danger);
 }
 
 .user-summary button:hover {
-  color: #ffb0b0;
+  color: var(--color-danger-hover);
 }
 
 .user-summary button svg {

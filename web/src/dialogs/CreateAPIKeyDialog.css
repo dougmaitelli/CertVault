@@ -8,6 +8,6 @@
 
 .certificate-access legend {
   margin-bottom: 10px;
-  color: #abb7bf;
+  color: var(--color-text-soft);
   font-size: 0.85rem;
 }
