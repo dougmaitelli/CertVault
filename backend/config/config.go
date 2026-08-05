@@ -28,6 +28,16 @@ type Config struct {
 
 const OIDCCallbackPath = "/auth/callback"
 
+const DefaultPath = "/config/config.yaml"
+
+// Path returns the configured YAML path or the container default.
+func Path() string {
+	if path := os.Getenv(EnvConfigFile); path != "" {
+		return path
+	}
+	return DefaultPath
+}
+
 func Load(path string) (*Config, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {

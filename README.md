@@ -160,7 +160,17 @@ For the Cloudflare example, create an API token restricted to the required zones
 
 ## Client access
 
-Create an API key in the web console. The raw value is shown once. Fetch artifacts with:
+Create an API key in the web console, or create one without the UI from inside the container:
+
+```sh
+docker compose exec certvault certvault api-key create \
+  --name traefik \
+  --scope certificates:read \
+  --scope private_keys:read \
+  --certificate homelab-wildcard
+```
+
+The raw value is shown once. See [Client access](https://dougmaitelli.github.io/CertVault/client-access/) for the complete headless management workflow. Fetch artifacts with:
 
 ```sh
 curl --fail --silent --show-error \

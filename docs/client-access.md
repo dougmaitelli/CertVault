@@ -12,6 +12,32 @@ API keys let clients fetch certificate material without administrator access.
 
 Every key also has a certificate allowlist. Selecting “Any certificate” includes certificates added later.
 
+## Headless API-key management
+
+The CertVault binary can manage API keys directly in the configured database. Run it inside the application container; container access already grants access to CertVault's database and secrets, so these commands do not use HTTP authentication.
+
+Create a key and capture the raw value shown once:
+
+```shell
+API_KEY="$(docker compose exec -T certvault certvault api-key create \
+  --name traefik \
+  --scope certificates:read \
+  --scope private_keys:read \
+  --certificate homelab)"
+```
+
+Repeat `--scope` and `--certificate` to grant multiple values. Use `--certificate '*'` to include every certificate, including certificates added later. An optional `--expires-at` accepts an RFC 3339 timestamp.
+
+The companion commands list, revoke, and delete keys:
+
+```shell
+docker compose exec certvault certvault api-key list
+docker compose exec certvault certvault api-key revoke --id 1
+docker compose exec certvault certvault api-key delete --id 1
+```
+
+`list` emits JSON for automation. A key must be revoked before it can be deleted. Every mutation is recorded in the audit log with the `local-cli` actor.
+
 ## Download artifacts
 
 ```shell
