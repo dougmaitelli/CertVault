@@ -7,7 +7,12 @@ import { Modal } from "../components/Modal";
 import { MultiSelect } from "../components/MultiSelect";
 
 const allCertificatesAccess = "*";
-const certificateReadScopes = ["certificates:read", "private_keys:read"];
+const defaultScopes = ["certificates:read", "private_keys:read"];
+const scopeOptions = [
+  { label: "Read certificates", value: "certificates:read" },
+  { label: "Read private keys", value: "private_keys:read" },
+  { label: "Trigger renewals", value: "renewals:trigger" },
+];
 
 type CreateAPIKeyDialogProps = {
   certificates: Certificate[];
@@ -21,6 +26,7 @@ export function CreateAPIKeyDialog({
   onCreated,
 }: CreateAPIKeyDialogProps) {
   const [name, setName] = useState("");
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(defaultScopes);
   const [anyCertificate, setAnyCertificate] = useState(false);
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>(
     [],
@@ -32,7 +38,7 @@ export function CreateAPIKeyDialog({
       method: "POST",
       body: JSON.stringify({
         name,
-        scopes: certificateReadScopes,
+        scopes: selectedScopes,
         certificates: anyCertificate
           ? [allCertificatesAccess]
           : selectedCertificates,
@@ -54,6 +60,15 @@ export function CreateAPIKeyDialog({
             placeholder="nas-01"
           />
         </label>
+        <fieldset className="key-permissions">
+          <legend>Permissions</legend>
+          <MultiSelect
+            label="Scopes"
+            options={scopeOptions}
+            selected={selectedScopes}
+            onChange={setSelectedScopes}
+          />
+        </fieldset>
         <fieldset className="certificate-access">
           <legend>Certificate access</legend>
           <Checkbox

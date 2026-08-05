@@ -23,12 +23,28 @@ const schedules = [
 
 type APIUsageHelperProps = {
   certificates: Certificate[];
+  scopes: string[];
   token: string;
 };
 
-export function APIUsageHelper({ certificates, token }: APIUsageHelperProps) {
+export function APIUsageHelper({
+  certificates,
+  scopes,
+  token,
+}: APIUsageHelperProps) {
+  const availableFileOptions = fileOptions.filter((option) =>
+    option.value
+      .split(",")
+      .every((file) =>
+        file === "private-key.pem"
+          ? scopes.includes("private_keys:read")
+          : scopes.includes("certificates:read"),
+      ),
+  );
   const [certificate, setCertificate] = useState(certificates[0]?.name ?? "");
-  const [files, setFiles] = useState<string>(fileOptions[0].value);
+  const [files, setFiles] = useState<string>(
+    availableFileOptions[0]?.value ?? "",
+  );
   const [destination, setDestination] = useState(() =>
     defaultDestination(certificates[0]?.name ?? ""),
   );
@@ -110,7 +126,7 @@ export function APIUsageHelper({ certificates, token }: APIUsageHelperProps) {
               value={files}
               onChange={(event) => setFiles(event.target.value)}
             >
-              {fileOptions.map((item) => (
+              {availableFileOptions.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>

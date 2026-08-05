@@ -95,17 +95,22 @@ export function APIKeysPage({
           </button>
         </div>
       )}
-      {createdKey && certificates.length > 0 && (
-        <APIUsageHelper
-          key={createdKey.api_key.id}
-          certificates={certificates.filter(
-            (certificate) =>
-              createdKey.api_key.certificates.includes("*") ||
-              createdKey.api_key.certificates.includes(certificate.name),
-          )}
-          token={createdKey.token}
-        />
-      )}
+      {createdKey &&
+        certificates.length > 0 &&
+        createdKey.api_key.scopes.some((scope) =>
+          ["certificates:read", "private_keys:read"].includes(scope),
+        ) && (
+          <APIUsageHelper
+            key={createdKey.api_key.id}
+            certificates={certificates.filter(
+              (certificate) =>
+                createdKey.api_key.certificates.includes("*") ||
+                createdKey.api_key.certificates.includes(certificate.name),
+            )}
+            scopes={createdKey.api_key.scopes}
+            token={createdKey.token}
+          />
+        )}
       <div className="table api-key-table">
         <table>
           <thead>
@@ -113,6 +118,7 @@ export function APIKeysPage({
               <th>Name</th>
               <th>Prefix</th>
               <th>Access</th>
+              <th>Permissions</th>
               <th>Created</th>
               <th>Last used</th>
               <th />
@@ -126,6 +132,7 @@ export function APIKeysPage({
                   <code>{apiKey.prefix}</code>
                 </td>
                 <td>{apiKey.certificates.join(", ")}</td>
+                <td>{apiKey.scopes.join(", ")}</td>
                 <td>{formatDate(apiKey.created_at)}</td>
                 <td>{formatDate(apiKey.last_used_at)}</td>
                 <td>

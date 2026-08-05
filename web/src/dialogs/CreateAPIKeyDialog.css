@@ -1,3 +1,4 @@
+.key-permissions,
 .certificate-access {
   display: grid;
   gap: 14px;
@@ -6,6 +7,7 @@
   border: 0;
 }
 
+.key-permissions legend,
 .certificate-access legend {
   margin-bottom: 10px;
   color: var(--color-text-soft);
