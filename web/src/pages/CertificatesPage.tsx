@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./CertificatesPage.css";
 import { api } from "../api/client";
-import type { Certificate, Job } from "../api/types";
+import type { Certificate } from "../api/types";
 import { CertificateDetails } from "../components/CertificateDetails";
 import { CertificateDownloadLink } from "../components/CertificateDownloadLink";
 import { Stat } from "../components/Stat";
@@ -10,13 +10,11 @@ import { formatDate, formatRemainingValidity } from "../utils/date";
 
 type CertificatesPageProps = {
   certificates: Certificate[];
-  jobs: Job[];
   reload: () => Promise<void>;
 };
 
 export function CertificatesPage({
   certificates,
-  jobs,
   reload,
 }: CertificatesPageProps) {
   const [selected, setSelected] = useState<Certificate>();
@@ -25,11 +23,9 @@ export function CertificatesPage({
     Partial<Record<string, number>>
   >({});
 
-  const renew = async (name: string) => {
-    const latestJobID = jobs.reduce(
-      (latest, job) => Math.max(latest, job.id),
-      0,
-    );
+  const renew = async (certificate: Certificate) => {
+    const name = certificate.name;
+    const latestJobID = certificate.latest_job?.id ?? 0;
     setRequestedRenewals((current) => ({
       ...current,
       [name]: latestJobID,
@@ -47,22 +43,16 @@ export function CertificatesPage({
     }
   };
 
-  const taskRunning = (name: string) => {
-    const previousJobID = requestedRenewals[name];
-    const requestedRenewalPending =
+  const taskRunning = (certificate: Certificate) => {
+    const previousJobID = requestedRenewals[certificate.name];
+    const latestJob = certificate.latest_job;
+    const requestedRenewalCompleted =
       previousJobID !== undefined &&
-      !jobs.some(
-        (job) =>
-          job.certificate_name === name &&
-          job.finished_at !== undefined &&
-          job.id > previousJobID,
-      );
-    return (
-      requestedRenewalPending ||
-      jobs.some(
-        (job) => job.certificate_name === name && job.status === "running",
-      )
-    );
+      latestJob?.finished_at !== undefined &&
+      latestJob.id > previousJobID;
+    const requestedRenewalPending =
+      previousJobID !== undefined && !requestedRenewalCompleted;
+    return requestedRenewalPending || latestJob?.status === "running";
   };
 
   return (
@@ -115,7 +105,7 @@ export function CertificatesPage({
             <div className="row">
               <h3>{certificate.name}</h3>
               <StatusBadgeGroup>
-                {taskRunning(certificate.name) && (
+                {taskRunning(certificate) && (
                   <StatusBadge status="running" label="Running" active />
                 )}
                 <StatusBadge status={certificate.status} />
@@ -159,13 +149,13 @@ export function CertificatesPage({
               </CertificateDownloadLink>
               <button
                 className="action-button success"
-                disabled={taskRunning(certificate.name)}
+                disabled={taskRunning(certificate)}
                 onClick={(event) => {
                   event.stopPropagation();
-                  void renew(certificate.name);
+                  void renew(certificate);
                 }}
               >
-                {taskRunning(certificate.name) ? "Running" : "Renew"}
+                {taskRunning(certificate) ? "Running" : "Renew"}
               </button>
             </div>
           </article>

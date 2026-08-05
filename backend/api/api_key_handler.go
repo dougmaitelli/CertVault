@@ -6,62 +6,7 @@ import (
 	"strconv"
 
 	"github.com/certvault/certvault/database/repository"
-	"github.com/certvault/certvault/service"
 )
-
-func (a *API) session(w http.ResponseWriter, r *http.Request) {
-	id, ok := requestIdentity(w, r)
-	if !ok {
-		return
-	}
-	name := id.DisplayName
-	if name == "" {
-		name = id.Name
-	}
-	jsonResponse(w, http.StatusOK, map[string]any{
-		"name":                  name,
-		"email":                 id.Email,
-		"picture":               id.Picture,
-		"authentication_method": id.AuthenticationMethod,
-		"admin":                 id.Admin,
-	})
-}
-
-func (a *API) listJobs(w http.ResponseWriter, r *http.Request) {
-	jobs, err := a.repos.Jobs.List(r.Context(), 100)
-	respond(w, jobs, err)
-}
-
-func (a *API) listACMEAccounts(w http.ResponseWriter, _ *http.Request) {
-	accounts, err := a.manager.ListAccounts()
-	respond(w, accounts, err)
-}
-
-func (a *API) deleteACMEAccount(w http.ResponseWriter, r *http.Request) {
-	account, err := a.manager.DeleteAccount(r.PathValue("id"))
-	if err != nil {
-		switch {
-		case errors.Is(err, service.ErrInvalidACMEAccountID):
-			problem(w, http.StatusBadRequest, "invalid_acme_account", err.Error())
-		case errors.Is(err, service.ErrCurrentACMEAccount):
-			problem(w, http.StatusConflict, "current_acme_account", err.Error())
-		case errors.Is(err, service.ErrACMEAccountNotFound):
-			problem(w, http.StatusNotFound, "acme_account_not_found", err.Error())
-		default:
-			problem(w, http.StatusInternalServerError, "acme_account_delete_failed", err.Error())
-		}
-		return
-	}
-	a.repos.Audits.Record(
-		r.Context(),
-		"admin",
-		"acme_account.delete",
-		account.DirectoryURL,
-		"",
-		a.remoteIP(r),
-	)
-	w.WriteHeader(http.StatusNoContent)
-}
 
 func (a *API) listAPIKeys(w http.ResponseWriter, r *http.Request) {
 	keys, err := a.repos.APIKeys.List(r.Context())
@@ -79,24 +24,13 @@ func (a *API) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key, token, err := a.repos.APIKeys.Create(
-		r.Context(),
-		input.Name,
-		input.Scopes,
-		input.Certificates,
-		input.ExpiresAt,
+		r.Context(), input.Name, input.Scopes, input.Certificates, input.ExpiresAt,
 	)
 	if err != nil {
 		problem(w, http.StatusInternalServerError, "database_error", err.Error())
 		return
 	}
-	a.repos.Audits.Record(
-		r.Context(),
-		"admin",
-		"api_key.create",
-		key.Name,
-		"",
-		a.remoteIP(r),
-	)
+	a.repos.Audits.Record(r.Context(), "admin", "api_key.create", key.Name, "", a.remoteIP(r))
 	jsonResponse(w, http.StatusCreated, map[string]any{"api_key": key, "token": token})
 }
 

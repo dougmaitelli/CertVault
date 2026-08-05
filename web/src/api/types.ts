@@ -16,6 +16,7 @@ export type Certificate = {
   status: string;
   last_error?: string;
   current_version?: CertificateVersion;
+  latest_job?: Job;
 };
 
 export type APIKey = {

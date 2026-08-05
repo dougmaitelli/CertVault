@@ -2,13 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import { api } from "./api/client";
-import type {
-  ACMEAccount,
-  APIKey,
-  Certificate,
-  Job,
-  Session,
-} from "./api/types";
+import type { ACMEAccount, APIKey, Certificate, Session } from "./api/types";
 import { ConsoleLayout } from "./components/ConsoleLayout";
 import { APIKeysPage } from "./pages/APIKeysPage";
 import { ACMEAccountsPage } from "./pages/ACMEAccountsPage";
@@ -52,7 +46,6 @@ type ConsoleProps = {
 
 function Console({ session, onLogout }: ConsoleProps) {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [jobs, setJobs] = useState<Job[]>([]);
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
   const [acmeAccounts, setACMEAccounts] = useState<ACMEAccount[]>([]);
   const [error, setError] = useState("");
@@ -63,24 +56,15 @@ function Console({ session, onLogout }: ConsoleProps) {
   const load = (): Promise<void> =>
     Promise.all([
       api<Certificate[]>("certificates"),
-      api<Job[]>("jobs"),
       api<APIKey[]>("api-keys"),
       api<ACMEAccount[]>("acme-accounts"),
     ])
-      .then(
-        ([
-          loadedCertificates,
-          loadedJobs,
-          loadedAPIKeys,
-          loadedACMEAccounts,
-        ]) => {
-          setCertificates(loadedCertificates);
-          setJobs(loadedJobs);
-          setAPIKeys(loadedAPIKeys);
-          setACMEAccounts(loadedACMEAccounts);
-          setError("");
-        },
-      )
+      .then(([loadedCertificates, loadedAPIKeys, loadedACMEAccounts]) => {
+        setCertificates(loadedCertificates);
+        setAPIKeys(loadedAPIKeys);
+        setACMEAccounts(loadedACMEAccounts);
+        setError("");
+      })
       .catch((caught) => setError(String(caught)));
 
   useEffect(() => {
@@ -107,11 +91,8 @@ function Console({ session, onLogout }: ConsoleProps) {
 
   useEffect(() => {
     const refreshTasks = () => {
-      void Promise.all([api<Certificate[]>("certificates"), api<Job[]>("jobs")])
-        .then(([loadedCertificates, loadedJobs]) => {
-          setCertificates(loadedCertificates);
-          setJobs(loadedJobs);
-        })
+      void api<Certificate[]>("certificates")
+        .then(setCertificates)
         .catch(() => {});
     };
 
@@ -147,11 +128,7 @@ function Console({ session, onLogout }: ConsoleProps) {
         <Route
           path={appRoutes.certificates.path}
           element={
-            <CertificatesPage
-              certificates={certificates}
-              jobs={jobs}
-              reload={load}
-            />
+            <CertificatesPage certificates={certificates} reload={load} />
           }
         />
         <Route path={appRoutes.history.path} element={<HistoryPage />} />

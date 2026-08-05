@@ -14,6 +14,7 @@ type Certificate struct {
 	RenewBeforeSeconds int64          `json:"renew_before_seconds"`
 	CurrentVersion     *Version       `json:"current_version,omitempty"`
 	LastError          string         `json:"last_error,omitempty"`
+	LatestJob          *Job           `json:"latest_job,omitempty"`
 }
 
 type Version struct {

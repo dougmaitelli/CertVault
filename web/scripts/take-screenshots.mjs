@@ -198,7 +198,6 @@ async function mockAPI(page) {
     }
     if (endpoint === "certificates")
       return route.fulfill({ json: certificates });
-    if (endpoint === "jobs") return route.fulfill({ json: jobs });
     if (endpoint === "jobs/history")
       return route.fulfill({
         json: {
