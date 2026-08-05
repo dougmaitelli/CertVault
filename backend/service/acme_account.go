@@ -18,7 +18,10 @@ import (
 	"github.com/certvault/certvault/vault"
 )
 
-const encryptedAccountFileSuffix = ".json.enc"
+const (
+	encryptedAccountFileSuffix = ".json.enc"
+	legacyAccountID            = "account"
+)
 
 var (
 	ErrACMEAccountNotFound  = errors.New("ACME account not found")
@@ -125,8 +128,7 @@ func (m *Manager) ListAccounts() ([]ACMEAccount, error) {
 }
 
 func (m *Manager) DeleteAccount(id string) (ACMEAccount, error) {
-	digest, err := hex.DecodeString(id)
-	if err != nil || len(digest) != sha256.Size {
+	if !validAccountID(id) {
 		return ACMEAccount{}, ErrInvalidACMEAccountID
 	}
 	if id == strings.TrimSuffix(filepath.Base(m.accountPath()), encryptedAccountFileSuffix) {
@@ -149,6 +151,14 @@ func (m *Manager) DeleteAccount(id string) (ACMEAccount, error) {
 		return ACMEAccount{}, err
 	}
 	return account, nil
+}
+
+func validAccountID(id string) bool {
+	if id == legacyAccountID {
+		return true
+	}
+	digest, err := hex.DecodeString(id)
+	return err == nil && len(digest) == sha256.Size
 }
 
 func (m *Manager) readAccount(path string) (ACMEAccount, error) {

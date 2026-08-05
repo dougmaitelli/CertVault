@@ -3,6 +3,7 @@ package service
 import (
 	"crypto/sha256"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -131,5 +132,38 @@ func TestDeleteAccountRejectsInvalidAndUnknownIDs(t *testing.T) {
 	unknownID := strings.Repeat("0", sha256.Size*2)
 	if _, err := manager.DeleteAccount(unknownID); !errors.Is(err, ErrACMEAccountNotFound) {
 		t.Fatalf("unknown ACME account error = %v", err)
+	}
+}
+
+func TestDeleteLegacyAccount(t *testing.T) {
+	manager := &Manager{cfg: &config.Config{
+		DataDir:   t.TempDir(),
+		MasterKey: make([]byte, 32),
+		ACME: config.ACME{
+			Email:        "admin@example.com",
+			DirectoryURL: "https://acme.example.com/directory",
+		},
+	}}
+	user, err := manager.loadUser()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = manager.saveUser(user); err != nil {
+		t.Fatal(err)
+	}
+	legacyPath := filepath.Join(manager.cfg.DataDir, "accounts", legacyAccountID+encryptedAccountFileSuffix)
+	if err = os.Rename(manager.accountPath(), legacyPath); err != nil {
+		t.Fatal(err)
+	}
+
+	deleted, err := manager.DeleteAccount(legacyAccountID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deleted.Email != manager.cfg.ACME.Email {
+		t.Fatalf("deleted legacy account = %#v", deleted)
+	}
+	if _, err = os.Stat(legacyPath); !os.IsNotExist(err) {
+		t.Fatalf("legacy account still exists: %v", err)
 	}
 }
