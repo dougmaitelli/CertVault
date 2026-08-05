@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/certvault/certvault/database"
 )
@@ -57,5 +58,18 @@ func TestAuditSearchFiltersAndPaginates(t *testing.T) {
 	page, err = audits.Search(ctx, AuditFilter{Query: "%", Page: 1, PerPage: 25})
 	if err != nil || page.Total != 0 {
 		t.Fatalf("wildcard was not escaped: %#v %v", page, err)
+	}
+
+	old := database.AuditEvent{At: time.Now().Add(-48 * time.Hour), Actor: "system", Action: "old", Resource: "test"}
+	if err = db.ORM().Create(&old).Error; err != nil {
+		t.Fatal(err)
+	}
+	deleted, err := audits.DeleteBefore(ctx, time.Now().Add(-24*time.Hour))
+	if err != nil || deleted != 1 {
+		t.Fatalf("unexpected audit cleanup: deleted=%d err=%v", deleted, err)
+	}
+	page, err = audits.Search(ctx, AuditFilter{Page: 1, PerPage: 25})
+	if err != nil || page.Total != 3 {
+		t.Fatalf("cleanup removed retained events: %#v %v", page, err)
 	}
 }

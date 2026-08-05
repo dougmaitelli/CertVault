@@ -18,6 +18,7 @@ type Config struct {
 	Server         Server                   `yaml:"server"`
 	ACME           ACME                     `yaml:"acme"`
 	Auth           Auth                     `yaml:"auth"`
+	Audit          Audit                    `yaml:"audit"`
 	DNSCredentials map[string]DNSCredential `yaml:"dns_credentials"`
 	Zones          []Zone                   `yaml:"zones"`
 	Certificates   []Certificate            `yaml:"certificates"`
@@ -154,6 +155,9 @@ func splitCommaSeparated(value string) []string {
 }
 
 func (c *Config) Validate() error {
+	if c.Audit.Retention.Duration < 0 {
+		return errors.New("audit.retention cannot be negative")
+	}
 	if c.ACME.Email == "" {
 		return errors.New("acme.email is required")
 	}

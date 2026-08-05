@@ -22,6 +22,10 @@ type Auth struct {
 	OIDC               *OIDC  `yaml:"oidc"`
 }
 
+type Audit struct {
+	Retention Duration `yaml:"retention"`
+}
+
 type OIDC struct {
 	IssuerURL        string   `yaml:"issuer_url"`
 	ClientID         string   `yaml:"client_id"`

@@ -64,6 +64,10 @@ server:
   # Only add the IP or network of a reverse proxy you operate.
   # trusted_proxies: [172.18.0.0/16]
 
+# Optional. Audit events are retained indefinitely when omitted.
+audit:
+  retention: 90d
+
 acme:
   email: admin@example.com
   directory_url: https://acme-staging-v02.api.letsencrypt.org/directory
@@ -203,7 +207,7 @@ Set either `CERTVAULT_MASTER_KEY` directly or `CERTVAULT_MASTER_KEY_FILE` to the
 
 The bootstrap administrator credential follows the same pattern: set either `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` directly or `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` to a secret file path, but not both. The file form remains recommended for Docker deployments.
 
-Certificate key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `rsa4096`. `renew_before` uses Go duration syntax; `720h` is 30 days.
+Certificate key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `rsa4096`. `renew_before` and `audit.retention` accept Go duration syntax plus whole days such as `30d` or `90d`. When audit retention is enabled, expired events are removed at startup and daily afterward.
 
 Set `acme.automatic_issuance` to control initial issuance and scheduled renewal globally. A certificate can set its own `automatic_issuance` value to override the global setting; omitted values inherit it. Manual renewal requests remain available regardless of these settings.
 

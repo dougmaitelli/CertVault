@@ -38,6 +38,13 @@ func (r *AuditRepository) Record(ctx context.Context, actor, action, resource, d
 	}).Error
 }
 
+func (r *AuditRepository) DeleteBefore(ctx context.Context, cutoff time.Time) (int64, error) {
+	result := r.database.ORM().WithContext(ctx).
+		Where("at < ?", cutoff).
+		Delete(&database.AuditEvent{})
+	return result.RowsAffected, result.Error
+}
+
 func (r *AuditRepository) List(ctx context.Context, limit int) ([]Audit, error) {
 	page, err := r.Search(ctx, AuditFilter{Page: 1, PerPage: limit})
 	return page.Items, err

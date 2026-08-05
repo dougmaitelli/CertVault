@@ -39,6 +39,10 @@ auth:
   #   allowed_groups:
   #     - cert-admins
 
+# Omit retention or set it to 0d to keep audit events indefinitely.
+audit:
+  retention: 90d
+
 # Credential names are user-defined. Provider names and environment variables
 # are documented at https://go-acme.github.io/lego/dns/.
 dns_credentials:

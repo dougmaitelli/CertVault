@@ -65,6 +65,9 @@ func main() {
 	} else {
 		log.Info("automatic certificate issuance disabled")
 	}
+	if cfg.Audit.Retention.Duration > 0 {
+		go service.RunAuditRetention(ctx, repositories.Audits, cfg.Audit.Retention.Duration, log)
+	}
 
 	handler, err := api.New(cfg, db, repositories, manager)
 	if err != nil {
