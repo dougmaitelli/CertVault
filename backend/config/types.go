@@ -55,12 +55,13 @@ type Certificate struct {
 }
 
 type Hook struct {
-	Name       string   `yaml:"name"`
-	Type       string   `yaml:"type"`
-	Events     []string `yaml:"events"`
-	URL        string   `yaml:"url"`
-	SecretFile string   `yaml:"secret_file"`
-	Command    string   `yaml:"command"`
-	Args       []string `yaml:"args"`
-	Timeout    Duration `yaml:"timeout"`
+	Name         string   `yaml:"name"`
+	Type         string   `yaml:"type"`
+	Events       []string `yaml:"events"`
+	Certificates []string `yaml:"certificates"`
+	URL          string   `yaml:"url"`
+	SecretFile   string   `yaml:"secret_file"`
+	Command      string   `yaml:"command"`
+	Args         []string `yaml:"args"`
+	Timeout      Duration `yaml:"timeout"`
 }

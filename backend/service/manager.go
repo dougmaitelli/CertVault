@@ -299,11 +299,16 @@ func (m *Manager) fireHooks(ctx context.Context, event, name string, v *reposito
 	}
 	body, _ := json.Marshal(payload)
 	for _, h := range m.cfg.Hooks {
-		if !contains(h.Events, event) {
+		if !hookMatches(h, event, name) {
 			continue
 		}
 		go m.runHook(ctx, h, body)
 	}
+}
+
+func hookMatches(h config.Hook, event, certificate string) bool {
+	return contains(h.Events, event) &&
+		(len(h.Certificates) == 0 || contains(h.Certificates, certificate))
 }
 
 func (m *Manager) runHook(ctx context.Context, h config.Hook, body []byte) {

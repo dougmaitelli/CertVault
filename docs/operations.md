@@ -27,6 +27,8 @@ Supported events are:
 
 Hook delivery runs asynchronously and does not block certificate issuance. The default timeout is 15 seconds.
 
+The optional `certificates` list limits a hook to named certificates. Omit it or leave it empty to receive matching events for every configured certificate. Unknown names are rejected during configuration validation.
+
 ### Webhook example
 
 ```yaml
@@ -37,6 +39,8 @@ hooks:
       - certificate.issued
       - certificate.renewed
       - certificate.failed
+    certificates:
+      - homelab-wildcard
     url: https://automation.example.com/hooks/certvault
     secret_file: /run/secrets/certvault_webhook_secret
     timeout: 15s
@@ -80,6 +84,8 @@ hooks:
       - certificate.issued
       - certificate.renewed
       - certificate.failed
+    certificates:
+      - homelab-wildcard
     command: /hooks/record-event
     args:
       - /data/hook-events.jsonl

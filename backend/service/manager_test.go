@@ -20,3 +20,20 @@ func TestIssueRejectsUnknownCertificateBeforeCreatingLock(t *testing.T) {
 		t.Fatal("unknown certificate created an issuance lock")
 	}
 }
+
+func TestHookMatchesCertificateAndEvent(t *testing.T) {
+	hook := config.Hook{Events: []string{"certificate.renewed"}}
+	if !hookMatches(hook, "certificate.renewed", "home") {
+		t.Fatal("hook without certificate filter did not match")
+	}
+	hook.Certificates = []string{"home", "proxy"}
+	if !hookMatches(hook, "certificate.renewed", "home") {
+		t.Fatal("hook did not match selected certificate")
+	}
+	if hookMatches(hook, "certificate.renewed", "other") {
+		t.Fatal("hook matched unselected certificate")
+	}
+	if hookMatches(hook, "certificate.failed", "home") {
+		t.Fatal("hook matched unselected event")
+	}
+}

@@ -225,6 +225,13 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+	for _, hook := range c.Hooks {
+		for _, certificate := range hook.Certificates {
+			if !names[certificate] {
+				return fmt.Errorf("hook %q references unknown certificate %q", hook.Name, certificate)
+			}
+		}
+	}
 	return nil
 }
 

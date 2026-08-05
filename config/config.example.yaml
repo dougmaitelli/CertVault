@@ -91,6 +91,9 @@ hooks:
   #     - certificate.issued
   #     - certificate.renewed
   #     - certificate.failed
+  #   # Omit certificates to receive matching events for every certificate.
+  #   certificates:
+  #     - homelab-wildcard
   #   url: https://automation.example.com/hooks/certvault
   #   secret_file: /run/secrets/webhook_secret
   #   timeout: 15s
@@ -99,6 +102,8 @@ hooks:
   #   events:
   #     - certificate.issued
   #     - certificate.renewed
+  #   certificates:
+  #     - homelab-wildcard
   #   command: /hooks/deploy-certificate
   #   args:
   #     - --reload
