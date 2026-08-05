@@ -63,6 +63,17 @@ export type Audit = {
   ip?: string;
 };
 
+export type AuditPage = {
+  items: Audit[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+  actors: string[];
+  actions: string[];
+  resources: string[];
+};
+
 export type Session = {
   name: string;
   email?: string;

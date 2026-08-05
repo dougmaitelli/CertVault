@@ -20,6 +20,43 @@
   font-weight: 700;
 }
 
+summary.multi-select-header {
+  cursor: pointer;
+  list-style: none;
+}
+
+summary.multi-select-header::-webkit-details-marker {
+  display: none;
+}
+
+.multi-select.compact {
+  position: relative;
+  overflow: visible;
+}
+
+.multi-select.compact .multi-select-header {
+  height: 42px;
+  border-bottom: 0;
+  border-radius: 9px;
+}
+
+.multi-select.compact[open] .multi-select-header {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.multi-select.compact .multi-select-options {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  right: -1px;
+  left: -1px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0 0 10px 10px;
+  background: var(--color-surface-inset);
+  box-shadow: 0 12px 24px var(--color-overlay);
+}
+
 .multi-select-count {
   color: var(--color-accent-text);
   font-size: 0.72rem;

@@ -1,0 +1,61 @@
+.audit-log {
+  display: grid;
+  gap: 16px;
+}
+
+.audit-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.4fr) repeat(3, minmax(120px, 0.7fr))
+    auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.audit-filters .action-button {
+  height: 42px;
+}
+
+.audit-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.audit-pagination > span:first-child {
+  margin-right: auto;
+}
+
+.audit-pagination label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.audit-pagination select {
+  padding: 7px;
+}
+
+.audit-empty {
+  padding: 32px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .audit-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .audit-filters {
+    grid-template-columns: 1fr;
+  }
+  .audit-pagination {
+    flex-wrap: wrap;
+  }
+}

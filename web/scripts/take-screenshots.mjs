@@ -203,7 +203,20 @@ async function mockAPI(page) {
     if (endpoint === "acme-accounts" && route.request().method() === "GET") {
       return route.fulfill({ json: accounts });
     }
-    if (endpoint === "audit") return route.fulfill({ json: audits });
+    if (endpoint === "audit") {
+      return route.fulfill({
+        json: {
+          items: audits,
+          total: audits.length,
+          page: 1,
+          per_page: 25,
+          total_pages: 1,
+          actors: [...new Set(audits.map((audit) => audit.actor))].sort(),
+          actions: [...new Set(audits.map((audit) => audit.action))].sort(),
+          resources: [...new Set(audits.map((audit) => audit.resource))].sort(),
+        },
+      });
+    }
     if (endpoint === "health" || endpoint === "ready") {
       return route.fulfill({ json: { status: "ok" } });
     }

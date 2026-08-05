@@ -32,11 +32,6 @@ func (a *API) listJobs(w http.ResponseWriter, r *http.Request) {
 	respond(w, jobs, err)
 }
 
-func (a *API) listAudits(w http.ResponseWriter, r *http.Request) {
-	audits, err := a.repos.Audits.List(r.Context(), 200)
-	respond(w, audits, err)
-}
-
 func (a *API) listACMEAccounts(w http.ResponseWriter, _ *http.Request) {
 	accounts, err := a.manager.ListAccounts()
 	respond(w, accounts, err)

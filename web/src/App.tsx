@@ -5,7 +5,6 @@ import { api } from "./api/client";
 import type {
   ACMEAccount,
   APIKey,
-  Audit,
   Certificate,
   Job,
   Session,
@@ -56,7 +55,6 @@ function Console({ session, onLogout }: ConsoleProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
   const [acmeAccounts, setACMEAccounts] = useState<ACMEAccount[]>([]);
-  const [audits, setAudits] = useState<Audit[]>([]);
   const [error, setError] = useState("");
   const [infrastructureHealthy, setInfrastructureHealthy] = useState<
     boolean | undefined
@@ -68,7 +66,6 @@ function Console({ session, onLogout }: ConsoleProps) {
       api<Job[]>("jobs"),
       api<APIKey[]>("api-keys"),
       api<ACMEAccount[]>("acme-accounts"),
-      api<Audit[]>("audit"),
     ])
       .then(
         ([
@@ -76,13 +73,11 @@ function Console({ session, onLogout }: ConsoleProps) {
           loadedJobs,
           loadedAPIKeys,
           loadedACMEAccounts,
-          loadedAudits,
         ]) => {
           setCertificates(loadedCertificates);
           setJobs(loadedJobs);
           setAPIKeys(loadedAPIKeys);
           setACMEAccounts(loadedACMEAccounts);
-          setAudits(loadedAudits);
           setError("");
         },
       )
@@ -167,10 +162,7 @@ function Console({ session, onLogout }: ConsoleProps) {
           path={appRoutes.acmeAccounts.path}
           element={<ACMEAccountsPage accounts={acmeAccounts} reload={load} />}
         />
-        <Route
-          path={appRoutes.auditLogs.path}
-          element={<AuditLogsPage audits={audits} />}
-        />
+        <Route path={appRoutes.auditLogs.path} element={<AuditLogsPage />} />
         <Route
           path={appRoutes.apiKeys.path}
           element={
