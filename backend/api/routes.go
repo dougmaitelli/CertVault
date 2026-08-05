@@ -10,6 +10,7 @@ func (a *API) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", a.health)
 	mux.HandleFunc("GET /api/v1/ready", a.ready)
+	mux.HandleFunc("GET /auth/methods", a.authenticationMethods)
 	mux.HandleFunc("GET /auth/login", a.authenticator.Login)
 	mux.HandleFunc("GET "+config.OIDCCallbackPath, a.authenticator.Callback)
 	mux.HandleFunc("POST /auth/bootstrap", a.authenticator.BootstrapLogin)

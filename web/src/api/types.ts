@@ -93,3 +93,8 @@ export type Session = {
   authentication_method?: string;
   admin: boolean;
 };
+
+export type AuthenticationMethods = {
+  oidc: boolean;
+  bootstrap: boolean;
+};
