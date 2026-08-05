@@ -62,3 +62,5 @@ Supported key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `r
 | `CERTVAULT_OIDC_ALLOWED_GROUPS` | Comma-separated administrator groups |
 
 Do not set both a direct secret and its `_FILE` counterpart.
+
+Bootstrap authentication is optional. Omit `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN`, `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE`, and `auth.bootstrap_token_file` to disable it. Configure OIDC if administrators still need web-console access.

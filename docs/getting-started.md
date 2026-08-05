@@ -45,6 +45,8 @@ CERTVAULT_BOOTSTRAP_ADMIN_TOKEN=replace-with-a-long-random-login-token
 CLOUDFLARE_DNS_API_TOKEN=replace-with-a-zone-restricted-token
 ```
 
+This guide uses the optional bootstrap token as the simplest initial login method. You may omit it when configuring OIDC instead.
+
 Generate the master key with:
 
 ```shell

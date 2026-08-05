@@ -2,12 +2,14 @@
 
 ## Bootstrap administrator
 
-The bootstrap token provides local or break-glass administrator access. Supply it using one of:
+The bootstrap token is optional. When configured, it provides local or break-glass administrator access. Supply it using one of:
 
 - `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN`
 - `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE`
 
 The file form is recommended for container deployments.
+
+To disable bootstrap login, omit both environment variables and `auth.bootstrap_token_file` from YAML. When OIDC is enabled, bootstrap remains available only as a secondary break-glass method. At least one authentication method must be configured to sign in to the web console.
 
 ## OpenID Connect
 

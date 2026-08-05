@@ -206,7 +206,7 @@ Some values may end in `_FILE`. CertVault reads that file and supplies its conte
 
 Set either `CERTVAULT_MASTER_KEY` directly or `CERTVAULT_MASTER_KEY_FILE` to the path of a mounted secret. They cannot both be set. The file form is recommended for Docker because the key is not exposed in the container's environment metadata.
 
-The bootstrap administrator credential follows the same pattern: set either `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` directly or `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` to a secret file path, but not both. The file form remains recommended for Docker deployments.
+The bootstrap administrator credential is optional. When enabled, set either `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` directly or `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` to a secret file path, but not both. It can also be configured with `auth.bootstrap_token_file` in YAML. Omit all three settings to disable bootstrap login. The file form remains recommended for Docker deployments.
 
 Certificate key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `rsa4096`. `renew_before` and `audit.retention` accept Go duration syntax plus whole days such as `30d` or `90d`. When audit retention is enabled, expired events are removed at startup and daily afterward.
 
