@@ -50,18 +50,25 @@
   color: var(--color-accent);
 }
 
-.shell footer {
+.shell aside footer {
   margin-top: auto;
 }
 
-.shell .source-link {
-  display: block;
-  padding: 0 10px 8px;
-}
-
 .shell main {
+  display: flex;
   min-width: 0;
   padding: 42px 5vw;
+  flex-direction: column;
+}
+
+.shell .content-footer {
+  margin-top: auto;
+  padding-top: 42px;
+  text-align: center;
+}
+
+.shell .source-link {
+  color: var(--color-text-soft);
 }
 
 .top {
@@ -144,7 +151,7 @@
     margin-left: auto;
   }
 
-  .shell footer {
+  .shell aside footer {
     margin: 0;
   }
 

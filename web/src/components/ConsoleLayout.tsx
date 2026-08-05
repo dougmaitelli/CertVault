@@ -42,14 +42,6 @@ export function ConsoleLayout({
         </nav>
         <footer>
           <UserSummary session={session} onLogout={onLogout} />
-          <a
-            className="source-link"
-            href="https://github.com/dougmaitelli/CertVault"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Source · AGPL-3.0
-          </a>
         </footer>
       </aside>
       <main>
@@ -64,6 +56,16 @@ export function ConsoleLayout({
         </div>
         {error && <div className="error">{error}</div>}
         <Outlet />
+        <footer className="content-footer">
+          <a
+            className="source-link"
+            href="https://github.com/dougmaitelli/CertVault"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Source · AGPL-3.0
+          </a>
+        </footer>
       </main>
     </div>
   );
