@@ -154,10 +154,7 @@ function Console({ session, onLogout }: ConsoleProps) {
             />
           }
         />
-        <Route
-          path={appRoutes.history.path}
-          element={<HistoryPage jobs={jobs} />}
-        />
+        <Route path={appRoutes.history.path} element={<HistoryPage />} />
         <Route
           path={appRoutes.acmeAccounts.path}
           element={<ACMEAccountsPage accounts={acmeAccounts} reload={load} />}

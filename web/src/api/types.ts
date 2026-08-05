@@ -53,6 +53,17 @@ export type Job = {
   finished_at?: string;
 };
 
+export type JobPage = {
+  items: Job[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+  certificates: string[];
+  operations: string[];
+  statuses: string[];
+};
+
 export type Audit = {
   id: number;
   at: string;

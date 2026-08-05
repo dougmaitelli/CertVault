@@ -1,0 +1,60 @@
+.history-log {
+  display: grid;
+  gap: 16px;
+}
+
+.history-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.history-filters .action-button {
+  height: 42px;
+}
+
+.history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.history-pagination > span:first-child {
+  margin-right: auto;
+}
+
+.history-pagination label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.history-pagination select {
+  padding: 7px;
+}
+
+.history-empty {
+  padding: 32px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .history-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .history-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .history-pagination {
+    flex-wrap: wrap;
+  }
+}

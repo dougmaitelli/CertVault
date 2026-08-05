@@ -1,16 +1,9 @@
 package api
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/certvault/certvault/database/repository"
-)
-
-const (
-	defaultAuditPageSize = 25
-	maxAuditPageSize     = 100
 )
 
 type auditPageResponse struct {
@@ -25,12 +18,12 @@ type auditPageResponse struct {
 }
 
 func (a *API) listAudits(w http.ResponseWriter, r *http.Request) {
-	page, err := auditPaginationValue(r, "page", 1, 1_000_000)
+	page, err := paginationValue(r, "page", 1, 1_000_000)
 	if err != nil {
 		problem(w, http.StatusBadRequest, "invalid_pagination", err.Error())
 		return
 	}
-	perPage, err := auditPaginationValue(r, "per_page", defaultAuditPageSize, maxAuditPageSize)
+	perPage, err := paginationValue(r, "per_page", defaultPageSize, maxPageSize)
 	if err != nil {
 		problem(w, http.StatusBadRequest, "invalid_pagination", err.Error())
 		return
@@ -64,16 +57,4 @@ func (a *API) listAudits(w http.ResponseWriter, r *http.Request) {
 		Actions:    actions,
 		Resources:  resources,
 	}, nil)
-}
-
-func auditPaginationValue(r *http.Request, name string, fallback, max int) (int, error) {
-	raw := r.URL.Query().Get(name)
-	if raw == "" {
-		return fallback, nil
-	}
-	value, err := strconv.Atoi(raw)
-	if err != nil || value < 1 || value > max {
-		return 0, errors.New(name + " must be between 1 and " + strconv.Itoa(max))
-	}
-	return value, nil
 }

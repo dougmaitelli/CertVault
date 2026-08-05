@@ -199,6 +199,21 @@ async function mockAPI(page) {
     if (endpoint === "certificates")
       return route.fulfill({ json: certificates });
     if (endpoint === "jobs") return route.fulfill({ json: jobs });
+    if (endpoint === "jobs/history")
+      return route.fulfill({
+        json: {
+          items: jobs,
+          total: jobs.length,
+          page: 1,
+          per_page: 25,
+          total_pages: 1,
+          certificates: [
+            ...new Set(jobs.map((job) => job.certificate_name)),
+          ].sort(),
+          operations: [...new Set(jobs.map((job) => job.kind))].sort(),
+          statuses: [...new Set(jobs.map((job) => job.status))].sort(),
+        },
+      });
     if (endpoint === "api-keys") return route.fulfill({ json: apiKeys });
     if (endpoint === "acme-accounts" && route.request().method() === "GET") {
       return route.fulfill({ json: accounts });
