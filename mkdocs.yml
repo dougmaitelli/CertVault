@@ -1,0 +1,67 @@
+site_name: CertVault
+site_description: Centrally managed TLS certificates for homelabs
+site_url: https://dougmaitelli.github.io/CertVault/
+repo_url: https://github.com/dougmaitelli/CertVault
+repo_name: dougmaitelli/CertVault
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  logo: assets/logo-mark.svg
+  favicon: assets/logo-mark.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+
+nav:
+  - Overview: index.md
+  - Getting started: getting-started.md
+  - Configuration: configuration.md
+  - Client access: client-access.md
+  - Authentication: authentication.md
+  - Operations: operations.md
+  - Security: security.md
+  - API reference: api.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/dougmaitelli/CertVault
+
+copyright: Copyright &copy; CertVault contributors · AGPL-3.0-only

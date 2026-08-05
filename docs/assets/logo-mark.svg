@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CertVault">
+  <defs>
+    <linearGradient id="cv" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#75f4d3"/>
+      <stop offset="1" stop-color="#2bcaa5"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#07100e"/>
+  <rect x="8" y="8" width="48" height="48" rx="11" fill="url(#cv)"/>
+  <path d="M22.5 21.5a11 11 0 1 0 0 21h5v-5h-5a6 6 0 1 1 0-11h5v-5h-5Zm7.5 0 8.5 21H44l8.5-21h-6l-5.2 14.3-5.2-14.3H30Z" fill="#07100e" transform="translate(32 32) scale(.82) translate(-32 -32)"/>
+</svg>

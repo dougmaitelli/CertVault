@@ -6,10 +6,11 @@
 [![GitHub release](https://img.shields.io/github/v/release/dougmaitelli/CertVault)](https://github.com/dougmaitelli/CertVault/releases)
 [![GHCR](https://img.shields.io/badge/container-ghcr.io-blue)](https://github.com/dougmaitelli/CertVault/pkgs/container/certvault)
 
-CertVault is a self-hosted ACME certificate controller for homelabs. It obtains wildcard and multi-domain certificates through DNS-01, renews them automatically, stores private material encrypted, and exposes scoped download endpoints for other machines on the local network. The web console shows certificate health, issuance history, and API-key usage.
+CertVault is a self-hosted ACME certificate controller for homelabs. It obtains wildcard and multi-domain certificates through DNS-01, renews them automatically, stores private material encrypted, and exposes scoped download endpoints for clients on the local network. The web console shows certificate health, issuance history, and API-key usage.
 
 ## Project documentation
 
+- [Documentation site](https://dougmaitelli.github.io/CertVault/)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)
 
@@ -33,7 +34,7 @@ CertVault is a self-hosted ACME certificate controller for homelabs. It obtains 
 </td>
 <td width="50%">
 <a href="screenshots/api-keys.png"><img src="screenshots/api-keys.png" alt="Scoped API key management"></a>
-<p><em>Machine access — scoped, revocable API keys with certificate allowlists and usage visibility.</em></p>
+<p><em>Client access — scoped, revocable API keys with certificate allowlists and usage visibility.</em></p>
 </td>
 </tr>
 </table>
@@ -157,7 +158,7 @@ Cloudflare is used only as a familiar Quick Start example. It is not required. C
 
 For the Cloudflare example, create an API token restricted to the required zones with `Zone:Read` and `DNS:Edit`. Do not use the Cloudflare global API key. DNS credentials are not persisted in SQLite.
 
-## Machine access
+## Client access
 
 Create an API key in the web console. The raw value is shown once. Fetch artifacts with:
 
@@ -173,7 +174,7 @@ curl --fail --silent --show-error \
   --output private-key.pem
 ```
 
-Downloads include an `ETag`, so clients may use `If-None-Match`. A machine key needs `certificates:read` for public certificate files and the separately privileged `private_keys:read` scope for private keys.
+Downloads include an `ETag`, so clients may use `If-None-Match`. A client key needs `certificates:read` for public certificate files and the separately privileged `private_keys:read` scope for private keys.
 
 The API Keys page can also generate a command that installs an automatic download job through `/client/install.sh`. The installer requires a Linux or Unix-like client with `curl`, `crontab`, and `install`. It stores the API key in a mode `0600` file, downloads through an atomic temporary directory, installs the selected cron schedule, and immediately performs the first download. Run the generated command again to replace an existing job for the same certificate files, including its token, server, schedule, and destination, instead of creating a duplicate. The default bundle installs `fullchain.pem` and `private-key.pem` together into a certificate-specific destination directory. The client stores each file's `ETag` and uses conditional requests on scheduled runs; unchanged files return `304 Not Modified`, are not rewritten, and do not create certificate-download audit events.
 
