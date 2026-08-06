@@ -58,6 +58,12 @@
   font-size: 0.8rem;
 }
 
+.api-usage-deployment {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
 .api-command {
   display: flex;
   min-width: 0;

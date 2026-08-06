@@ -3,6 +3,12 @@ import type { Certificate } from "../api/types";
 import "./APIUsageHelper.css";
 
 const copyFeedbackDuration = 2000;
+const defaultOutputNames: Record<string, string> = {
+  "certificate.crt": "certificate.crt",
+  "chain.crt": "chain.crt",
+  "fullchain.crt": "fullchain.crt",
+  "private.key": "private.key",
+};
 
 const fileOptions = [
   {
@@ -48,6 +54,8 @@ export function APIUsageHelper({
   const [destination, setDestination] = useState(() =>
     defaultDestination(certificates[0]?.name ?? ""),
   );
+  const [outputNames, setOutputNames] = useState(defaultOutputNames);
+  const [reloadCommand, setReloadCommand] = useState("");
   const [schedule, setSchedule] = useState<string>(schedules[0].value);
   const [copied, setCopied] = useState(false);
   const copyFeedbackTimeout = useRef<number | null>(null);
@@ -64,16 +72,35 @@ export function APIUsageHelper({
   const command = useMemo(() => {
     const installer = `${window.location.origin}/client/install.sh`;
     const executor = `sudo env CERTVAULT_API_KEY=${shellQuote(token)} sh`;
+    const fileArguments = files
+      .split(",")
+      .filter(Boolean)
+      .map((file) => {
+        const output = outputNames[file] || file;
+        const specification = output === file ? file : `${file}=${output}`;
+        return `--file ${shellQuote(specification)}`;
+      });
     return [
       `curl -fsSL ${shellQuote(installer)}`,
       `| ${executor} -s --`,
       `--server ${shellQuote(window.location.origin)}`,
       `--certificate ${shellQuote(certificate)}`,
-      `--files ${shellQuote(files)}`,
+      ...fileArguments,
       `--destination ${shellQuote(destination)}`,
       `--schedule ${shellQuote(schedule)}`,
+      ...(reloadCommand
+        ? [`--reload-command ${shellQuote(reloadCommand)}`]
+        : []),
     ].join(" \\\n  ");
-  }, [certificate, destination, files, schedule, token]);
+  }, [
+    certificate,
+    destination,
+    files,
+    outputNames,
+    reloadCommand,
+    schedule,
+    token,
+  ]);
 
   function selectCertificate(nextCertificate: string) {
     const previousDefault = defaultDestination(certificate);
@@ -156,6 +183,35 @@ export function APIUsageHelper({
           required
         />
       </label>
+      <div className="api-usage-deployment">
+        {files
+          .split(",")
+          .filter(Boolean)
+          .map((file) => (
+            <label className="api-usage-output" key={file}>
+              Output name for {file}
+              <input
+                value={outputNames[file] ?? file}
+                onChange={(event) =>
+                  setOutputNames((current) => ({
+                    ...current,
+                    [file]: event.target.value,
+                  }))
+                }
+                pattern="[A-Za-z0-9._-]+"
+                required
+              />
+            </label>
+          ))}
+        <label className="api-usage-output">
+          Command after files change (optional)
+          <input
+            value={reloadCommand}
+            onChange={(event) => setReloadCommand(event.target.value)}
+            placeholder="systemctl restart pveproxy"
+          />
+        </label>
+      </div>
       <div className="api-command">
         <code>{command}</code>
         <button

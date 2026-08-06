@@ -68,5 +68,26 @@ After creating a key, the console generates an installer command for Linux and U
 - Performs the first download immediately
 - Tracks an `ETag` for each file
 - Uses conditional requests and avoids rewriting unchanged destination files
+- Allows each artifact to be installed under a service-specific output name
+- Optionally runs a reload command when one or more files change
 
 Running the command again replaces the existing job for that certificate and destination.
+
+Use repeated `--file ARTIFACT` options to select downloads, or
+`--file ARTIFACT=OUTPUT` when a service requires a specific filename. Output
+values must be plain filenames, not paths. An optional `--reload-command` runs
+only after at least one downloaded artifact changes.
+For example, a job installed on each Proxmox VE node can deploy the node-local
+web interface certificate with:
+
+```shell
+curl -fsSL https://certvault.example/client/install.sh | \
+  sudo env CERTVAULT_API_KEY='cv_live_PREFIX.SECRET' sh -s -- \
+  --server 'https://certvault.example' \
+  --certificate 'proxmox.example' \
+  --file 'fullchain.crt=pveproxy-ssl.pem' \
+  --file 'private.key=pveproxy-ssl.key' \
+  --destination '/etc/pve/local' \
+  --reload-command 'systemctl restart pveproxy' \
+  --schedule '17 3 * * *'
+```

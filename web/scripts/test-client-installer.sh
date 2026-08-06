@@ -71,7 +71,8 @@ run_installer() {
     sh public/client/install.sh \
       --server "$server" \
       --certificate "homelab" \
-      --files "fullchain.crt,private.key" \
+      --file "fullchain.crt" \
+      --file "private.key" \
       --destination "$destination" \
       --schedule "$schedule"
 }
@@ -112,3 +113,31 @@ if grep -Fq "$old_server" "$job_script"; then
   printf 'Old server was not replaced in job script\n' >&2
   exit 1
 fi
+
+mapped_destination="$test_dir/proxmox"
+reload_log="$test_dir/reloads.log"
+PATH="$test_dir/bin:$PATH" \
+  HOME="$test_dir/home" \
+  TEST_CRONTAB="$test_dir/crontab" \
+  MOCK_CURL_LOG="$test_dir/curl.log" \
+  CERTVAULT_API_KEY="$token" \
+  sh public/client/install.sh \
+    --server "$server" \
+    --certificate "proxmox" \
+    --file "fullchain.crt=pveproxy-ssl.pem" \
+    --file "private.key=pveproxy-ssl.key" \
+    --destination "$mapped_destination" \
+    --reload-command "printf 'reloaded\\n' >> '$reload_log'" \
+    --schedule "$schedule"
+
+mapped_job_script="$test_dir/home/.local/libexec/certvault-proxmox-fullchain.crt-private.key"
+[ "$(cat "$mapped_destination/pveproxy-ssl.pem")" = "mock certificate material" ]
+[ "$(cat "$mapped_destination/pveproxy-ssl.key")" = "mock certificate material" ]
+[ "$(file_mode "$mapped_destination/pveproxy-ssl.pem")" = "644" ]
+[ "$(file_mode "$mapped_destination/pveproxy-ssl.key")" = "600" ]
+[ "$(wc -l <"$reload_log" | tr -d ' ')" = "1" ]
+
+PATH="$test_dir/bin:$PATH" \
+  MOCK_CURL_LOG="$test_dir/curl.log" \
+  "$mapped_job_script"
+[ "$(wc -l <"$reload_log" | tr -d ' ')" = "1" ]

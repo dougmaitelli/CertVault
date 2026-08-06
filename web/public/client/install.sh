@@ -4,20 +4,27 @@ set -eu
 default_schedule="17 3 * * *"
 server=""
 certificate=""
-files="fullchain.crt,private.key"
+file_specs=""
 destination=""
 schedule="$default_schedule"
+reload_command=""
 
 usage() {
   cat <<'EOF'
 Install a recurring CertVault certificate download.
 
 Usage:
-  install.sh --server URL --certificate NAME --files FILES --destination DIRECTORY [--schedule CRON]
+  install.sh --server URL --certificate NAME --destination DIRECTORY [OPTIONS]
 
 The API token is read from CERTVAULT_API_KEY or prompted for securely.
-FILES is a comma-separated list of certificate.crt, chain.crt, fullchain.crt,
-or private.key. It defaults to fullchain.crt,private.key.
+
+Options:
+  --file ARTIFACT[=OUTPUT]
+                          Download an artifact, optionally renaming it. Repeatable.
+  --schedule CRON        Cron schedule. Defaults to "17 3 * * *".
+  --reload-command CMD   Shell command to run after one or more files change.
+
+Artifacts are certificate.crt, chain.crt, fullchain.crt, and private.key.
 EOF
 }
 
@@ -25,9 +32,14 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --server) server=${2-}; shift 2 ;;
     --certificate) certificate=${2-}; shift 2 ;;
-    --files) files=${2-}; shift 2 ;;
+    --file)
+      spec=${2-}
+      file_specs="${file_specs}${file_specs:+,}$spec"
+      shift 2
+      ;;
     --destination) destination=${2-}; shift 2 ;;
     --schedule) schedule=${2-}; shift 2 ;;
+    --reload-command) reload_command=${2-}; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
@@ -40,18 +52,50 @@ fi
 
 old_ifs=$IFS
 IFS=,
-set -- $files
+set -- $file_specs
 IFS=$old_ifs
 if [ "$#" -eq 0 ]; then
   printf 'At least one file is required\n' >&2
   exit 2
 fi
-for file in "$@"; do
+artifacts=""
+normalized_specs=""
+seen_artifacts="|"
+seen_outputs="|"
+for spec in "$@"; do
+  case "$spec" in
+    *=*)
+      file=${spec%%=*}
+      output=${spec#*=}
+      ;;
+    *)
+      file=$spec
+      output=$spec
+      ;;
+  esac
   case "$file" in
     certificate.crt|chain.crt|fullchain.crt|private.key) ;;
     *) printf 'Unsupported file: %s\n' "$file" >&2; exit 2 ;;
   esac
+  case "$output" in
+    ""|.|..|*/*|*[!A-Za-z0-9._-]*)
+      printf 'Invalid output filename: %s\n' "$output" >&2
+      exit 2
+      ;;
+  esac
+  case "$seen_artifacts" in
+    *"|$file|"*) printf 'Duplicate artifact: %s\n' "$file" >&2; exit 2 ;;
+  esac
+  case "$seen_outputs" in
+    *"|$output|"*) printf 'Duplicate output filename: %s\n' "$output" >&2; exit 2 ;;
+  esac
+  seen_artifacts="$seen_artifacts$file|"
+  seen_outputs="$seen_outputs$output|"
+  artifacts="${artifacts}${artifacts:+,}$file"
+  normalized_spec="$file=$output"
+  normalized_specs="${normalized_specs}${normalized_specs:+,}$normalized_spec"
 done
+file_specs=$normalized_specs
 
 case "$schedule" in
   *[!A-Za-z0-9,'*/?_-\ ']*|*'
@@ -82,7 +126,7 @@ if [ -z "$token" ]; then
   exit 2
 fi
 
-job=$(printf '%s-%s' "$certificate" "$files" | tr -c 'A-Za-z0-9._-' '-')
+job=$(printf '%s-%s' "$certificate" "$artifacts" | tr -c 'A-Za-z0-9._-' '-')
 config_dir=${CERTVAULT_CLIENT_CONFIG_DIR:-"$HOME/.config/certvault"}
 script_dir=${CERTVAULT_CLIENT_SCRIPT_DIR:-"$HOME/.local/libexec"}
 token_file="$config_dir/$job.token"
@@ -91,7 +135,9 @@ sync_script="$script_dir/certvault-sync"
 job_script="$script_dir/certvault-$job"
 
 install -d -m 700 "$config_dir" "$script_dir" "$etag_dir"
-install -d -m 755 "$destination"
+if [ ! -d "$destination" ]; then
+  install -d -m 755 "$destination"
+fi
 printf '%s\n' "$token" >"$token_file"
 chmod 600 "$token_file"
 
@@ -110,11 +156,15 @@ server=$2
 certificate=$3
 destination=$4
 etag_dir=$5
-shift 5
+reload_command=$6
+shift 6
 token=$(cat "$token_file")
-temporary=$(mktemp -d "$destination/.certvault.tmp.XXXXXX")
+temporary=$(mktemp -d "$destination/.certvault.tmp.XXXXXX" 2>/dev/null || \
+  mktemp -d "${TMPDIR:-/tmp}/certvault.tmp.XXXXXX")
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
-for file in "$@"; do
+for spec in "$@"; do
+  file=${spec%%=*}
+  output=${spec#*=}
   url="${server%/}/api/v1/certificates/$certificate/$file"
   headers="$temporary/$file.headers"
   etag_file="$etag_dir/$file"
@@ -122,16 +172,16 @@ for file in "$@"; do
     etag=$(cat "$etag_file")
     status=$(curl -fsSL -D "$headers" -w '%{http_code}' \
       -H "Authorization: Bearer $token" -H "If-None-Match: $etag" \
-      "$url" -o "$temporary/$file")
+      "$url" -o "$temporary/$output")
   else
     status=$(curl -fsSL -D "$headers" -w '%{http_code}' \
       -H "Authorization: Bearer $token" \
-      "$url" -o "$temporary/$file")
+      "$url" -o "$temporary/$output")
   fi
   case "$status" in
     200) ;;
     304)
-      rm -f "$temporary/$file" "$headers"
+      rm -f "$temporary/$output" "$headers"
       continue
       ;;
     *)
@@ -140,16 +190,20 @@ for file in "$@"; do
       ;;
   esac
   case "$file" in
-    private.key) chmod 600 "$temporary/$file" ;;
-    *) chmod 644 "$temporary/$file" ;;
+    private.key) chmod 600 "$temporary/$output" ;;
+    *) chmod 644 "$temporary/$output" ;;
   esac
   awk 'tolower($1) == "etag:" { sub(/\r$/, "", $2); value = $2 } END { if (value != "") print value }' \
     "$headers" >"$temporary/$file.etag"
   rm -f "$headers"
 done
-for file in "$@"; do
-  if [ -f "$temporary/$file" ]; then
-    mv -f "$temporary/$file" "$destination/$file"
+changed=0
+for spec in "$@"; do
+  file=${spec%%=*}
+  output=${spec#*=}
+  if [ -f "$temporary/$output" ]; then
+    mv -f "$temporary/$output" "$destination/$output"
+    changed=1
     if [ -s "$temporary/$file.etag" ]; then
       mv -f "$temporary/$file.etag" "$etag_dir/$file"
       chmod 600 "$etag_dir/$file"
@@ -160,6 +214,9 @@ for file in "$@"; do
 done
 rmdir "$temporary"
 trap - EXIT HUP INT TERM
+if [ "$changed" -eq 1 ] && [ -n "$reload_command" ]; then
+  /bin/sh -c "$reload_command"
+fi
 EOF
 chmod 700 "$sync_script"
 
@@ -180,13 +237,15 @@ shell_quote() {
   shell_quote "$destination"
   printf ' '
   shell_quote "$etag_dir"
+  printf ' '
+  shell_quote "$reload_command"
   old_ifs=$IFS
   IFS=,
-  set -- $files
+  set -- $file_specs
   IFS=$old_ifs
-  for file in "$@"; do
+  for spec in "$@"; do
     printf ' '
-    shell_quote "$file"
+    shell_quote "$spec"
   done
   printf '\n'
 } >"$job_script"
