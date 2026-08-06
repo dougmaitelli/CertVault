@@ -2,17 +2,27 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database"
 	"github.com/certvault/certvault/database/repository"
 	certnetwork "github.com/certvault/certvault/network"
+	"github.com/coreos/go-oidc/v3/oidc"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return f(request)
+}
 
 func TestSessionRoundTrip(t *testing.T) {
 	authenticator := &Authenticator{config: &config.Config{MasterKey: make([]byte, 32)}}
@@ -49,6 +59,67 @@ func TestGroupAllowed(t *testing.T) {
 	}
 	if groupAllowed([]string{"users"}, []string{"operators"}) {
 		t.Fatal("non-matching group was accepted")
+	}
+}
+
+func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
+	var available atomic.Bool
+	var discoveries atomic.Int32
+	issuer := "https://id.example.com"
+	client := &http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		discoveries.Add(1)
+		if !available.Load() {
+			return &http.Response{
+				StatusCode: http.StatusServiceUnavailable,
+				Body:       io.NopCloser(strings.NewReader("unavailable")),
+				Header:     make(http.Header),
+			}, nil
+		}
+		contents, _ := json.Marshal(map[string]any{
+			"issuer":                 issuer,
+			"authorization_endpoint": issuer + "/authorize",
+			"token_endpoint":         issuer + "/token",
+			"jwks_uri":               issuer + "/keys",
+		})
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(string(contents))),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	authenticator, err := New(
+		&config.Config{
+			Server: config.Server{PublicURL: "https://certvault.example.com"},
+			Auth: config.Auth{OIDC: &config.OIDC{
+				IssuerURL:    issuer,
+				ClientID:     "certvault",
+				ClientSecret: "secret",
+			}},
+		},
+		nil,
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if discoveries.Load() != 0 {
+		t.Fatal("OIDC discovery ran during authenticator initialization")
+	}
+
+	loginRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/auth/login", nil)
+	loginRequest = loginRequest.WithContext(oidc.ClientContext(loginRequest.Context(), client))
+	response := httptest.NewRecorder()
+	authenticator.Login(response, loginRequest)
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unavailable OIDC login returned %d", response.Code)
+	}
+
+	available.Store(true)
+	response = httptest.NewRecorder()
+	authenticator.Login(response, loginRequest)
+	if response.Code != http.StatusFound {
+		t.Fatalf("recovered OIDC login returned %d: %s", response.Code, response.Body.String())
 	}
 }
 

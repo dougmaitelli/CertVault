@@ -12,13 +12,15 @@ import (
 )
 
 type Authenticator struct {
-	config    *config.Config
-	repos     *repository.Repositories
-	bootstrap string
-	oidc      *oidc.Provider
-	oauth     *oauth2.Config
-	clientIPs *certnetwork.ClientIPResolver
-	states    sync.Map
+	config     *config.Config
+	repos      *repository.Repositories
+	bootstrap  string
+	oidcMu     sync.Mutex
+	oidcSecret string
+	oidc       *oidc.Provider
+	oauth      *oauth2.Config
+	clientIPs  *certnetwork.ClientIPResolver
+	states     sync.Map
 }
 
 type Identity struct {

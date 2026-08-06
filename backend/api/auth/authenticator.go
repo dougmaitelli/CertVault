@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -48,10 +49,6 @@ func New(
 		authenticator.bootstrap = strings.TrimSpace(string(contents))
 	}
 	if cfg.Auth.OIDC != nil {
-		provider, err := oidc.NewProvider(context.Background(), cfg.Auth.OIDC.IssuerURL)
-		if err != nil {
-			return nil, fmt.Errorf("OIDC discovery: %w", err)
-		}
 		secret := cfg.Auth.OIDC.ClientSecret
 		if cfg.Auth.OIDC.ClientSecretFile != "" {
 			contents, readErr := os.ReadFile(cfg.Auth.OIDC.ClientSecretFile)
@@ -60,16 +57,33 @@ func New(
 			}
 			secret = strings.TrimSpace(string(contents))
 		}
-		authenticator.oidc = provider
-		authenticator.oauth = &oauth2.Config{
-			ClientID:     cfg.Auth.OIDC.ClientID,
-			ClientSecret: secret,
-			Endpoint:     provider.Endpoint(),
-			RedirectURL:  cfg.OIDCRedirectURL(),
-			Scopes:       []string{oidc.ScopeOpenID, "profile", "email", "groups"},
-		}
+		authenticator.oidcSecret = secret
 	}
 	return authenticator, nil
+}
+
+func (a *Authenticator) oidcClient(ctx context.Context) (*oidc.Provider, *oauth2.Config, error) {
+	if a.config.Auth.OIDC == nil {
+		return nil, nil, errors.New("OIDC is not configured")
+	}
+	a.oidcMu.Lock()
+	defer a.oidcMu.Unlock()
+	if a.oidc != nil && a.oauth != nil {
+		return a.oidc, a.oauth, nil
+	}
+	provider, err := oidc.NewProvider(ctx, a.config.Auth.OIDC.IssuerURL)
+	if err != nil {
+		return nil, nil, fmt.Errorf("OIDC discovery: %w", err)
+	}
+	a.oidc = provider
+	a.oauth = &oauth2.Config{
+		ClientID:     a.config.Auth.OIDC.ClientID,
+		ClientSecret: a.oidcSecret,
+		Endpoint:     provider.Endpoint(),
+		RedirectURL:  a.config.OIDCRedirectURL(),
+		Scopes:       []string{oidc.ScopeOpenID, "profile", "email", "groups"},
+	}
+	return a.oidc, a.oauth, nil
 }
 
 func (a *Authenticator) Middleware(next http.Handler) http.Handler {
@@ -115,8 +129,13 @@ func (a *Authenticator) BootstrapLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Authenticator) Login(w http.ResponseWriter, r *http.Request) {
-	if a.oauth == nil {
+	if a.config.Auth.OIDC == nil {
 		problem(w, http.StatusNotFound, "oidc_disabled", "OIDC is not configured")
+		return
+	}
+	_, oauth, err := a.oidcClient(r.Context())
+	if err != nil {
+		problem(w, http.StatusServiceUnavailable, "oidc_unavailable", err.Error())
 		return
 	}
 	state := randomToken()
@@ -126,7 +145,7 @@ func (a *Authenticator) Login(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(
 		w,
 		r,
-		a.oauth.AuthCodeURL(state, oidc.Nonce(nonce), oauth2.S256ChallengeOption(verifier)),
+		oauth.AuthCodeURL(state, oidc.Nonce(nonce), oauth2.S256ChallengeOption(verifier)),
 		http.StatusFound,
 	)
 }
@@ -146,13 +165,18 @@ func (a *Authenticator) Callback(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusBadRequest, "expired_state", "OIDC state expired")
 		return
 	}
-	token, err := a.oauth.Exchange(r.Context(), r.URL.Query().Get("code"), oauth2.VerifierOption(state.verifier))
+	provider, oauth, err := a.oidcClient(r.Context())
+	if err != nil {
+		problem(w, http.StatusServiceUnavailable, "oidc_unavailable", err.Error())
+		return
+	}
+	token, err := oauth.Exchange(r.Context(), r.URL.Query().Get("code"), oauth2.VerifierOption(state.verifier))
 	if err != nil {
 		problem(w, http.StatusUnauthorized, "oidc_error", err.Error())
 		return
 	}
 	rawIDToken, _ := token.Extra("id_token").(string)
-	verified, err := a.oidc.Verifier(&oidc.Config{ClientID: a.oauth.ClientID}).Verify(r.Context(), rawIDToken)
+	verified, err := provider.Verifier(&oidc.Config{ClientID: oauth.ClientID}).Verify(r.Context(), rawIDToken)
 	if err != nil || verified.Nonce != state.nonce {
 		problem(w, http.StatusUnauthorized, "oidc_error", "ID token verification failed")
 		return
