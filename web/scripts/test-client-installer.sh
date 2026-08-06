@@ -71,13 +71,13 @@ run_installer() {
     sh public/client/install.sh \
       --server "$server" \
       --certificate "homelab" \
-      --files "fullchain.pem,private-key.pem" \
+      --files "fullchain.crt,private.key" \
       --destination "$destination" \
       --schedule "$schedule"
 }
 
 run_installer
-job_script="$test_dir/home/.local/libexec/certvault-homelab-fullchain.pem-private-key.pem"
+job_script="$test_dir/home/.local/libexec/certvault-homelab-fullchain.crt-private.key"
 PATH="$test_dir/bin:$PATH" \
   MOCK_CURL_LOG="$test_dir/curl.log" \
   "$job_script"
@@ -90,17 +90,17 @@ server="https://replacement.example"
 token="replacement-token"
 run_installer
 
-[ "$(cat "$destination/fullchain.pem")" = "mock certificate material" ]
-[ "$(cat "$destination/private-key.pem")" = "mock certificate material" ]
-[ "$(file_mode "$destination/fullchain.pem")" = "644" ]
-[ "$(file_mode "$destination/private-key.pem")" = "600" ]
-[ "$(file_mode "$test_dir/home/.config/certvault/homelab-fullchain.pem-private-key.pem.token")" = "600" ]
-[ "$(cat "$test_dir/home/.config/certvault/homelab-fullchain.pem-private-key.pem.token")" = "replacement-token" ]
-[ "$(file_mode "$test_dir/home/.config/certvault/homelab-fullchain.pem-private-key.pem.etags/fullchain.pem")" = "600" ]
-[ "$(cat "$test_dir/home/.config/certvault/homelab-fullchain.pem-private-key.pem.etags/fullchain.pem")" = '"mock-fullchain.pem"' ]
+[ "$(cat "$destination/fullchain.crt")" = "mock certificate material" ]
+[ "$(cat "$destination/private.key")" = "mock certificate material" ]
+[ "$(file_mode "$destination/fullchain.crt")" = "644" ]
+[ "$(file_mode "$destination/private.key")" = "600" ]
+[ "$(file_mode "$test_dir/home/.config/certvault/homelab-fullchain.crt-private.key.token")" = "600" ]
+[ "$(cat "$test_dir/home/.config/certvault/homelab-fullchain.crt-private.key.token")" = "replacement-token" ]
+[ "$(file_mode "$test_dir/home/.config/certvault/homelab-fullchain.crt-private.key.etags/fullchain.crt")" = "600" ]
+[ "$(cat "$test_dir/home/.config/certvault/homelab-fullchain.crt-private.key.etags/fullchain.crt")" = '"mock-fullchain.crt"' ]
 [ "$(grep -c ' 200$' "$test_dir/curl.log")" = "4" ]
 [ "$(grep -c ' 304$' "$test_dir/curl.log")" = "2" ]
-[ "$(grep -c '# certvault:homelab-fullchain.pem-private-key.pem' "$test_dir/crontab")" = "1" ]
+[ "$(grep -c '# certvault:homelab-fullchain.crt-private.key' "$test_dir/crontab")" = "1" ]
 grep -Fq "29 4 * * 1" "$test_dir/crontab"
 grep -Fq "$destination" "$job_script"
 grep -Fq "$server" "$job_script"

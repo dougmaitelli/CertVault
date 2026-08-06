@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 type CertificateArtifact =
-  "certificate.pem" | "chain.pem" | "fullchain.pem" | "private-key.pem";
+  "certificate.crt" | "chain.crt" | "fullchain.crt" | "private.key";
 
 type CertificateDownloadLinkProps = {
   artifact: CertificateArtifact;

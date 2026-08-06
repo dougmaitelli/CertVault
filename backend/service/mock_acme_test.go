@@ -64,7 +64,7 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 		t.Fatalf("domains = %#v", version.Domains)
 	}
 
-	certificatePEM, err := manager.ReadFile(version, "certificate.pem")
+	certificatePEM, err := manager.ReadFile(version, "certificate.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 	if err = certificate.VerifyHostname("service.example.test"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = manager.ReadFile(version, "private-key.pem"); err != nil {
+	if _, err = manager.ReadFile(version, "private.key"); err != nil {
 		t.Fatal(err)
 	}
 

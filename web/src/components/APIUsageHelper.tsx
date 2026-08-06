@@ -6,13 +6,13 @@ const copyFeedbackDuration = 2000;
 
 const fileOptions = [
   {
-    value: "fullchain.pem,private-key.pem",
+    value: "fullchain.crt,private.key",
     label: "Full chain + private key",
   },
-  { value: "fullchain.pem", label: "Full chain" },
-  { value: "certificate.pem", label: "Certificate" },
-  { value: "chain.pem", label: "CA chain" },
-  { value: "private-key.pem", label: "Private key" },
+  { value: "fullchain.crt", label: "Full chain" },
+  { value: "certificate.crt", label: "Certificate" },
+  { value: "chain.crt", label: "CA chain" },
+  { value: "private.key", label: "Private key" },
 ] as const;
 
 const schedules = [
@@ -36,7 +36,7 @@ export function APIUsageHelper({
     option.value
       .split(",")
       .every((file) =>
-        file === "private-key.pem"
+        file === "private.key"
           ? scopes.includes("private_keys:read")
           : scopes.includes("certificates:read"),
       ),

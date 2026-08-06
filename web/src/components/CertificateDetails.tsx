@@ -75,28 +75,28 @@ export function CertificateDetails({
       <div className="action-buttons">
         <CertificateDownloadLink
           certificateName={certificate.name}
-          artifact="certificate.pem"
+          artifact="certificate.crt"
           disabled={!certificate.current_version}
         >
           Certificate
         </CertificateDownloadLink>
         <CertificateDownloadLink
           certificateName={certificate.name}
-          artifact="chain.pem"
+          artifact="chain.crt"
           disabled={!certificate.current_version}
         >
           Chain
         </CertificateDownloadLink>
         <CertificateDownloadLink
           certificateName={certificate.name}
-          artifact="fullchain.pem"
+          artifact="fullchain.crt"
           disabled={!certificate.current_version}
         >
           Full chain
         </CertificateDownloadLink>
         <CertificateDownloadLink
           certificateName={certificate.name}
-          artifact="private-key.pem"
+          artifact="private.key"
           disabled={!certificate.current_version}
         >
           Private key

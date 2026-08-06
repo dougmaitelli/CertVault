@@ -212,10 +212,10 @@ func (m *Manager) save(name string, r *certificate.Resource) (repository.Version
 	}
 	fullChain := append(append([]byte{}, r.Certificate...), r.IssuerCertificate...)
 	files := map[string][]byte{
-		"certificate.pem":     r.Certificate,
-		"chain.pem":           r.IssuerCertificate,
-		"fullchain.pem":       fullChain,
-		"private-key.pem.enc": key,
+		"certificate.crt": r.Certificate,
+		"chain.crt":       r.IssuerCertificate,
+		"fullchain.crt":   fullChain,
+		"private.key.enc": key,
 	}
 	for n, b := range files {
 		if e = atomicWrite(filepath.Join(dir, n), b, 0600); e != nil {
@@ -242,19 +242,28 @@ func (m *Manager) save(name string, r *certificate.Resource) (repository.Version
 }
 
 func (m *Manager) ReadFile(v *repository.Version, name string) ([]byte, error) {
-	allowed := map[string]bool{"certificate.pem": true, "chain.pem": true, "fullchain.pem": true, "private-key.pem": true}
+	allowed := map[string]bool{"certificate.crt": true, "chain.crt": true, "fullchain.crt": true, "private.key": true}
 	if !allowed[name] {
 		return nil, errors.New("invalid file")
 	}
 	disk := name
-	if name == "private-key.pem" {
+	if name == "private.key" {
 		disk += ".enc"
 	}
 	b, e := os.ReadFile(filepath.Join(m.cfg.DataDir, v.Path, disk))
+	if errors.Is(e, os.ErrNotExist) {
+		legacy := map[string]string{
+			"certificate.crt": "certificate.pem",
+			"chain.crt":       "chain.pem",
+			"fullchain.crt":   "fullchain.pem",
+			"private.key":     "private-key.pem.enc",
+		}
+		b, e = os.ReadFile(filepath.Join(m.cfg.DataDir, v.Path, legacy[name]))
+	}
 	if e != nil {
 		return nil, e
 	}
-	if name == "private-key.pem" {
+	if name == "private.key" {
 		return vault.Decrypt(m.cfg.MasterKey, b)
 	}
 	return b, nil

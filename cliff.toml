@@ -16,6 +16,7 @@ filter_unconventional = false
 split_commits = false
 
 commit_parsers = [
+  { message = "^[Bb]reaking", group = "⚠️ Breaking Changes" },
   { message = "^[Ff]ix|^[Bb]ug|^[Pp]atch", group = "🐛 Bug Fixes" },
   { message = "^[Aa]dd|^[Ii]mplement|^[Ii]ntroduce|^[Nn]ew", group = "🚀 Features" },
   { message = "^[Uu]pdate|^[Ii]mprove|^[Ee]nhance|^[Cc]hange", group = "✨ Improvements" },

@@ -6,8 +6,8 @@ API keys let clients fetch certificate material without administrator access.
 
 | Scope | Allows |
 |---|---|
-| `certificates:read` | Certificate metadata, versions, `certificate.pem`, `chain.pem`, and `fullchain.pem` |
-| `private_keys:read` | `private-key.pem` downloads |
+| `certificates:read` | Certificate metadata, versions, `certificate.crt`, `chain.crt`, and `fullchain.crt` |
+| `private_keys:read` | `private.key` downloads |
 | `renewals:trigger` | Manual renewal requests |
 
 Every key also has a certificate allowlist. Selecting “Any certificate” includes certificates added later.
@@ -43,8 +43,8 @@ docker compose exec certvault certvault api-key delete --id 1
 ```shell
 curl --fail --silent --show-error \
   -H 'Authorization: Bearer cv_live_PREFIX.SECRET' \
-  https://certvault.example/api/v1/certificates/homelab/fullchain.pem \
-  --output fullchain.pem
+  https://certvault.example/api/v1/certificates/homelab/fullchain.crt \
+  --output fullchain.crt
 ```
 
 Private keys require `private_keys:read`:
@@ -52,8 +52,8 @@ Private keys require `private_keys:read`:
 ```shell
 curl --fail --silent --show-error \
   -H 'Authorization: Bearer cv_live_PREFIX.SECRET' \
-  https://certvault.example/api/v1/certificates/homelab/private-key.pem \
-  --output private-key.pem
+  https://certvault.example/api/v1/certificates/homelab/private.key \
+  --output private.key
 ```
 
 Downloads include an `ETag`, which clients may send back through `If-None-Match`. CertVault returns `304 Not Modified` when the artifact is unchanged and does not create a download audit event for that response.

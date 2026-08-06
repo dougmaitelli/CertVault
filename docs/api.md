@@ -13,10 +13,10 @@ Authorization: Bearer cv_live_PREFIX.SECRET
 | `GET` | `/api/v1/certificates` | `certificates:read` |
 | `GET` | `/api/v1/certificates/{name}` | `certificates:read` |
 | `GET` | `/api/v1/certificates/{name}/versions` | `certificates:read` |
-| `GET` | `/api/v1/certificates/{name}/certificate.pem` | `certificates:read` |
-| `GET` | `/api/v1/certificates/{name}/chain.pem` | `certificates:read` |
-| `GET` | `/api/v1/certificates/{name}/fullchain.pem` | `certificates:read` |
-| `GET` | `/api/v1/certificates/{name}/private-key.pem` | `private_keys:read` |
+| `GET` | `/api/v1/certificates/{name}/certificate.crt` | `certificates:read` |
+| `GET` | `/api/v1/certificates/{name}/chain.crt` | `certificates:read` |
+| `GET` | `/api/v1/certificates/{name}/fullchain.crt` | `certificates:read` |
+| `GET` | `/api/v1/certificates/{name}/private.key` | `private_keys:read` |
 | `POST` | `/api/v1/certificates/{name}/renew` | `renewals:trigger` |
 
 All certificate endpoints also enforce the API key’s certificate allowlist.

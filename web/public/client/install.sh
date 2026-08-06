@@ -4,7 +4,7 @@ set -eu
 default_schedule="17 3 * * *"
 server=""
 certificate=""
-files="fullchain.pem,private-key.pem"
+files="fullchain.crt,private.key"
 destination=""
 schedule="$default_schedule"
 
@@ -16,8 +16,8 @@ Usage:
   install.sh --server URL --certificate NAME --files FILES --destination DIRECTORY [--schedule CRON]
 
 The API token is read from CERTVAULT_API_KEY or prompted for securely.
-FILES is a comma-separated list of certificate.pem, chain.pem, fullchain.pem,
-or private-key.pem. It defaults to fullchain.pem,private-key.pem.
+FILES is a comma-separated list of certificate.crt, chain.crt, fullchain.crt,
+or private.key. It defaults to fullchain.crt,private.key.
 EOF
 }
 
@@ -48,7 +48,7 @@ if [ "$#" -eq 0 ]; then
 fi
 for file in "$@"; do
   case "$file" in
-    certificate.pem|chain.pem|fullchain.pem|private-key.pem) ;;
+    certificate.crt|chain.crt|fullchain.crt|private.key) ;;
     *) printf 'Unsupported file: %s\n' "$file" >&2; exit 2 ;;
   esac
 done
@@ -98,7 +98,7 @@ chmod 600 "$token_file"
 # Installing again replaces the job configuration. Discard validators from the
 # previous configuration so the immediate sync populates a changed destination
 # instead of treating its files as already current.
-for file in certificate.pem chain.pem fullchain.pem private-key.pem; do
+for file in certificate.crt chain.crt fullchain.crt private.key; do
   rm -f "$etag_dir/$file"
 done
 
@@ -140,7 +140,7 @@ for file in "$@"; do
       ;;
   esac
   case "$file" in
-    private-key.pem) chmod 600 "$temporary/$file" ;;
+    private.key) chmod 600 "$temporary/$file" ;;
     *) chmod 644 "$temporary/$file" ;;
   esac
   awk 'tolower($1) == "etag:" { sub(/\r$/, "", $2); value = $2 } END { if (value != "") print value }' \

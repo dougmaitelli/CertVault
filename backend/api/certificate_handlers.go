@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	certificateArtifact = "certificate.pem"
-	chainArtifact       = "chain.pem"
-	fullChainArtifact   = "fullchain.pem"
-	privateKeyArtifact  = "private-key.pem"
+	certificateArtifact = "certificate.crt"
+	chainArtifact       = "chain.crt"
+	fullChainArtifact   = "fullchain.crt"
+	privateKeyArtifact  = "private.key"
 )
 
 var certificateArtifacts = map[string]string{

@@ -19,7 +19,7 @@ func TestAuditSearchFiltersAndPaginates(t *testing.T) {
 	audits := New(db).Audits
 	ctx := context.Background()
 	audits.Record(ctx, "admin", "api_key.create", "deploy", "created key", "192.0.2.1")
-	audits.Record(ctx, "node", "certificate.download", "example.com", "fullchain.pem", "192.0.2.2")
+	audits.Record(ctx, "node", "certificate.download", "example.com", "fullchain.crt", "192.0.2.2")
 	audits.Record(ctx, "admin", "certificate.renew", "example.com", "", "192.0.2.1")
 
 	page, err := audits.Search(ctx, AuditFilter{Actors: []string{"admin"}, Page: 1, PerPage: 1})

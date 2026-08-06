@@ -31,12 +31,12 @@ paths:
       summary: Inspect a certificate
       parameters: [{name: name, in: path, required: true, schema: {type: string}}]
       responses: {"200": {description: Certificate metadata}, "404": {description: Not found}}
-  /certificates/{name}/fullchain.pem:
+  /certificates/{name}/fullchain.crt:
     get:
       summary: Download the current full chain
       parameters: [{name: name, in: path, required: true, schema: {type: string}}]
       responses: {"200": {description: PEM full chain}}
-  /certificates/{name}/private-key.pem:
+  /certificates/{name}/private.key:
     get:
       summary: Download the decrypted current private key
       parameters: [{name: name, in: path, required: true, schema: {type: string}}]

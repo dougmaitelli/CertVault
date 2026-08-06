@@ -120,7 +120,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	privateKeyRequest := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
-		"/api/v1/certificates/home/private-key.pem",
+		"/api/v1/certificates/home/private.key",
 		nil,
 	)
 	privateKeyRequest.Header.Set("Authorization", "Bearer "+token)

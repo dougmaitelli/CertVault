@@ -175,18 +175,18 @@ The raw value is shown once. See [Client access](https://dougmaitelli.github.io/
 ```sh
 curl --fail --silent --show-error \
   -H 'Authorization: Bearer cv_live_PREFIX.SECRET' \
-  https://certvault.home.example.com/api/v1/certificates/homelab-wildcard/fullchain.pem \
-  --output fullchain.pem
+  https://certvault.home.example.com/api/v1/certificates/homelab-wildcard/fullchain.crt \
+  --output fullchain.crt
 
 curl --fail --silent --show-error \
   -H 'Authorization: Bearer cv_live_PREFIX.SECRET' \
-  https://certvault.home.example.com/api/v1/certificates/homelab-wildcard/private-key.pem \
-  --output private-key.pem
+  https://certvault.home.example.com/api/v1/certificates/homelab-wildcard/private.key \
+  --output private.key
 ```
 
 Downloads include an `ETag`, so clients may use `If-None-Match`. A client key needs `certificates:read` for public certificate files and the separately privileged `private_keys:read` scope for private keys.
 
-The API Keys page can also generate a command that installs an automatic download job through `/client/install.sh`. The installer requires a Linux or Unix-like client with `curl`, `crontab`, and `install`. It stores the API key in a mode `0600` file, downloads through an atomic temporary directory, installs the selected cron schedule, and immediately performs the first download. Run the generated command again to replace an existing job for the same certificate files, including its token, server, schedule, and destination, instead of creating a duplicate. The default bundle installs `fullchain.pem` and `private-key.pem` together into a certificate-specific destination directory. The client stores each file's `ETag` and uses conditional requests on scheduled runs; unchanged files return `304 Not Modified`, are not rewritten, and do not create certificate-download audit events.
+The API Keys page can also generate a command that installs an automatic download job through `/client/install.sh`. The installer requires a Linux or Unix-like client with `curl`, `crontab`, and `install`. It stores the API key in a mode `0600` file, downloads through an atomic temporary directory, installs the selected cron schedule, and immediately performs the first download. Run the generated command again to replace an existing job for the same certificate files, including its token, server, schedule, and destination, instead of creating a duplicate. The default bundle installs `fullchain.crt` and `private.key` together into a certificate-specific destination directory. The client stores each file's `ETag` and uses conditional requests on scheduled runs; unchanged files return `304 Not Modified`, are not rewritten, and do not create certificate-download audit events.
 
 ## Configuration
 
