@@ -5,7 +5,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/certvault/certvault/api/auth"
@@ -47,30 +47,41 @@ func New(
 }
 
 func (a *API) frontend(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(filepath.Clean(r.URL.Path), "/")
-	root := os.Getenv(config.EnvUIDir)
-	if root == "" {
-		root = "/app/ui"
+	rootPath := os.Getenv(config.EnvUIDir)
+	if rootPath == "" {
+		rootPath = "/app/ui"
 	}
-	if path == "." || path == "" {
+	root, err := os.OpenRoot(rootPath)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer func() { _ = root.Close() }()
+
+	assetPath := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
+	if assetPath == "." || assetPath == "" {
 		serveFrontendIndex(w, r, root)
 		return
 	}
-	full := filepath.Join(root, path)
-	info, err := os.Stat(full)
+	info, err := root.Stat(assetPath)
 	if err != nil || info.IsDir() {
 		serveFrontendIndex(w, r, root)
 		return
 	}
-	if t := mime.TypeByExtension(filepath.Ext(full)); t != "" {
-		w.Header().Set("Content-Type", t)
+	asset, err := root.Open(assetPath)
+	if err != nil {
+		serveFrontendIndex(w, r, root)
+		return
 	}
-	http.ServeFile(w, r, full)
+	defer func() { _ = asset.Close() }()
+	if contentType := mime.TypeByExtension(path.Ext(assetPath)); contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	http.ServeContent(w, r, path.Base(assetPath), info.ModTime(), asset)
 }
 
-func serveFrontendIndex(w http.ResponseWriter, r *http.Request, root string) {
-	indexPath := filepath.Join(root, "index.html")
-	index, err := os.Open(indexPath)
+func serveFrontendIndex(w http.ResponseWriter, r *http.Request, root *os.Root) {
+	index, err := root.Open("index.html")
 	if err != nil {
 		http.NotFound(w, r)
 		return
