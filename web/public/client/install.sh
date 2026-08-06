@@ -28,6 +28,8 @@ Artifacts are certificate.crt, chain.crt, fullchain.crt, and private.key.
 EOF
 }
 
+# Parse only simple flags here; file mappings are normalized and validated as a
+# complete set below so duplicate artifacts and output names can be rejected.
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --server) server=${2-}; shift 2 ;;
@@ -50,6 +52,9 @@ if [ -z "$server" ] || [ -z "$certificate" ] || [ -z "$destination" ]; then
   exit 2
 fi
 
+# Convert every ARTIFACT[=OUTPUT] value into the explicit ARTIFACT=OUTPUT form
+# consumed by the generated sync script. Output names are restricted to
+# basenames so a mapping cannot escape the selected destination directory.
 old_ifs=$IFS
 IFS=,
 set -- $file_specs
@@ -97,6 +102,8 @@ for spec in "$@"; do
 done
 file_specs=$normalized_specs
 
+# Cron expressions are stored verbatim in the generated crontab. Reject shell
+# metacharacters and require the traditional five-field format.
 case "$schedule" in
   *[!A-Za-z0-9,'*/?_-\ ']*|*'
 '*) printf 'Invalid cron schedule\n' >&2; exit 2 ;;
@@ -109,6 +116,8 @@ if [ "$#" -ne 5 ]; then
   exit 2
 fi
 
+# Prefer a token supplied by automation, falling back to a non-echoing terminal
+# prompt for an interactive installation.
 token=${CERTVAULT_API_KEY-}
 if [ -z "$token" ]; then
   if [ ! -r /dev/tty ]; then
@@ -126,6 +135,8 @@ if [ -z "$token" ]; then
   exit 2
 fi
 
+# The artifact set identifies a job. Reinstalling the same set intentionally
+# replaces its destination, token, schedule, mappings, and reload command.
 job=$(printf '%s-%s' "$certificate" "$artifacts" | tr -c 'A-Za-z0-9._-' '-')
 config_dir=${CERTVAULT_CLIENT_CONFIG_DIR:-"$HOME/.config/certvault"}
 script_dir=${CERTVAULT_CLIENT_SCRIPT_DIR:-"$HOME/.local/libexec"}
@@ -159,9 +170,30 @@ etag_dir=$5
 reload_command=$6
 shift 6
 token=$(cat "$token_file")
-temporary=$(mktemp -d "$destination/.certvault.tmp.XXXXXX" 2>/dev/null || \
-  mktemp -d "${TMPDIR:-/tmp}/certvault.tmp.XXXXXX")
+
+# Prefer staging beside the destination so deployment is an atomic rename.
+# Some special filesystems, notably Proxmox pmxcfs, allow writes but not chmod;
+# detect that case and stage in the private ETag directory instead.
+deployment=move
+temporary=$(mktemp -d "$destination/.certvault.tmp.XXXXXX" 2>/dev/null || true)
+if [ -n "$temporary" ]; then
+  permission_probe="$temporary/.permission-test"
+  : >"$permission_probe"
+  if ! chmod 600 "$permission_probe" 2>/dev/null; then
+    rm -rf "$temporary"
+    temporary=""
+  else
+    rm -f "$permission_probe"
+  fi
+fi
+if [ -z "$temporary" ]; then
+  temporary=$(mktemp -d "$etag_dir/.certvault.tmp.XXXXXX")
+  deployment=copy
+fi
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
+
+# Download and validate every changed artifact before deploying any of them.
+# ETags avoid rewriting files—and avoid service reloads—when nothing changed.
 for spec in "$@"; do
   file=${spec%%=*}
   output=${spec#*=}
@@ -197,12 +229,20 @@ for spec in "$@"; do
     "$headers" >"$temporary/$file.etag"
   rm -f "$headers"
 done
+
+# Same-filesystem staging uses atomic moves. The fallback uses ordinary copies
+# because chmod-limited destinations cannot host the protected staging files.
 changed=0
 for spec in "$@"; do
   file=${spec%%=*}
   output=${spec#*=}
   if [ -f "$temporary/$output" ]; then
-    mv -f "$temporary/$output" "$destination/$output"
+    if [ "$deployment" = "copy" ]; then
+      cp -f "$temporary/$output" "$destination/$output"
+      rm -f "$temporary/$output"
+    else
+      mv -f "$temporary/$output" "$destination/$output"
+    fi
     changed=1
     if [ -s "$temporary/$file.etag" ]; then
       mv -f "$temporary/$file.etag" "$etag_dir/$file"
@@ -214,6 +254,8 @@ for spec in "$@"; do
 done
 rmdir "$temporary"
 trap - EXIT HUP INT TERM
+
+# Reload only after the complete changed set has been deployed successfully.
 if [ "$changed" -eq 1 ] && [ -n "$reload_command" ]; then
   /bin/sh -c "$reload_command"
 fi
@@ -224,6 +266,8 @@ shell_quote() {
   printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
 }
 
+# Persist a small wrapper with every value shell-quoted. Cron invokes this file
+# rather than embedding credentials or complex arguments in the crontab.
 {
   printf '#!/bin/sh\nexec '
   shell_quote "$sync_script"
@@ -251,6 +295,7 @@ shell_quote() {
 } >"$job_script"
 chmod 700 "$job_script"
 
+# Replace this job's existing cron entry without disturbing unrelated entries.
 marker="# certvault:$job"
 existing=$(crontab -l 2>/dev/null || true)
 {

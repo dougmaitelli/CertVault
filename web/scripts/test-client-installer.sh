@@ -54,6 +54,20 @@ esac
 EOF
 chmod 700 "$test_dir/bin/crontab"
 
+cat >"$test_dir/bin/chmod" <<'EOF'
+#!/bin/sh
+set -eu
+for argument in "$@"; do
+  case "$argument" in
+    "${MOCK_CHMOD_UNSUPPORTED_DIR-}"/.certvault.tmp.*/.permission-test)
+      [ -n "${MOCK_CHMOD_UNSUPPORTED_DIR-}" ] && exit 1
+      ;;
+  esac
+done
+exec /bin/chmod "$@"
+EOF
+chmod 700 "$test_dir/bin/chmod"
+
 file_mode() {
   stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"
 }
@@ -120,6 +134,7 @@ PATH="$test_dir/bin:$PATH" \
   HOME="$test_dir/home" \
   TEST_CRONTAB="$test_dir/crontab" \
   MOCK_CURL_LOG="$test_dir/curl.log" \
+  MOCK_CHMOD_UNSUPPORTED_DIR="$mapped_destination" \
   CERTVAULT_API_KEY="$token" \
   sh public/client/install.sh \
     --server "$server" \
@@ -139,5 +154,6 @@ mapped_job_script="$test_dir/home/.local/libexec/certvault-proxmox-fullchain.crt
 
 PATH="$test_dir/bin:$PATH" \
   MOCK_CURL_LOG="$test_dir/curl.log" \
+  MOCK_CHMOD_UNSUPPORTED_DIR="$mapped_destination" \
   "$mapped_job_script"
 [ "$(wc -l <"$reload_log" | tr -d ' ')" = "1" ]
