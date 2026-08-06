@@ -2,6 +2,7 @@
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
+  isolation: isolate;
 }
 
 .shell aside {
@@ -9,10 +10,13 @@
   top: 0;
   display: flex;
   height: 100vh;
-  padding: 28px 18px 10px;
+  z-index: 2;
+  padding: 28px 18px 14px;
   flex-direction: column;
-  border-right: 1px solid var(--color-border);
-  background: var(--color-background);
+  border-right: 1px solid rgb(255 255 255 / 7%);
+  background: rgb(14 24 28 / 72%);
+  box-shadow: 12px 0 40px rgb(0 6 8 / 22%);
+  backdrop-filter: blur(22px) saturate(130%);
 }
 
 .shell header {
@@ -31,23 +35,40 @@
 
 .shell nav {
   display: grid;
-  gap: 5px;
+  gap: 8px;
 }
 
 .shell nav a {
   padding: 11px 14px;
   border: 0;
-  border-radius: 7px;
+  border: 1px solid transparent;
+  border-radius: 11px;
   background: transparent;
   color: var(--color-text-secondary);
   text-align: left;
   text-decoration: none;
   text-transform: capitalize;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.shell nav a:hover {
+  background: rgb(255 255 255 / 3%);
+  color: var(--color-text);
+  transform: translateX(2px);
 }
 
 .shell nav a.active {
-  background: var(--color-accent-subtle);
-  color: var(--color-accent);
+  border-color: rgb(91 230 193 / 13%);
+  background: linear-gradient(145deg, rgb(35 61 61 / 82%), rgb(16 31 35 / 82%));
+  color: var(--color-accent-text);
+  box-shadow:
+    5px 5px 12px rgb(2 8 10 / 42%),
+    -4px -4px 10px rgb(65 96 98 / 9%),
+    inset 1px 1px 0 rgb(255 255 255 / 5%);
 }
 
 .shell aside footer {
@@ -59,6 +80,7 @@
   min-width: 0;
   padding: 42px 5vw 16px;
   flex-direction: column;
+  position: relative;
 }
 
 .shell .content-footer {
@@ -73,23 +95,35 @@
 
 .top {
   display: flex;
-  margin-bottom: 35px;
+  margin-bottom: 32px;
   align-items: center;
   justify-content: space-between;
 }
 
 .top h1 {
-  margin: 4px 0;
+  margin: 5px 0 0;
+  font-size: clamp(1.8rem, 3vw, 2.45rem);
+  letter-spacing: -0.045em;
   text-transform: capitalize;
 }
 
 .top small {
   color: var(--color-accent);
   letter-spacing: 0.15em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .health {
+  padding: 10px 14px;
+  border: 1px solid rgb(255 255 255 / 7%);
+  border-radius: 999px;
+  background: rgb(21 36 41 / 55%);
   color: var(--color-text-soft);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(12px);
+  font-size: 0.78rem;
 }
 
 .health i {
@@ -136,6 +170,8 @@
     padding: 12px;
     flex-direction: row;
     align-items: center;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .shell aside header {
@@ -149,13 +185,19 @@
   .shell nav {
     display: flex;
     margin-left: auto;
+    overflow-x: auto;
   }
 
   .shell aside footer {
-    margin: 0;
+    display: none;
   }
 
   .shell main {
     padding: 25px 16px 12px;
+  }
+
+  .shell nav a {
+    padding: 9px 10px;
+    white-space: nowrap;
   }
 }

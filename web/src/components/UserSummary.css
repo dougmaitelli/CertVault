@@ -23,6 +23,7 @@
   background: var(--color-accent-subtle);
   color: var(--color-accent-text);
   font-weight: 800;
+  box-shadow: var(--shadow-soft);
 }
 
 .user-summary-identity {

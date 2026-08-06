@@ -1,13 +1,16 @@
 .stats > div {
   padding: 22px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgb(29 48 54 / 82%), rgb(17 30 34 / 75%));
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
 }
 
 .stats strong {
   display: block;
   font-size: 2rem;
+  letter-spacing: -0.04em;
 }
 
 .stats span {

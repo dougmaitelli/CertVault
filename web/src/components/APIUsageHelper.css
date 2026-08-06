@@ -2,8 +2,10 @@
   margin-bottom: 20px;
   padding: 18px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
+  border-radius: 16px;
+  background: var(--color-glass);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px);
 }
 
 .api-usage-heading {
@@ -65,6 +67,7 @@
   border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   background: var(--color-surface-inset);
+  box-shadow: var(--shadow-inset);
 }
 
 .api-command code {

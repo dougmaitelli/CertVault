@@ -3,4 +3,7 @@
   height: 100vh;
   place-items: center;
   font-size: 2rem;
+  color: var(--color-accent);
+  letter-spacing: -0.04em;
+  text-shadow: 0 0 30px rgb(91 230 193 / 32%);
 }

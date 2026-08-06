@@ -4,6 +4,7 @@
   background: var(--color-surface-hover);
   font-size: 0.72rem;
   text-transform: uppercase;
+  box-shadow: inset 1px 1px 0 rgb(255 255 255 / 6%);
 }
 
 .status-badge-valid,

@@ -20,8 +20,10 @@
 .empty-state {
   padding: 20px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgb(27 45 51 / 82%), rgb(17 30 35 / 76%));
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
 }
 
 .account-list article.current {

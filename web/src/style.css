@@ -1,16 +1,18 @@
 :root {
-  --color-background: #0b1015;
-  --color-surface: #111920;
-  --color-surface-raised: color-mix(in srgb, var(--color-surface) 94%, white);
-  --color-surface-inset: color-mix(in srgb, var(--color-background) 92%, black);
+  --color-background: #0d1519;
+  --color-surface: #142126;
+  --color-surface-raised: color-mix(in srgb, var(--color-surface) 91%, white);
+  --color-surface-inset: color-mix(in srgb, var(--color-background) 90%, black);
   --color-surface-hover: color-mix(in srgb, var(--color-surface) 88%, white);
-  --color-border: #222e36;
+  --color-glass: rgb(23 38 44 / 72%);
+  --color-glass-strong: rgb(26 43 49 / 88%);
+  --color-border: rgb(185 227 218 / 10%);
   --color-border-strong: color-mix(in srgb, var(--color-border) 76%, white);
-  --color-text: #dce4ea;
-  --color-text-secondary: #8e9da6;
-  --color-text-muted: #71808a;
-  --color-text-soft: #abb7bf;
-  --color-accent: #4be0bd;
+  --color-text: #e8f1ef;
+  --color-text-secondary: #98aaa9;
+  --color-text-muted: #778c8b;
+  --color-text-soft: #b5c5c2;
+  --color-accent: #5be6c1;
   --color-accent-text: color-mix(in srgb, var(--color-accent) 70%, white);
   --color-accent-subtle: color-mix(
     in srgb,
@@ -63,6 +65,12 @@
     var(--color-surface)
   );
   --color-overlay: #020608cc;
+  --shadow-raised:
+    10px 10px 24px rgb(2 8 10 / 48%), -8px -8px 20px rgb(62 91 96 / 10%);
+  --shadow-soft:
+    6px 6px 16px rgb(2 8 10 / 38%), -5px -5px 14px rgb(68 98 102 / 8%);
+  --shadow-inset:
+    inset 3px 3px 8px rgb(1 7 9 / 55%), inset -3px -3px 8px rgb(59 86 90 / 10%);
 
   font-family: Inter, ui-sans-serif, system-ui;
   color: var(--color-text);
@@ -76,6 +84,17 @@
 
 body {
   margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 80% 8%, rgb(58 199 168 / 12%), transparent 26rem),
+    radial-gradient(
+      circle at 18% 92%,
+      rgb(68 118 145 / 10%),
+      transparent 30rem
+    ),
+    var(--color-background);
+  background-attachment: fixed;
 }
 
 button,
@@ -114,9 +133,22 @@ input,
 select {
   padding: 12px;
   border: 1px solid var(--color-border-strong);
-  border-radius: 8px;
+  border-radius: 11px;
   background: var(--color-surface-inset);
   color: white;
+  box-shadow: var(--shadow-inset);
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--color-accent-border);
+  box-shadow:
+    var(--shadow-inset),
+    0 0 0 3px rgb(91 230 193 / 10%);
 }
 
 form label {
@@ -135,28 +167,25 @@ form > .action-button {
 }
 
 .action-button {
-  padding: 7px 10px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 6px;
-  background: var(--color-surface-hover);
+  padding: 8px 12px;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 10px;
+  background: rgb(31 49 55 / 82%);
   color: var(--color-text);
   font-size: 0.8rem;
   text-decoration: none;
   transition:
-    filter 150ms ease,
-    box-shadow 150ms ease;
+    background-color 150ms ease,
+    border-color 150ms ease;
 }
 
-.action-button:hover {
-  filter: brightness(1.1);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, white 16%, transparent),
-    0 0 7px color-mix(in srgb, var(--color-accent) 40%, transparent),
-    0 0 16px color-mix(in srgb, var(--color-accent) 27%, transparent);
+.action-button:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: rgb(91 230 193 / 28%);
+  background: rgb(38 59 64 / 90%);
 }
 
 .action-button:active {
-  filter: brightness(0.95);
+  filter: brightness(0.88);
 }
 
 .action-button:disabled,
@@ -168,10 +197,38 @@ form > .action-button {
 }
 
 .action-button.success {
+  position: relative;
+  overflow: hidden;
   border-color: var(--color-accent-border);
-  background: var(--color-accent-strong);
-  color: var(--color-text);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
   font-weight: 800;
+}
+
+.action-button.success::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 25%,
+    rgb(255 255 255 / 42%) 48%,
+    transparent 72%
+  );
+  content: "";
+  pointer-events: none;
+  transform: translateX(-130%);
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.action-button.success:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, white);
+  background: var(--color-accent);
+}
+
+.action-button.success:hover:not(:disabled):not(
+    [aria-disabled="true"]
+  )::before {
+  transform: translateX(130%);
 }
 
 .action-buttons {
@@ -191,18 +248,25 @@ form > .action-button {
   color: var(--color-accent-contrast);
   font-weight: 900;
   line-height: 1;
+  box-shadow:
+    5px 5px 12px rgb(2 8 10 / 50%),
+    -3px -3px 10px rgb(91 230 193 / 12%),
+    inset 1px 1px 1px rgb(255 255 255 / 35%);
 }
 
 .table {
   overflow-x: auto;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 16px;
+  background: var(--color-glass);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px) saturate(125%);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--color-surface);
+  background: transparent;
 }
 
 th,
@@ -216,6 +280,15 @@ th {
   color: var(--color-text-muted);
   font-size: 0.7rem;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+tbody tr {
+  transition: background-color 150ms ease;
+}
+
+tbody tr:hover {
+  background: rgb(255 255 255 / 2.5%);
 }
 
 .error {

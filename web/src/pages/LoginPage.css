@@ -2,20 +2,22 @@
   display: grid;
   min-height: 100vh;
   place-items: center;
-  background: radial-gradient(
-    circle at 50% 20%,
-    var(--color-accent-subtle),
-    var(--color-background) 48%
-  );
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 20%, rgb(91 230 193 / 17%), transparent 38%),
+    radial-gradient(circle at 15% 80%, rgb(74 123 151 / 14%), transparent 34%);
 }
 
 .login section {
   width: 390px;
   padding: 42px;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
-  background: var(--color-surface);
-  box-shadow: 0 24px 80px #0008;
+  border-radius: 24px;
+  background: rgb(22 37 43 / 72%);
+  box-shadow:
+    18px 22px 60px rgb(1 7 9 / 64%),
+    -10px -10px 35px rgb(76 113 115 / 10%);
+  backdrop-filter: blur(24px) saturate(130%);
   text-align: center;
 }
 
