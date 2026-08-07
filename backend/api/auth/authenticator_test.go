@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database"
@@ -41,12 +42,29 @@ func TestSessionRoundTrip(t *testing.T) {
 	if len(cookies) != 1 {
 		t.Fatalf("cookies = %d, want 1", len(cookies))
 	}
+	if cookies[0].MaxAge != int(config.DefaultSessionDuration.Seconds()) {
+		t.Fatalf("cookie max age = %d, want %d", cookies[0].MaxAge, int(config.DefaultSessionDuration.Seconds()))
+	}
 	identity, ok := authenticator.verifySession(cookies[0].Value)
 	if !ok || identity.Name != "admin@example.com" ||
 		identity.DisplayName != "Certificate Admin" ||
 		identity.Picture != "https://id.example.com/avatar.png" ||
 		identity.AuthenticationMethod != authMethodOIDC {
 		t.Fatalf("verified session = %#v, %v", identity, ok)
+	}
+}
+
+func TestSessionUsesConfiguredDuration(t *testing.T) {
+	authenticator := &Authenticator{config: &config.Config{
+		MasterKey: make([]byte, 32),
+		Auth:      config.Auth{SessionDuration: config.Duration{Duration: 2 * time.Hour}},
+	}}
+	recorder := httptest.NewRecorder()
+	authenticator.setSession(recorder, sessionPayload{Name: "admin@example.com"})
+
+	cookies := recorder.Result().Cookies()
+	if len(cookies) != 1 || cookies[0].MaxAge != int((2*time.Hour).Seconds()) {
+		t.Fatalf("cookies = %#v, want a two-hour max age", cookies)
 	}
 }
 

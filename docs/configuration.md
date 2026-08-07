@@ -15,6 +15,7 @@ CertVault reads YAML from `/config/config.yaml` by default. The reference file i
 | `server.log_level` | `debug`, `info`, `warn`, or `error` |
 | `server.trusted_proxies` | Proxy IP addresses or CIDRs trusted to supply client IP headers |
 | `audit.retention` | Age after which audit events are deleted; omitted means indefinitely |
+| `auth.session_duration` | Browser session lifetime; defaults to `8h` |
 | `acme.email` | ACME account contact address |
 | `acme.directory_url` | ACME v2 directory |
 | `acme.accept_terms` | Must be `true` |
@@ -53,6 +54,7 @@ Supported key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `r
 | `CERTVAULT_ACME_DNS_RESOLVERS` | Comma-separated DNS-01 resolvers |
 | `CERTVAULT_MASTER_KEY` | Base64-encoded 32-byte encryption key |
 | `CERTVAULT_MASTER_KEY_FILE` | File containing the master key |
+| `CERTVAULT_SESSION_DURATION` | Browser session lifetime, such as `8h` or `1d` |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` | Bootstrap UI credential |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` | File containing the bootstrap credential |
 | `CERTVAULT_OIDC_ISSUER_URL` | OIDC issuer |

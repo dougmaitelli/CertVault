@@ -11,6 +11,8 @@ The file form is recommended for container deployments.
 
 To disable bootstrap login, omit both environment variables and `auth.bootstrap_token_file` from YAML. When OIDC is enabled, bootstrap remains available only as a secondary break-glass method. At least one authentication method must be configured to sign in to the web console.
 
+Browser sessions last 8 hours by default. Configure `auth.session_duration` in YAML or set `CERTVAULT_SESSION_DURATION` to a duration such as `12h` or `1d` to override it. This lifetime applies to both bootstrap and OIDC sessions.
+
 ## OpenID Connect
 
 ```yaml

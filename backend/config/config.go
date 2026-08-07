@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	certnetwork "github.com/certvault/certvault/network"
 	"go.yaml.in/yaml/v3"
@@ -96,6 +97,11 @@ func applyEnv(c *Config) error {
 			DefaultDNSResolverSecondary,
 		}
 	}
+	if v := os.Getenv(EnvSessionDuration); v != "" {
+		if err := c.Auth.SessionDuration.UnmarshalText([]byte(v)); err != nil {
+			return fmt.Errorf("%s: %w", EnvSessionDuration, err)
+		}
+	}
 	bootstrapToken := os.Getenv(EnvBootstrapAdminToken)
 	bootstrapTokenFile := os.Getenv(EnvBootstrapAdminTokenFile)
 	if bootstrapToken != "" && bootstrapTokenFile != "" {
@@ -165,6 +171,9 @@ func splitCommaSeparated(value string) []string {
 }
 
 func (c *Config) Validate() error {
+	if c.Auth.SessionDuration.Duration < 0 {
+		return errors.New("auth.session_duration cannot be negative")
+	}
 	if c.Audit.Retention.Duration < 0 {
 		return errors.New("audit.retention cannot be negative")
 	}
@@ -243,6 +252,13 @@ func (c *Config) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (c *Config) SessionDuration() time.Duration {
+	if c.Auth.SessionDuration.Duration == 0 {
+		return DefaultSessionDuration
+	}
+	return c.Auth.SessionDuration.Duration
 }
 
 func (c *Config) OIDCRedirectURL() string {

@@ -17,9 +17,10 @@ type ACME struct {
 }
 
 type Auth struct {
-	BootstrapToken     string `yaml:"-"`
-	BootstrapTokenFile string `yaml:"bootstrap_token_file"`
-	OIDC               *OIDC  `yaml:"oidc"`
+	SessionDuration    Duration `yaml:"session_duration"`
+	BootstrapToken     string   `yaml:"-"`
+	BootstrapTokenFile string   `yaml:"bootstrap_token_file"`
+	OIDC               *OIDC    `yaml:"oidc"`
 }
 
 type Audit struct {

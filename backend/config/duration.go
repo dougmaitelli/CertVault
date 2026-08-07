@@ -9,14 +9,21 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-const DefaultRenewBefore = 30 * 24 * time.Hour
+const (
+	DefaultRenewBefore     = 30 * 24 * time.Hour
+	DefaultSessionDuration = 8 * time.Hour
+)
 
 type Duration struct {
 	time.Duration
 }
 
 func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
-	value := strings.TrimSpace(node.Value)
+	return d.UnmarshalText([]byte(node.Value))
+}
+
+func (d *Duration) UnmarshalText(text []byte) error {
+	value := strings.TrimSpace(string(text))
 	if strings.HasSuffix(value, "d") {
 		days, err := strconv.ParseInt(strings.TrimSuffix(value, "d"), 10, 64)
 		if err != nil {

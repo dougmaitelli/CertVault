@@ -24,7 +24,6 @@ import (
 const (
 	identityKey         contextKey = "identity"
 	sessionCookie                  = "cv_session"
-	sessionDuration                = 12 * time.Hour
 	oidcStateLifetime              = 10 * time.Minute
 	authMethodBootstrap            = "bootstrap"
 	authMethodOIDC                 = "oidc"
@@ -228,6 +227,7 @@ func withIdentity(r *http.Request, identity Identity) *http.Request {
 }
 
 func (a *Authenticator) setSession(w http.ResponseWriter, session sessionPayload) {
+	sessionDuration := a.config.SessionDuration()
 	session.ExpiresAt = time.Now().Add(sessionDuration).Unix()
 	contents, _ := json.Marshal(session)
 	payload := base64.RawURLEncoding.EncodeToString(contents)

@@ -203,6 +203,7 @@ Global values can be overridden with:
 | `CERTVAULT_ACME_DNS_RESOLVERS` | Comma-separated recursive resolvers used for DNS-01 checks; defaults to `1.1.1.1:53,1.0.0.1:53` |
 | `CERTVAULT_MASTER_KEY` | Base64-encoded 32-byte encryption key |
 | `CERTVAULT_MASTER_KEY_FILE` | Path to a file containing the Base64-encoded encryption key |
+| `CERTVAULT_SESSION_DURATION` | Browser session lifetime; defaults to `8h` |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` | Break-glass UI token |
 | `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` | Path to a file containing the break-glass UI token |
 | `CERTVAULT_OIDC_ISSUER_URL` | OIDC issuer used for provider discovery |

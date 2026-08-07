@@ -12,6 +12,7 @@ const (
 	EnvACMEDNSResolvers        = "CERTVAULT_ACME_DNS_RESOLVERS"
 	EnvMasterKey               = "CERTVAULT_MASTER_KEY"
 	EnvMasterKeyFile           = "CERTVAULT_MASTER_KEY_FILE"
+	EnvSessionDuration         = "CERTVAULT_SESSION_DURATION"
 	EnvBootstrapAdminToken     = "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN"
 	EnvBootstrapAdminTokenFile = "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE"
 	EnvOIDCIssuerURL           = "CERTVAULT_OIDC_ISSUER_URL"

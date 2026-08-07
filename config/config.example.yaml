@@ -26,6 +26,8 @@ acme:
 
 # Authentication is optional, but at least one UI login method is recommended.
 auth:
+  # Browser session lifetime. Defaults to 8h.
+  session_duration: 8h
   # Use CERTVAULT_BOOTSTRAP_ADMIN_TOKEN instead when secrets come from the
   # environment.
   # bootstrap_token_file: /run/secrets/admin_token
