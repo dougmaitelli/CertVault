@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router";
 import "./ConsoleLayout.css";
 import type { Session } from "../api/types";
 import { navigationRoutes } from "../routing/routes";

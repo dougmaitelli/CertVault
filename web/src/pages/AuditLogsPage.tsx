@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import { api } from "../api/client";
 import type { AuditPage } from "../api/types";
 import { MultiSelect } from "../components/MultiSelect";
