@@ -15,7 +15,7 @@ Thank you for helping improve CertVault. Bug reports, documentation, tests, and 
 Requirements:
 
 - Go 1.25.10 or the version declared by `backend/go.mod`
-- Node.js 24 or newer with npm
+- Node.js 24 or newer with pnpm 11.20.0
 - OpenSSL for generation of local development secrets
 - Docker only for container builds or containerized screenshot generation
 

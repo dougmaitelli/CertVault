@@ -2,9 +2,10 @@
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",
+  "packageManager": "pnpm@11.20.0",
   "scripts": {
     "dev": "vite",
-    "build": "npm run typecheck && vite build",
+    "build": "pnpm run typecheck && vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src scripts --max-warnings 0",
     "lint:fix": "eslint src scripts --fix",
@@ -12,8 +13,8 @@
     "format:check": "prettier --check src scripts eslint.config.mjs package.json tsconfig.json vite.config.ts index.html",
     "screenshots": "node scripts/take-screenshots.mjs",
     "screenshots:docker": "sh scripts/screenshots-docker.sh",
-    "test": "npm run typecheck && sh scripts/test-client-installer.sh",
-    "check": "npm run format:check && npm run lint && npm run test && npm run build"
+    "test": "pnpm run typecheck && sh scripts/test-client-installer.sh",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run test && pnpm run build"
   },
   "dependencies": {
     "react": "^19.2.8",

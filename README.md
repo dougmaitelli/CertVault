@@ -270,9 +270,9 @@ make build         # backend binary and frontend production bundle
 make check         # run every non-mutating verification above
 ```
 
-Frontend commands can also be run independently from `web/` with `npm run format`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`, or `npm run check`.
+Frontend commands can also be run independently from `web/` with `pnpm run format`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test`, `pnpm run build`, or `pnpm run check`.
 
-Regenerate the README screenshots from deterministic mocked API data with `make screenshots`. This requires Playwright's Chromium browser (`cd web && npx playwright install chromium`). To use Playwright's prebuilt browser container instead, run `make screenshots-docker` with Docker available.
+Regenerate the README screenshots from deterministic mocked API data with `make screenshots`. This requires Playwright's Chromium browser (`cd web && pnpm exec playwright install chromium`). To use Playwright's prebuilt browser container instead, run `make screenshots-docker` with Docker available.
 
 The API outline is in [`docs/openapi.yaml`](docs/openapi.yaml).
 

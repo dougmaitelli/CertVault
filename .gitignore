@@ -1,6 +1,7 @@
 /web/node_modules/
 /web/dist/
 /web/*.tsbuildinfo
+/.pnpm-store/
 /secrets/
 /data/
 /config/config.yaml

@@ -3,6 +3,7 @@
 .codex
 web/node_modules
 web/dist
+.pnpm-store
 data
 secrets
 *.db

@@ -1,9 +1,10 @@
 FROM node:26-alpine AS ui
+RUN npm install --global pnpm@11.20.0
 WORKDIR /src/web
-COPY web/package*.json ./
-RUN npm ci
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY web/ ./
-RUN npm run build
+RUN pnpm run build
 
 FROM golang:1.26-alpine AS backend
 RUN apk add --no-cache build-base

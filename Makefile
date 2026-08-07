@@ -22,13 +22,13 @@ dependencies-backend:
 	cd backend && go mod download
 
 dependencies-frontend:
-	cd web && npm ci
+	cd web && pnpm install --frozen-lockfile
 
 build-backend:
 	cd backend && go build -buildvcs=false -o ../certvault .
 
 build-frontend:
-	cd web && npm run build
+	cd web && pnpm run build
 
 test: test-backend test-frontend
 
@@ -36,7 +36,7 @@ test-backend:
 	cd backend && go test ./...
 
 test-frontend:
-	cd web && npm run test
+	cd web && pnpm run test
 
 format: format-backend format-frontend
 
@@ -44,7 +44,7 @@ format-backend:
 	gofmt -w backend
 
 format-frontend:
-	cd web && npm run format
+	cd web && pnpm run format
 
 format-check: format-check-backend format-check-frontend
 
@@ -52,7 +52,7 @@ format-check-backend:
 	test -z "$$(gofmt -l backend)"
 
 format-check-frontend:
-	cd web && npm run format:check
+	cd web && pnpm run format:check
 
 lint: lint-backend lint-frontend
 
@@ -60,7 +60,7 @@ lint-backend: $(GOLANGCI_LINT)
 	cd backend && $(GOLANGCI_LINT) run ./...
 
 lint-frontend:
-	cd web && npm run lint
+	cd web && pnpm run lint
 
 vet:
 	cd backend && go vet ./...
@@ -80,10 +80,10 @@ clean:
 	rm -rf .cache
 
 screenshots:
-	cd web && npm run screenshots
+	cd web && pnpm run screenshots
 
 screenshots-docker:
-	cd web && npm run screenshots:docker
+	cd web && pnpm run screenshots:docker
 
 docker:
 	docker compose build
@@ -109,4 +109,4 @@ dev: dependencies
 		backend_pid=$$!; \
 		trap 'kill $$backend_pid 2>/dev/null || true' EXIT INT TERM; \
 		cd ../web; \
-		npm run dev
+		pnpm run dev
