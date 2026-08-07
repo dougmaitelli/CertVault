@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -78,6 +79,13 @@ func applyEnv(c *Config) error {
 		if err := c.Server.LogLevel.UnmarshalText([]byte(v)); err != nil {
 			return fmt.Errorf("%s: %w", EnvLogLevel, err)
 		}
+	}
+	if v := os.Getenv(EnvUIEnabled); v != "" {
+		enabled, err := strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("%s: %w", EnvUIEnabled, err)
+		}
+		c.Server.UIEnabled = &enabled
 	}
 	if v := os.Getenv(EnvACMEEmail); v != "" {
 		c.ACME.Email = v
@@ -259,6 +267,10 @@ func (c *Config) SessionDuration() time.Duration {
 		return DefaultSessionDuration
 	}
 	return c.Auth.SessionDuration.Duration
+}
+
+func (c *Config) UIEnabled() bool {
+	return c.Server.UIEnabled == nil || *c.Server.UIEnabled
 }
 
 func (c *Config) OIDCRedirectURL() string {

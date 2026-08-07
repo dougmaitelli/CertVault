@@ -198,6 +198,8 @@ Global values can be overridden with:
 | `CERTVAULT_DATA_DIR` | Persistent data directory |
 | `CERTVAULT_LISTEN` | HTTP listen address |
 | `CERTVAULT_PUBLIC_URL` | Browser-visible HTTPS origin |
+| `CERTVAULT_UI_ENABLED` | Enable or disable the web console and browser authentication routes |
+| `CERTVAULT_LOG_LEVEL` | Logging level |
 | `CERTVAULT_ACME_EMAIL` | ACME account email |
 | `CERTVAULT_ACME_DIRECTORY_URL` | ACME directory override |
 | `CERTVAULT_ACME_DNS_RESOLVERS` | Comma-separated recursive resolvers used for DNS-01 checks; defaults to `1.1.1.1:53,1.0.0.1:53` |
@@ -211,7 +213,6 @@ Global values can be overridden with:
 | `CERTVAULT_OIDC_CLIENT_SECRET` | OIDC client secret |
 | `CERTVAULT_OIDC_CLIENT_SECRET_FILE` | Path to a file containing the OIDC client secret |
 | `CERTVAULT_OIDC_ALLOWED_GROUPS` | Comma-separated administrator group allowlist |
-| `CERTVAULT_UI_DIR` | Built frontend directory |
 
 Some values may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.
 

@@ -69,3 +69,26 @@ func TestFrontendDoesNotFollowSymlinksOutsideUIRoot(t *testing.T) {
 		t.Fatalf("escaped frontend response = %d %q", response.Code, response.Body.String())
 	}
 }
+
+func TestHeadlessModeDoesNotRegisterUIOrBrowserAuthenticationRoutes(t *testing.T) {
+	disabled := false
+	handler := (&API{cfg: &config.Config{
+		Server: config.Server{UIEnabled: &disabled},
+	}}).routes()
+
+	for _, route := range []string{"/", "/certificates", "/auth/methods", "/auth/login"} {
+		request := httptest.NewRequest(http.MethodGet, route, nil)
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusNotFound {
+			t.Errorf("headless route %s returned %d, want 404", route, response.Code)
+		}
+	}
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("headless health route returned %d", response.Code)
+	}
+}

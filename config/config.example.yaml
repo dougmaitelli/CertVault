@@ -4,6 +4,8 @@ data_dir: /data
 server:
   listen: 0.0.0.0:8080
   public_url: https://certvault.home.example.com
+  # Disable the web console and browser authentication routes for API-only use.
+  ui_enabled: true
   # debug, info, warn, warning, error, or a slog offset such as DEBUG+2.
   log_level: info
   # Only trust forwarding headers from proxies you operate. Entries may be

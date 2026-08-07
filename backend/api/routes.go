@@ -10,11 +10,14 @@ func (a *API) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", a.health)
 	mux.HandleFunc("GET /api/v1/ready", a.ready)
-	mux.HandleFunc("GET /auth/methods", a.authenticationMethods)
-	mux.HandleFunc("GET /auth/login", a.authenticator.Login)
-	mux.HandleFunc("GET "+config.OIDCCallbackPath, a.authenticator.Callback)
-	mux.HandleFunc("POST /auth/bootstrap", a.authenticator.BootstrapLogin)
-	mux.HandleFunc("POST /auth/logout", a.authenticator.Logout)
+
+	if a.cfg.UIEnabled() {
+		mux.HandleFunc("GET /auth/methods", a.authenticationMethods)
+		mux.HandleFunc("GET /auth/login", a.authenticator.Login)
+		mux.HandleFunc("GET "+config.OIDCCallbackPath, a.authenticator.Callback)
+		mux.HandleFunc("POST /auth/bootstrap", a.authenticator.BootstrapLogin)
+		mux.HandleFunc("POST /auth/logout", a.authenticator.Logout)
+	}
 
 	apiMux := http.NewServeMux()
 	apiMux.HandleFunc("GET /api/v1/session", a.session)
@@ -50,7 +53,9 @@ func (a *API) routes() http.Handler {
 	apiMux.HandleFunc("GET /api/v1/audit", requireAdministrator(a.listAudits))
 	mux.Handle("/api/", a.authenticator.Middleware(apiMux))
 
-	mux.HandleFunc("/", a.frontend)
+	if a.cfg.UIEnabled() {
+		mux.HandleFunc("/", a.frontend)
+	}
 	return a.security(mux)
 }
 

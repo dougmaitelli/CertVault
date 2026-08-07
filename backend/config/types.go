@@ -3,6 +3,7 @@ package config
 type Server struct {
 	Listen         string   `yaml:"listen"`
 	PublicURL      string   `yaml:"public_url"`
+	UIEnabled      *bool    `yaml:"ui_enabled"`
 	LogLevel       LogLevel `yaml:"log_level"`
 	TrustedProxies []string `yaml:"trusted_proxies"`
 }

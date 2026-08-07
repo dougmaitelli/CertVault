@@ -7,6 +7,7 @@ const (
 	EnvListen                  = "CERTVAULT_LISTEN"
 	EnvPublicURL               = "CERTVAULT_PUBLIC_URL"
 	EnvLogLevel                = "CERTVAULT_LOG_LEVEL"
+	EnvUIEnabled               = "CERTVAULT_UI_ENABLED"
 	EnvACMEEmail               = "CERTVAULT_ACME_EMAIL"
 	EnvACMEDirectoryURL        = "CERTVAULT_ACME_DIRECTORY_URL"
 	EnvACMEDNSResolvers        = "CERTVAULT_ACME_DNS_RESOLVERS"

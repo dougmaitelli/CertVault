@@ -12,6 +12,7 @@ CertVault reads YAML from `/config/config.yaml` by default. The reference file i
 | `data_dir` | SQLite database and encrypted certificate storage |
 | `server.listen` | HTTP listen address |
 | `server.public_url` | Browser-visible origin and OIDC callback base |
+| `server.ui_enabled` | Web console and browser authentication routes; defaults to `true` |
 | `server.log_level` | `debug`, `info`, `warn`, or `error` |
 | `server.trusted_proxies` | Proxy IP addresses or CIDRs trusted to supply client IP headers |
 | `audit.retention` | Age after which audit events are deleted; omitted means indefinitely |
@@ -48,6 +49,7 @@ Supported key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `r
 | `CERTVAULT_DATA_DIR` | Persistent data directory |
 | `CERTVAULT_LISTEN` | HTTP listen address |
 | `CERTVAULT_PUBLIC_URL` | Browser-visible origin |
+| `CERTVAULT_UI_ENABLED` | Enable or disable the web console and browser authentication routes |
 | `CERTVAULT_LOG_LEVEL` | Logging level |
 | `CERTVAULT_ACME_EMAIL` | ACME account email |
 | `CERTVAULT_ACME_DIRECTORY_URL` | ACME directory |
