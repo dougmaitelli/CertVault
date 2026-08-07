@@ -2,6 +2,7 @@ package config
 
 // Application environment variable names.
 const (
+	EnvAppVersion              = "APP_VERSION"
 	EnvConfigFile              = "CERTVAULT_CONFIG"
 	EnvDataDir                 = "CERTVAULT_DATA_DIR"
 	EnvListen                  = "CERTVAULT_LISTEN"

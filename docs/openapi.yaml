@@ -21,7 +21,17 @@ paths:
   /health:
     get:
       security: []
-      responses: {"200": {description: Healthy}}
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version]
+                properties:
+                  status: {type: string, const: ok}
+                  version: {type: string}
   /certificates:
     get:
       summary: List certificates visible to the caller

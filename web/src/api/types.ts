@@ -98,3 +98,8 @@ export type AuthenticationMethods = {
   oidc: boolean;
   bootstrap: boolean;
 };
+
+export type Health = {
+  status: "ok";
+  version: string;
+};

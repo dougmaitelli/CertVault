@@ -16,6 +16,7 @@ import (
 )
 
 type Config struct {
+	AppVersion     string                   `yaml:"-"`
 	DataDir        string                   `yaml:"data_dir"`
 	Server         Server                   `yaml:"server"`
 	ACME           ACME                     `yaml:"acme"`
@@ -60,6 +61,10 @@ func Load(path string) (*Config, error) {
 }
 
 func applyEnv(c *Config) error {
+	c.AppVersion = os.Getenv(EnvAppVersion)
+	if c.AppVersion == "" {
+		c.AppVersion = "dev"
+	}
 	if v := os.Getenv(EnvDataDir); v != "" {
 		c.DataDir = v
 	}

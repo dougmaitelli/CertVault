@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -18,8 +19,9 @@ import (
 func TestHealthAndScopedCertificateList(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &config.Config{
-		DataDir:   dir,
-		MasterKey: make([]byte, 32),
+		AppVersion: "v1.2.3",
+		DataDir:    dir,
+		MasterKey:  make([]byte, 32),
 		ACME: config.ACME{
 			Email:       "test@example.com",
 			AcceptTerms: true,
@@ -61,6 +63,13 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	handler.ServeHTTP(health, healthRequest)
 	if health.Code != http.StatusOK {
 		t.Fatalf("health returned %d", health.Code)
+	}
+	var healthBody map[string]string
+	if err = json.Unmarshal(health.Body.Bytes(), &healthBody); err != nil {
+		t.Fatal(err)
+	}
+	if healthBody["version"] != cfg.AppVersion {
+		t.Fatalf("health version = %q, want %q", healthBody["version"], cfg.AppVersion)
 	}
 	ready := httptest.NewRecorder()
 	readyRequest := httptest.NewRequestWithContext(

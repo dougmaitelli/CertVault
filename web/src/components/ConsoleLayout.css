@@ -86,6 +86,8 @@
 .shell .content-footer {
   margin-top: auto;
   padding-top: 42px;
+  color: var(--color-text-soft);
+  font-size: 0.68rem;
   text-align: center;
 }
 

@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router";
 import "./App.css";
 import { api } from "./api/client";
-import type { ACMEAccount, APIKey, Certificate, Session } from "./api/types";
+import type {
+  ACMEAccount,
+  APIKey,
+  Certificate,
+  Health,
+  Session,
+} from "./api/types";
 import { ConsoleLayout } from "./components/ConsoleLayout";
 import { APIKeysPage } from "./pages/APIKeysPage";
 import { ACMEAccountsPage } from "./pages/ACMEAccountsPage";
@@ -49,6 +55,7 @@ function Console({ session, onLogout }: ConsoleProps) {
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
   const [acmeAccounts, setACMEAccounts] = useState<ACMEAccount[]>([]);
   const [error, setError] = useState("");
+  const [appVersion, setAppVersion] = useState("dev");
   const [infrastructureHealthy, setInfrastructureHealthy] = useState<
     boolean | undefined
   >();
@@ -73,8 +80,11 @@ function Console({ session, onLogout }: ConsoleProps) {
 
   useEffect(() => {
     const checkInfrastructure = () => {
-      void Promise.all([api("health"), api("ready")])
-        .then(() => setInfrastructureHealthy(true))
+      void Promise.all([api<Health>("health"), api("ready")])
+        .then(([health]) => {
+          setAppVersion(health.version);
+          setInfrastructureHealthy(true);
+        })
         .catch(() => setInfrastructureHealthy(false));
       void api<ACMEAccount[]>("acme-accounts")
         .then(setACMEAccounts)
@@ -116,6 +126,7 @@ function Console({ session, onLogout }: ConsoleProps) {
           <ConsoleLayout
             error={error}
             health={health}
+            version={appVersion}
             session={session}
             onLogout={onLogout}
           />

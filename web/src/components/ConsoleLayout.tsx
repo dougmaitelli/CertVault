@@ -7,6 +7,7 @@ import { UserSummary } from "./UserSummary";
 type ConsoleLayoutProps = {
   error: string;
   health: "checking" | "operational" | "warning" | "failed";
+  version: string;
   session: Session;
   onLogout: () => void;
 };
@@ -14,6 +15,7 @@ type ConsoleLayoutProps = {
 export function ConsoleLayout({
   error,
   health,
+  version,
   session,
   onLogout,
 }: ConsoleLayoutProps) {
@@ -57,6 +59,7 @@ export function ConsoleLayout({
         {error && <div className="error">{error}</div>}
         <Outlet />
         <footer className="content-footer">
+          <span>{version} · </span>
           <a
             className="source-link"
             href="https://github.com/dougmaitelli/CertVault"

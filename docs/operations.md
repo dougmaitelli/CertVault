@@ -121,5 +121,5 @@ Executable hooks run directly without an implicit shell. They receive only `PATH
 
 ## Health endpoints
 
-- `/api/v1/health` reports process health.
+- `/api/v1/health` reports process health and the running application version.
 - `/api/v1/ready` verifies that required infrastructure is available.

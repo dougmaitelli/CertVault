@@ -8,7 +8,10 @@ import (
 const readinessFilePattern = ".certvault-readiness-*"
 
 func (a *API) health(w http.ResponseWriter, _ *http.Request) {
-	jsonResponse(w, http.StatusOK, map[string]string{"status": "ok"})
+	jsonResponse(w, http.StatusOK, map[string]string{
+		"status":  "ok",
+		"version": a.cfg.AppVersion,
+	})
 }
 
 func (a *API) ready(w http.ResponseWriter, r *http.Request) {
