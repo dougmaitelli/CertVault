@@ -188,7 +188,7 @@ func deleteAPIKey(args []string, stdout, stderr io.Writer) error {
 func mutateAPIKey(
 	action string,
 	completedAction string,
-	auditAction string,
+	auditAction audit.Action,
 	args []string,
 	stdout, stderr io.Writer,
 	mutation func(context.Context, *repository.Repositories, int64) (string, error),

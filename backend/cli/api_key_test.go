@@ -89,7 +89,7 @@ func TestAPIKeyLifecycle(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	audits, err := repository.New(db).Audits.Search(context.Background(), repository.AuditFilter{
-		Actors:  []string{audit.ActorLocalCLI},
+		Actors:  []string{string(audit.ActorLocalCLI)},
 		Page:    1,
 		PerPage: 10,
 	})

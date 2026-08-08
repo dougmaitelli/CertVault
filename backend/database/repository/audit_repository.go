@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/database"
 	"gorm.io/gorm/clause"
 )
@@ -27,11 +28,18 @@ type AuditSearchResult struct {
 	Total int64
 }
 
-func (r *AuditRepository) Record(ctx context.Context, actor, action, resource, detail, ip string) {
+func (r *AuditRepository) Record(
+	ctx context.Context,
+	actor audit.Actor,
+	action audit.Action,
+	resource string,
+	detail string,
+	ip string,
+) {
 	_ = r.database.ORM().WithContext(ctx).Create(&database.AuditEvent{
 		At:       time.Now().UTC(),
-		Actor:    actor,
-		Action:   action,
+		Actor:    string(actor),
+		Action:   string(action),
 		Resource: resource,
 		Detail:   detail,
 		IP:       ip,

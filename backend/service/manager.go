@@ -93,7 +93,7 @@ func (m *Manager) reconcile(ctx context.Context) {
 }
 
 func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) error {
-	var auditAction string
+	var auditAction audit.Action
 
 	switch kind {
 	case IssueKindInitial:

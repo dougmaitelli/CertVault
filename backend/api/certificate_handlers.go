@@ -67,7 +67,8 @@ func (a *API) renewCertificate(w http.ResponseWriter, r *http.Request) {
 	go func() { _ = a.manager.Issue(context.Background(), name, service.IssueKindManual) }()
 
 	a.repos.Audits.Record(
-		r.Context(), id.Name, audit.ActionRenewalTrigger, name, "", a.remoteIP(r),
+		r.Context(), audit.Actor(id.Name), audit.ActionRenewalTrigger,
+		name, "", a.remoteIP(r),
 	)
 	jsonResponse(w, http.StatusAccepted, map[string]string{"status": "queued"})
 }
@@ -107,7 +108,7 @@ func (a *API) downloadCertificate(file string) http.HandlerFunc {
 		_, _ = w.Write(contents)
 
 		a.repos.Audits.Record(
-			r.Context(), id.Name, audit.ActionCertificateDownload,
+			r.Context(), audit.Actor(id.Name), audit.ActionCertificateDownload,
 			name, file, a.remoteIP(r),
 		)
 	}

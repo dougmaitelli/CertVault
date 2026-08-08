@@ -1,23 +1,27 @@
 package audit
 
-const (
-	ActorAdmin          = "admin"
-	ActorBootstrapAdmin = "bootstrap-admin"
-	ActorLocalCLI       = "local-cli"
-	ActorSystem         = "system"
-)
+type Actor string
 
 const (
-	ActionACMEAccountDelete    = "acme_account.delete"
-	ActionAPIKeyCreate         = "api_key.create"
-	ActionAPIKeyDelete         = "api_key.delete"
-	ActionAPIKeyRevoke         = "api_key.revoke"
-	ActionAuthLogin            = "auth.login"
-	ActionCertificateDownload  = "certificate.download"
-	ActionCertificateInitial   = "certificate.initial"
-	ActionCertificateManual    = "certificate.manual"
-	ActionCertificateScheduled = "certificate.scheduled"
-	ActionRenewalTrigger       = "renewal.trigger"
+	ActorAdmin          Actor = "admin"
+	ActorBootstrapAdmin Actor = "bootstrap-admin"
+	ActorLocalCLI       Actor = "local-cli"
+	ActorSystem         Actor = "system"
+)
+
+type Action string
+
+const (
+	ActionACMEAccountDelete    Action = "acme_account.delete"
+	ActionAPIKeyCreate         Action = "api_key.create"
+	ActionAPIKeyDelete         Action = "api_key.delete"
+	ActionAPIKeyRevoke         Action = "api_key.revoke"
+	ActionAuthLogin            Action = "auth.login"
+	ActionCertificateDownload  Action = "certificate.download"
+	ActionCertificateInitial   Action = "certificate.initial"
+	ActionCertificateManual    Action = "certificate.manual"
+	ActionCertificateScheduled Action = "certificate.scheduled"
+	ActionRenewalTrigger       Action = "renewal.trigger"
 )
 
 const (

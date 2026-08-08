@@ -26,8 +26,8 @@ const (
 	identityKey         contextKey = "identity"
 	sessionCookie                  = "cv_session"
 	oidcStateLifetime              = 10 * time.Minute
-	authMethodBootstrap            = audit.DetailAuthBootstrap
-	authMethodOIDC                 = audit.DetailAuthOIDC
+	authMethodBootstrap            = string(audit.DetailAuthBootstrap)
+	authMethodOIDC                 = string(audit.DetailAuthOIDC)
 )
 
 func NewBrowserAuthenticator(
@@ -113,7 +113,7 @@ func (a *BrowserAuthenticator) BootstrapLogin(w http.ResponseWriter, r *http.Req
 	}
 
 	a.setSession(w, sessionPayload{
-		Name:                 audit.ActorBootstrapAdmin,
+		Name:                 string(audit.ActorBootstrapAdmin),
 		DisplayName:          "Bootstrap administrator",
 		AuthenticationMethod: authMethodBootstrap,
 	})
@@ -214,7 +214,7 @@ func (a *BrowserAuthenticator) Callback(w http.ResponseWriter, r *http.Request) 
 		AuthenticationMethod: authMethodOIDC,
 	})
 	a.repos.Audits.Record(
-		r.Context(), actor, audit.ActionAuthLogin,
+		r.Context(), audit.Actor(actor), audit.ActionAuthLogin,
 		audit.ResourceUI, authMethodOIDC, a.remoteIP(r),
 	)
 	http.Redirect(w, r, "/", http.StatusFound)
