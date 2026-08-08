@@ -21,6 +21,7 @@ const (
 	EnvOIDCClientID            = "CERTVAULT_OIDC_CLIENT_ID"
 	EnvOIDCClientSecret        = "CERTVAULT_OIDC_CLIENT_SECRET"
 	EnvOIDCClientSecretFile    = "CERTVAULT_OIDC_CLIENT_SECRET_FILE"
+	EnvOIDCScopes              = "CERTVAULT_OIDC_SCOPES"
 	EnvOIDCAllowedGroups       = "CERTVAULT_OIDC_ALLOWED_GROUPS"
 	EnvUIDir                   = "CERTVAULT_UI_DIR"
 	EnvEventJSON               = "CERTVAULT_EVENT_JSON"

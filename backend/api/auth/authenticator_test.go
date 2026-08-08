@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -127,6 +128,7 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 				IssuerURL:    issuer,
 				ClientID:     "certvault",
 				ClientSecret: "secret",
+				Scopes:       []string{oidc.ScopeOpenID, "custom-scope"},
 			}},
 		},
 		nil,
@@ -156,6 +158,10 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 
 	if response.Code != http.StatusFound {
 		t.Fatalf("recovered OIDC login returned %d: %s", response.Code, response.Body.String())
+	}
+
+	if !slices.Equal(authenticator.oauth.Scopes, []string{oidc.ScopeOpenID, "custom-scope"}) {
+		t.Fatalf("OAuth scopes = %#v", authenticator.oauth.Scopes)
 	}
 }
 

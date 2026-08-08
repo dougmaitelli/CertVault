@@ -1,6 +1,7 @@
 package config
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -44,6 +45,7 @@ func TestApplyEnvConfiguresOIDCFromEnvironment(t *testing.T) {
 	t.Setenv(EnvOIDCClientID, "certvault")
 	t.Setenv(EnvOIDCClientSecret, "direct-secret")
 	t.Setenv(EnvOIDCClientSecretFile, "")
+	t.Setenv(EnvOIDCScopes, "openid, profile, custom-scope")
 	t.Setenv(EnvOIDCAllowedGroups, "admins, certificate-operators")
 
 	configuration := Config{}
@@ -70,6 +72,11 @@ func TestApplyEnvConfiguresOIDCFromEnvironment(t *testing.T) {
 		if configuration.Auth.OIDC.AllowedGroups[index] != expected {
 			t.Fatalf("allowed groups = %#v", configuration.Auth.OIDC.AllowedGroups)
 		}
+	}
+
+	expectedScopes := []string{"openid", "profile", "custom-scope"}
+	if !slices.Equal(configuration.Auth.OIDC.Scopes, expectedScopes) {
+		t.Fatalf("OIDC scopes = %#v, want %#v", configuration.Auth.OIDC.Scopes, expectedScopes)
 	}
 }
 
@@ -101,5 +108,31 @@ func TestValidateRemovesTrailingSlashesFromOIDCIssuer(t *testing.T) {
 
 	if configuration.Auth.OIDC.IssuerURL != "https://id.example.com/realms/homelab" {
 		t.Fatalf("OIDC issuer URL = %q", configuration.Auth.OIDC.IssuerURL)
+	}
+
+	if !slices.Equal(configuration.Auth.OIDC.Scopes, defaultOIDCScopes()) {
+		t.Fatalf("OIDC scopes = %#v, want %#v", configuration.Auth.OIDC.Scopes, defaultOIDCScopes())
+	}
+}
+
+func TestValidateRequiresOpenIDScope(t *testing.T) {
+	configuration := Config{
+		Server: Server{PublicURL: "https://certvault.example.com"},
+		ACME: ACME{
+			Email:        "admin@example.com",
+			DirectoryURL: "https://acme.example.com/directory",
+			AcceptTerms:  true,
+		},
+		Auth: Auth{OIDC: &OIDC{
+			IssuerURL:    "https://id.example.com",
+			ClientID:     "certvault",
+			ClientSecret: "secret",
+			Scopes:       []string{"profile", "email"},
+		}},
+	}
+
+	err := configuration.Validate()
+	if err == nil || !strings.Contains(err.Error(), "must include openid") {
+		t.Fatalf("Validate() error = %v, want missing openid scope", err)
 	}
 }

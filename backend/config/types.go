@@ -33,6 +33,7 @@ type OIDC struct {
 	ClientID         string   `yaml:"client_id"`
 	ClientSecret     string   `yaml:"-"`
 	ClientSecretFile string   `yaml:"client_secret_file"`
+	Scopes           []string `yaml:"scopes"`
 	AllowedGroups    []string `yaml:"allowed_groups"`
 }
 

@@ -90,7 +90,7 @@ func (a *BrowserAuthenticator) oidcClient(ctx context.Context) (*oidc.Provider, 
 		ClientSecret: a.oidcSecret,
 		Endpoint:     provider.Endpoint(),
 		RedirectURL:  a.config.OIDCRedirectURL(),
-		Scopes:       []string{oidc.ScopeOpenID, "profile", "email", "groups"},
+		Scopes:       a.config.Auth.OIDC.Scopes,
 	}
 
 	return a.oidc, a.oauth, nil

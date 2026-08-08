@@ -79,6 +79,7 @@ acme:
 #   oidc:
 #     issuer_url: https://auth.example.com
 #     client_id: certvault
+#     scopes: [openid, profile, email, groups]
 #     allowed_groups: [cert-admins]
 
 dns_credentials:
@@ -212,6 +213,7 @@ Global values can be overridden with:
 | `CERTVAULT_OIDC_CLIENT_ID` | OIDC client identifier |
 | `CERTVAULT_OIDC_CLIENT_SECRET` | OIDC client secret |
 | `CERTVAULT_OIDC_CLIENT_SECRET_FILE` | Path to a file containing the OIDC client secret |
+| `CERTVAULT_OIDC_SCOPES` | Comma-separated OIDC scopes; must include `openid` |
 | `CERTVAULT_OIDC_ALLOWED_GROUPS` | Comma-separated administrator group allowlist |
 
 Some values may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.

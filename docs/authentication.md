@@ -25,6 +25,7 @@ auth:
     issuer_url: https://auth.example.com/realms/homelab
     client_id: certvault
     client_secret_file: /run/secrets/oidc_client_secret
+    scopes: [openid, profile, email, groups]
     allowed_groups: [cert-admins]
 ```
 
@@ -42,7 +43,7 @@ Register this redirect URI with the OIDC provider:
 {server.public_url}/auth/callback
 ```
 
-OIDC uses Authorization Code flow with PKCE. If `allowed_groups` is empty, every successfully authenticated identity becomes an administrator; configuring an allowlist is strongly recommended.
+OIDC uses Authorization Code flow with PKCE. Scopes default to `openid`, `profile`, `email`, and `groups`; configure them with `auth.oidc.scopes` or the comma-separated `CERTVAULT_OIDC_SCOPES` override. The `openid` scope is required. If `allowed_groups` is empty, every successfully authenticated identity becomes an administrator; configuring an allowlist is strongly recommended.
 
 ## Administrator and client boundaries
 

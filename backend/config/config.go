@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,12 @@ type Config struct {
 const OIDCCallbackPath = "/auth/callback"
 
 const DefaultPath = "/config/config.yaml"
+
+const oidcScopeOpenID = "openid"
+
+func defaultOIDCScopes() []string {
+	return []string{oidcScopeOpenID, "profile", "email", "groups"}
+}
 
 // Path returns the configured YAML path or the container default.
 func Path() string {
@@ -160,6 +167,7 @@ func applyEnv(c *Config) error {
 	oidcClientID := os.Getenv(EnvOIDCClientID)
 	oidcClientSecret := os.Getenv(EnvOIDCClientSecret)
 	oidcClientSecretFile := os.Getenv(EnvOIDCClientSecretFile)
+	oidcScopes := os.Getenv(EnvOIDCScopes)
 	oidcAllowedGroups := os.Getenv(EnvOIDCAllowedGroups)
 
 	if oidcClientSecret != "" && oidcClientSecretFile != "" {
@@ -172,7 +180,7 @@ func applyEnv(c *Config) error {
 
 	if c.Auth.OIDC == nil && (oidcIssuerURL != "" || oidcClientID != "" ||
 		oidcClientSecret != "" || oidcClientSecretFile != "" ||
-		oidcAllowedGroups != "") {
+		oidcScopes != "" || oidcAllowedGroups != "") {
 		c.Auth.OIDC = &OIDC{}
 	}
 
@@ -196,6 +204,10 @@ func applyEnv(c *Config) error {
 	if oidcClientSecretFile != "" {
 		c.Auth.OIDC.ClientSecret = ""
 		c.Auth.OIDC.ClientSecretFile = oidcClientSecretFile
+	}
+
+	if oidcScopes != "" {
+		c.Auth.OIDC.Scopes = splitCommaSeparated(oidcScopes)
 	}
 
 	if oidcAllowedGroups != "" {
@@ -245,6 +257,10 @@ func (c *Config) Validate() error {
 
 	if c.Auth.OIDC != nil {
 		c.Auth.OIDC.IssuerURL = strings.TrimRight(c.Auth.OIDC.IssuerURL, "/")
+		if len(c.Auth.OIDC.Scopes) == 0 {
+			c.Auth.OIDC.Scopes = defaultOIDCScopes()
+		}
+
 		if c.Auth.OIDC.IssuerURL == "" || c.Auth.OIDC.ClientID == "" {
 			return errors.New("auth.oidc requires issuer_url and client_id")
 		}
@@ -255,6 +271,10 @@ func (c *Config) Validate() error {
 
 		if c.Auth.OIDC.ClientSecret != "" && c.Auth.OIDC.ClientSecretFile != "" {
 			return errors.New("auth.oidc client secret and client secret file cannot both be set")
+		}
+
+		if !slices.Contains(c.Auth.OIDC.Scopes, oidcScopeOpenID) {
+			return errors.New("auth.oidc.scopes must include openid")
 		}
 
 		publicURL, err := url.Parse(c.Server.PublicURL)

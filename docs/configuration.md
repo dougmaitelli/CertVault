@@ -63,6 +63,7 @@ Supported key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `r
 | `CERTVAULT_OIDC_CLIENT_ID` | OIDC client ID |
 | `CERTVAULT_OIDC_CLIENT_SECRET` | OIDC client secret |
 | `CERTVAULT_OIDC_CLIENT_SECRET_FILE` | File containing the OIDC client secret |
+| `CERTVAULT_OIDC_SCOPES` | Comma-separated OIDC scopes; must include `openid` |
 | `CERTVAULT_OIDC_ALLOWED_GROUPS` | Comma-separated administrator groups |
 
 Do not set both a direct secret and its `_FILE` counterpart.

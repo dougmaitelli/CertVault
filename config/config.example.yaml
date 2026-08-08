@@ -39,6 +39,8 @@ auth:
   #   Use CERTVAULT_OIDC_CLIENT_SECRET instead when secrets come from the
   #   environment.
   #   client_secret_file: /run/secrets/oidc_client_secret
+  #   Defaults to openid, profile, email, and groups. The openid scope is required.
+  #   scopes: [openid, profile, email, groups]
   #   An empty list allows every successfully authenticated OIDC identity.
   #   allowed_groups:
   #     - cert-admins
