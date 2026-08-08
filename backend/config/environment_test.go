@@ -1,10 +1,136 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 )
+
+func TestAppVersionDefaultsToDevelopment(t *testing.T) {
+	t.Setenv("APP_VERSION", "")
+
+	cfg := Config{}
+	if err := applyEnv(&cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	if cfg.AppVersion != "dev" {
+		t.Fatalf("app version = %q, want dev", cfg.AppVersion)
+	}
+}
+
+func TestAppVersionEnvironmentOverride(t *testing.T) {
+	t.Setenv("APP_VERSION", "v1.2.3")
+
+	cfg := Config{}
+	if err := applyEnv(&cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	if cfg.AppVersion != "v1.2.3" {
+		t.Fatalf("app version = %q, want v1.2.3", cfg.AppVersion)
+	}
+}
+
+func TestApplyEnvUsesBootstrapTokenValue(t *testing.T) {
+	t.Setenv("CERTVAULT_BOOTSTRAP_ADMIN_TOKEN", "direct-token")
+	t.Setenv("CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE", "")
+
+	configuration := Config{Auth: Auth{BootstrapTokenFile: "/configured/token"}}
+
+	if err := applyEnv(&configuration); err != nil {
+		t.Fatal(err)
+	}
+
+	if configuration.Auth.BootstrapToken != "direct-token" {
+		t.Fatalf("bootstrap token = %q", configuration.Auth.BootstrapToken)
+	}
+
+	if configuration.Auth.BootstrapTokenFile != "" {
+		t.Fatalf("bootstrap token file = %q, want empty", configuration.Auth.BootstrapTokenFile)
+	}
+}
+
+func TestApplyEnvUsesBootstrapTokenFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "admin-token")
+	if err := os.WriteFile(path, []byte("file-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("CERTVAULT_BOOTSTRAP_ADMIN_TOKEN", "")
+	t.Setenv("CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE", path)
+
+	configuration := Config{Auth: Auth{BootstrapToken: "configured-token"}}
+
+	if err := applyEnv(&configuration); err != nil {
+		t.Fatal(err)
+	}
+
+	if configuration.Auth.BootstrapToken != "file-token" {
+		t.Fatalf("bootstrap token = %q", configuration.Auth.BootstrapToken)
+	}
+
+	if configuration.Auth.BootstrapTokenFile != "" {
+		t.Fatalf("bootstrap token file = %q, want empty", configuration.Auth.BootstrapTokenFile)
+	}
+}
+
+func TestApplyEnvRejectsBootstrapTokenValueAndFileTogether(t *testing.T) {
+	t.Setenv("CERTVAULT_BOOTSTRAP_ADMIN_TOKEN", "direct-token")
+	t.Setenv("CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE", "/run/secrets/admin_token")
+
+	err := applyEnv(&Config{})
+	if err == nil {
+		t.Fatal("applyEnv accepted both bootstrap token variables")
+	}
+
+	if !strings.Contains(err.Error(), "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN") ||
+		!strings.Contains(err.Error(), "CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestApplyEnvUsesPublicDNSResolversByDefault(t *testing.T) {
+	t.Setenv("CERTVAULT_ACME_DNS_RESOLVERS", "")
+
+	configuration := Config{}
+
+	if err := applyEnv(&configuration); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []string{"1.1.1.1:53", "1.0.0.1:53"}
+	assertDNSResolvers(t, configuration.ACME.DNSResolvers, expected)
+}
+
+func TestApplyEnvOverridesDNSResolvers(t *testing.T) {
+	t.Setenv("CERTVAULT_ACME_DNS_RESOLVERS", "9.9.9.9:53, 8.8.8.8")
+
+	configuration := Config{ACME: ACME{DNSResolvers: []string{"192.168.1.1:53"}}}
+
+	if err := applyEnv(&configuration); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []string{"9.9.9.9:53", "8.8.8.8"}
+	assertDNSResolvers(t, configuration.ACME.DNSResolvers, expected)
+}
+
+func assertDNSResolvers(t *testing.T, actual, expected []string) {
+	t.Helper()
+
+	if len(actual) != len(expected) {
+		t.Fatalf("DNS resolvers = %#v, want %#v", actual, expected)
+	}
+
+	for index := range expected {
+		if actual[index] != expected[index] {
+			t.Fatalf("DNS resolvers = %#v, want %#v", actual, expected)
+		}
+	}
+}
 
 func TestApplyEnvUsesOIDCClientSecretValue(t *testing.T) {
 	t.Setenv("CERTVAULT_OIDC_CLIENT_SECRET", "direct-secret")
@@ -134,5 +260,32 @@ func TestValidateRequiresOpenIDScope(t *testing.T) {
 	err := configuration.Validate()
 	if err == nil || !strings.Contains(err.Error(), "must include openid") {
 		t.Fatalf("Validate() error = %v, want missing openid scope", err)
+	}
+}
+
+func TestUIEnabledDefaultsToTrue(t *testing.T) {
+	if !(&Config{}).UIEnabled() {
+		t.Fatal("UI is disabled by default")
+	}
+}
+
+func TestUIEnabledEnvironmentOverride(t *testing.T) {
+	t.Setenv("CERTVAULT_UI_ENABLED", "false")
+
+	cfg := Config{}
+	if err := applyEnv(&cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	if cfg.UIEnabled() {
+		t.Fatal("UI environment override was ignored")
+	}
+}
+
+func TestInvalidUIEnabledEnvironmentOverride(t *testing.T) {
+	t.Setenv("CERTVAULT_UI_ENABLED", "sometimes")
+
+	if err := applyEnv(&Config{}); err == nil {
+		t.Fatal("invalid UI enabled value was accepted")
 	}
 }
