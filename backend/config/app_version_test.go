@@ -3,7 +3,7 @@ package config
 import "testing"
 
 func TestAppVersionDefaultsToDevelopment(t *testing.T) {
-	t.Setenv(EnvAppVersion, "")
+	t.Setenv("APP_VERSION", "")
 
 	cfg := Config{}
 	if err := applyEnv(&cfg); err != nil {
@@ -16,7 +16,7 @@ func TestAppVersionDefaultsToDevelopment(t *testing.T) {
 }
 
 func TestAppVersionEnvironmentOverride(t *testing.T) {
-	t.Setenv(EnvAppVersion, "v1.2.3")
+	t.Setenv("APP_VERSION", "v1.2.3")
 
 	cfg := Config{}
 	if err := applyEnv(&cfg); err != nil {

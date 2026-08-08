@@ -1,34 +1,18 @@
 package config
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	certnetwork "github.com/certvault/certvault/network"
 	"go.yaml.in/yaml/v3"
 )
-
-type Config struct {
-	AppVersion     string                   `yaml:"-"`
-	DataDir        string                   `yaml:"data_dir"`
-	Server         Server                   `yaml:"server"`
-	ACME           ACME                     `yaml:"acme"`
-	Auth           Auth                     `yaml:"auth"`
-	Audit          Audit                    `yaml:"audit"`
-	DNSCredentials map[string]DNSCredential `yaml:"dns_credentials"`
-	Zones          []Zone                   `yaml:"zones"`
-	Certificates   []Certificate            `yaml:"certificates"`
-	Hooks          []Hook                   `yaml:"hooks"`
-	MasterKey      []byte                   `yaml:"-"`
-}
 
 const OIDCCallbackPath = "/auth/callback"
 
@@ -64,170 +48,24 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 
-	c.MasterKey, err = loadMasterKey(c.DataDir)
-	if err != nil {
-		return nil, fmt.Errorf("master key: %w", err)
+	if len(c.MasterKey) == 0 {
+		path := filepath.Join(c.DataDir, "master.key")
+
+		contents, readErr := os.ReadFile(path)
+		if readErr != nil {
+			if os.IsNotExist(readErr) {
+				return nil, fmt.Errorf("master key: %s does not exist; generate it with: openssl rand -base64 32", path)
+			}
+
+			return nil, fmt.Errorf("master key: %w", readErr)
+		}
+
+		if err := c.MasterKey.UnmarshalText(contents); err != nil {
+			return nil, fmt.Errorf("master key: %w", err)
+		}
 	}
 
 	return &c, c.Validate()
-}
-
-func applyEnv(c *Config) error {
-	c.AppVersion = os.Getenv(EnvAppVersion)
-	if c.AppVersion == "" {
-		c.AppVersion = "dev"
-	}
-
-	if v := os.Getenv(EnvDataDir); v != "" {
-		c.DataDir = v
-	}
-
-	if c.DataDir == "" {
-		c.DataDir = "/data"
-	}
-
-	if v := os.Getenv(EnvListen); v != "" {
-		c.Server.Listen = v
-	}
-
-	if c.Server.Listen == "" {
-		c.Server.Listen = "0.0.0.0:8080"
-	}
-
-	if v := os.Getenv(EnvPublicURL); v != "" {
-		c.Server.PublicURL = v
-	}
-
-	if v := os.Getenv(EnvLogLevel); v != "" {
-		if err := c.Server.LogLevel.UnmarshalText([]byte(v)); err != nil {
-			return fmt.Errorf("%s: %w", EnvLogLevel, err)
-		}
-	}
-
-	if v := os.Getenv(EnvUIEnabled); v != "" {
-		enabled, err := strconv.ParseBool(v)
-		if err != nil {
-			return fmt.Errorf("%s: %w", EnvUIEnabled, err)
-		}
-
-		c.Server.UIEnabled = &enabled
-	}
-
-	if v := os.Getenv(EnvACMEEmail); v != "" {
-		c.ACME.Email = v
-	}
-
-	if v := os.Getenv(EnvACMEDirectoryURL); v != "" {
-		c.ACME.DirectoryURL = v
-	}
-
-	if c.ACME.DirectoryURL == "" {
-		c.ACME.DirectoryURL = "https://acme-v02.api.letsencrypt.org/directory"
-	}
-
-	if v := os.Getenv(EnvACMEDNSResolvers); v != "" {
-		c.ACME.DNSResolvers = splitCommaSeparated(v)
-	}
-
-	if len(c.ACME.DNSResolvers) == 0 {
-		c.ACME.DNSResolvers = []string{
-			DefaultDNSResolverPrimary,
-			DefaultDNSResolverSecondary,
-		}
-	}
-
-	if v := os.Getenv(EnvSessionDuration); v != "" {
-		if err := c.Auth.SessionDuration.UnmarshalText([]byte(v)); err != nil {
-			return fmt.Errorf("%s: %w", EnvSessionDuration, err)
-		}
-	}
-
-	bootstrapToken := os.Getenv(EnvBootstrapAdminToken)
-
-	bootstrapTokenFile := os.Getenv(EnvBootstrapAdminTokenFile)
-	if bootstrapToken != "" && bootstrapTokenFile != "" {
-		return fmt.Errorf(
-			"%s and %s cannot both be set",
-			EnvBootstrapAdminToken,
-			EnvBootstrapAdminTokenFile,
-		)
-	}
-
-	if bootstrapToken != "" {
-		c.Auth.BootstrapToken = bootstrapToken
-		c.Auth.BootstrapTokenFile = ""
-	}
-
-	if bootstrapTokenFile != "" {
-		c.Auth.BootstrapToken = ""
-		c.Auth.BootstrapTokenFile = bootstrapTokenFile
-	}
-
-	oidcIssuerURL := os.Getenv(EnvOIDCIssuerURL)
-	oidcClientID := os.Getenv(EnvOIDCClientID)
-	oidcClientSecret := os.Getenv(EnvOIDCClientSecret)
-	oidcClientSecretFile := os.Getenv(EnvOIDCClientSecretFile)
-	oidcScopes := os.Getenv(EnvOIDCScopes)
-	oidcAllowedGroups := os.Getenv(EnvOIDCAllowedGroups)
-
-	if oidcClientSecret != "" && oidcClientSecretFile != "" {
-		return fmt.Errorf(
-			"%s and %s cannot both be set",
-			EnvOIDCClientSecret,
-			EnvOIDCClientSecretFile,
-		)
-	}
-
-	if c.Auth.OIDC == nil && (oidcIssuerURL != "" || oidcClientID != "" ||
-		oidcClientSecret != "" || oidcClientSecretFile != "" ||
-		oidcScopes != "" || oidcAllowedGroups != "") {
-		c.Auth.OIDC = &OIDC{}
-	}
-
-	if c.Auth.OIDC == nil {
-		return nil
-	}
-
-	if oidcIssuerURL != "" {
-		c.Auth.OIDC.IssuerURL = oidcIssuerURL
-	}
-
-	if oidcClientID != "" {
-		c.Auth.OIDC.ClientID = oidcClientID
-	}
-
-	if oidcClientSecret != "" {
-		c.Auth.OIDC.ClientSecret = oidcClientSecret
-		c.Auth.OIDC.ClientSecretFile = ""
-	}
-
-	if oidcClientSecretFile != "" {
-		c.Auth.OIDC.ClientSecret = ""
-		c.Auth.OIDC.ClientSecretFile = oidcClientSecretFile
-	}
-
-	if oidcScopes != "" {
-		c.Auth.OIDC.Scopes = splitCommaSeparated(oidcScopes)
-	}
-
-	if oidcAllowedGroups != "" {
-		c.Auth.OIDC.AllowedGroups = splitCommaSeparated(oidcAllowedGroups)
-	}
-
-	return nil
-}
-
-func splitCommaSeparated(value string) []string {
-	parts := strings.Split(value, ",")
-
-	values := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if trimmed := strings.TrimSpace(part); trimmed != "" {
-			values = append(values, trimmed)
-		}
-	}
-
-	return values
 }
 
 func (c *Config) Validate() error {
@@ -423,45 +261,4 @@ func findZone(domain string, zones map[string]string) string {
 	}
 
 	return value
-}
-
-func loadMasterKeyFile(path string) ([]byte, error) {
-	b, err := os.ReadFile(path)
-	if err == nil {
-		return decodeMasterKey(string(b))
-	}
-
-	if !os.IsNotExist(err) {
-		return nil, err
-	}
-
-	return nil, fmt.Errorf("%s does not exist; generate it with: openssl rand -base64 32", path)
-}
-
-func loadMasterKey(dataDir string) ([]byte, error) {
-	value := os.Getenv(EnvMasterKey)
-
-	path := os.Getenv(EnvMasterKeyFile)
-	if value != "" && path != "" {
-		return nil, fmt.Errorf("%s and %s cannot both be set", EnvMasterKey, EnvMasterKeyFile)
-	}
-
-	if value != "" {
-		return decodeMasterKey(value)
-	}
-
-	if path == "" {
-		path = filepath.Join(dataDir, "master.key")
-	}
-
-	return loadMasterKeyFile(path)
-}
-
-func decodeMasterKey(encoded string) ([]byte, error) {
-	raw, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encoded))
-	if err != nil || len(raw) != 32 {
-		return nil, errors.New("master key must be base64-encoded 32 bytes")
-	}
-
-	return raw, nil
 }

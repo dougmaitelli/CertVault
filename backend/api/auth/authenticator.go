@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -34,37 +33,19 @@ func NewBrowserAuthenticator(
 	cfg *config.Config,
 	repos *repository.Repositories,
 	clientIPs *certnetwork.ClientIPResolver,
-) (*BrowserAuthenticator, error) {
+) *BrowserAuthenticator {
 	browserAuthenticator := &BrowserAuthenticator{
 		config:    cfg,
 		repos:     repos,
 		bootstrap: cfg.Auth.BootstrapToken,
 		clientIPs: clientIPs,
 	}
-	if cfg.Auth.BootstrapTokenFile != "" {
-		contents, err := os.ReadFile(cfg.Auth.BootstrapTokenFile)
-		if err != nil {
-			return nil, err
-		}
-
-		browserAuthenticator.bootstrap = strings.TrimSpace(string(contents))
-	}
 
 	if cfg.Auth.OIDC != nil {
-		secret := cfg.Auth.OIDC.ClientSecret
-		if cfg.Auth.OIDC.ClientSecretFile != "" {
-			contents, readErr := os.ReadFile(cfg.Auth.OIDC.ClientSecretFile)
-			if readErr != nil {
-				return nil, readErr
-			}
-
-			secret = strings.TrimSpace(string(contents))
-		}
-
-		browserAuthenticator.oidcSecret = secret
+		browserAuthenticator.oidcSecret = cfg.Auth.OIDC.ClientSecret
 	}
 
-	return browserAuthenticator, nil
+	return browserAuthenticator
 }
 
 func (a *BrowserAuthenticator) oidcClient(ctx context.Context) (*oidc.Provider, *oauth2.Config, error) {

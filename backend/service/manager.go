@@ -48,6 +48,8 @@ const (
 	IssueKindScheduled IssueKind = "scheduled"
 )
 
+const pathEnvironmentVariable = "PATH"
+
 func NewManager(c *config.Config, repos *repository.Repositories, log *slog.Logger) (*Manager, error) {
 	return &Manager{cfg: c, repos: repos, log: log}, nil
 }
@@ -443,7 +445,7 @@ func (m *Manager) runHook(ctx context.Context, h config.Hook, body []byte) {
 	case "exec":
 		cmd := exec.CommandContext(ctx, h.Command, h.Args...)
 		cmd.Env = []string{
-			config.EnvPath + "=/usr/local/bin:/usr/bin:/bin",
+			pathEnvironmentVariable + "=/usr/local/bin:/usr/bin:/bin",
 			config.EnvEventJSON + "=" + string(body),
 		}
 		_, hookErr = cmd.CombinedOutput()

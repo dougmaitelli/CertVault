@@ -3,7 +3,7 @@ package config
 import "testing"
 
 func TestApplyEnvUsesPublicDNSResolversByDefault(t *testing.T) {
-	t.Setenv(EnvACMEDNSResolvers, "")
+	t.Setenv("CERTVAULT_ACME_DNS_RESOLVERS", "")
 
 	configuration := Config{}
 
@@ -11,12 +11,12 @@ func TestApplyEnvUsesPublicDNSResolversByDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := []string{DefaultDNSResolverPrimary, DefaultDNSResolverSecondary}
+	expected := []string{"1.1.1.1:53", "1.0.0.1:53"}
 	assertDNSResolvers(t, configuration.ACME.DNSResolvers, expected)
 }
 
 func TestApplyEnvOverridesDNSResolvers(t *testing.T) {
-	t.Setenv(EnvACMEDNSResolvers, "9.9.9.9:53, 8.8.8.8")
+	t.Setenv("CERTVAULT_ACME_DNS_RESOLVERS", "9.9.9.9:53, 8.8.8.8")
 
 	configuration := Config{ACME: ACME{DNSResolvers: []string{"192.168.1.1:53"}}}
 

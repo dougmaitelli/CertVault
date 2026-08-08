@@ -6,7 +6,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-func TestKeyTypeUnmarshalYAML(t *testing.T) {
+func TestKeyTypeYAMLUsesTextUnmarshaller(t *testing.T) {
 	var value struct {
 		KeyType KeyType `yaml:"key_type"`
 	}

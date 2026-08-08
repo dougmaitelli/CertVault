@@ -9,7 +9,7 @@ func TestUIEnabledDefaultsToTrue(t *testing.T) {
 }
 
 func TestUIEnabledEnvironmentOverride(t *testing.T) {
-	t.Setenv(EnvUIEnabled, "false")
+	t.Setenv("CERTVAULT_UI_ENABLED", "false")
 
 	cfg := Config{}
 	if err := applyEnv(&cfg); err != nil {
@@ -22,7 +22,7 @@ func TestUIEnabledEnvironmentOverride(t *testing.T) {
 }
 
 func TestInvalidUIEnabledEnvironmentOverride(t *testing.T) {
-	t.Setenv(EnvUIEnabled, "sometimes")
+	t.Setenv("CERTVAULT_UI_ENABLED", "sometimes")
 
 	if err := applyEnv(&Config{}); err == nil {
 		t.Fatal("invalid UI enabled value was accepted")

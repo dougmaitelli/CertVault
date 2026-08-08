@@ -52,8 +52,8 @@ func TestCertificateAutomaticIssuanceOverridesGlobalSetting(t *testing.T) {
 
 func loadAutomaticIssuanceConfig(t *testing.T, setting string) *Config {
 	t.Helper()
-	t.Setenv(EnvMasterKey, base64.StdEncoding.EncodeToString(make([]byte, 32)))
-	t.Setenv(EnvMasterKeyFile, "")
+	t.Setenv("CERTVAULT_MASTER_KEY", base64.StdEncoding.EncodeToString(make([]byte, 32)))
+	t.Setenv("CERTVAULT_MASTER_KEY_FILE", "")
 	path := filepath.Join(t.TempDir(), "config.yaml")
 
 	contents := "data_dir: " + t.TempDir() + "\n" +

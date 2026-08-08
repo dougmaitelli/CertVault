@@ -3,44 +3,68 @@ package config
 import (
 	"bytes"
 	"encoding/base64"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestLoadMasterKeyFromEnvironment(t *testing.T) {
 	expected := bytes.Repeat([]byte{42}, 32)
-	t.Setenv(EnvMasterKey, base64.StdEncoding.EncodeToString(expected))
-	t.Setenv(EnvMasterKeyFile, "")
+	t.Setenv("CERTVAULT_MASTER_KEY", base64.StdEncoding.EncodeToString(expected))
+	t.Setenv("CERTVAULT_MASTER_KEY_FILE", "")
 
-	actual, err := loadMasterKey(t.TempDir())
-	if err != nil {
+	configuration := Config{}
+	if err := applyEnv(&configuration); err != nil {
 		t.Fatal(err)
 	}
 
-	if !bytes.Equal(actual, expected) {
-		t.Fatalf("master key = %x, want %x", actual, expected)
+	if !bytes.Equal(configuration.MasterKey, expected) {
+		t.Fatalf("master key = %x, want %x", configuration.MasterKey, expected)
+	}
+}
+
+func TestLoadMasterKeyFromFileEnvironment(t *testing.T) {
+	expected := bytes.Repeat([]byte{42}, 32)
+
+	path := filepath.Join(t.TempDir(), "master-key")
+	if err := os.WriteFile(path, []byte(base64.StdEncoding.EncodeToString(expected)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("CERTVAULT_MASTER_KEY", "")
+	t.Setenv("CERTVAULT_MASTER_KEY_FILE", path)
+
+	configuration := Config{}
+	if err := applyEnv(&configuration); err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(configuration.MasterKey, expected) {
+		t.Fatalf("master key = %x, want %x", configuration.MasterKey, expected)
 	}
 }
 
 func TestLoadMasterKeyRejectsValueAndFileTogether(t *testing.T) {
-	t.Setenv(EnvMasterKey, base64.StdEncoding.EncodeToString(make([]byte, 32)))
-	t.Setenv(EnvMasterKeyFile, "/run/secrets/master_key")
+	t.Setenv("CERTVAULT_MASTER_KEY", base64.StdEncoding.EncodeToString(make([]byte, 32)))
+	t.Setenv("CERTVAULT_MASTER_KEY_FILE", "/run/secrets/master_key")
 
-	_, err := loadMasterKey(t.TempDir())
+	err := applyEnv(&Config{})
 	if err == nil {
-		t.Fatal("loadMasterKey accepted both master key variables")
+		t.Fatal("applyEnv accepted both master key variables")
 	}
 
-	if !strings.Contains(err.Error(), EnvMasterKey) ||
-		!strings.Contains(err.Error(), EnvMasterKeyFile) {
+	if !strings.Contains(err.Error(), "CERTVAULT_MASTER_KEY") ||
+		!strings.Contains(err.Error(), "CERTVAULT_MASTER_KEY_FILE") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
 func TestDecodeMasterKeyRejectsInvalidValues(t *testing.T) {
 	for _, value := range []string{"not-base64", base64.StdEncoding.EncodeToString(make([]byte, 31))} {
-		if _, err := decodeMasterKey(value); err == nil {
-			t.Fatalf("decodeMasterKey(%q) succeeded", value)
+		var key MasterKey
+		if err := key.UnmarshalText([]byte(value)); err == nil {
+			t.Fatalf("MasterKey.UnmarshalText(%q) succeeded", value)
 		}
 	}
 }

@@ -34,10 +34,7 @@ func New(
 
 	var browserAuthenticator *auth.BrowserAuthenticator
 	if c.UIEnabled() {
-		browserAuthenticator, err = auth.NewBrowserAuthenticator(c, repos, clientIPs)
-		if err != nil {
-			return nil, err
-		}
+		browserAuthenticator = auth.NewBrowserAuthenticator(c, repos, clientIPs)
 	}
 
 	a := &API{

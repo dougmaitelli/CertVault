@@ -4,16 +4,10 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-
-	"go.yaml.in/yaml/v3"
 )
 
 // LogLevel is a validated slog logging threshold.
 type LogLevel slog.Level
-
-func (l *LogLevel) UnmarshalYAML(node *yaml.Node) error {
-	return l.UnmarshalText([]byte(node.Value))
-}
 
 // UnmarshalText parses a standard slog level name or offset.
 func (l *LogLevel) UnmarshalText(text []byte) error {

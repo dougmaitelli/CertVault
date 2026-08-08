@@ -27,7 +27,7 @@ func TestSessionDurationDefaultsToEightHours(t *testing.T) {
 }
 
 func TestSessionDurationEnvironmentOverride(t *testing.T) {
-	t.Setenv(EnvSessionDuration, "12h")
+	t.Setenv("CERTVAULT_SESSION_DURATION", "12h")
 
 	cfg := Config{}
 	if err := applyEnv(&cfg); err != nil {
@@ -40,7 +40,7 @@ func TestSessionDurationEnvironmentOverride(t *testing.T) {
 }
 
 func TestInvalidSessionDurationEnvironmentOverride(t *testing.T) {
-	t.Setenv(EnvSessionDuration, "tomorrow")
+	t.Setenv("CERTVAULT_SESSION_DURATION", "tomorrow")
 
 	if err := applyEnv(&Config{}); err == nil {
 		t.Fatal("invalid session duration was accepted")

@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"go.yaml.in/yaml/v3"
 )
 
 const (
@@ -16,10 +14,6 @@ const (
 
 type Duration struct {
 	time.Duration
-}
-
-func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
-	return d.UnmarshalText([]byte(node.Value))
 }
 
 func (d *Duration) UnmarshalText(text []byte) error {

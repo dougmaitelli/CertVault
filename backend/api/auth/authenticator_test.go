@@ -121,7 +121,7 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 		}, nil
 	})}
 
-	authenticator, err := NewBrowserAuthenticator(
+	authenticator := NewBrowserAuthenticator(
 		&config.Config{
 			Server: config.Server{PublicURL: "https://certvault.example.com"},
 			Auth: config.Auth{OIDC: &config.OIDC{
@@ -134,9 +134,6 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 		nil,
 		nil,
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	if discoveries.Load() != 0 {
 		t.Fatal("OIDC discovery ran during authenticator initialization")
@@ -179,7 +176,7 @@ func TestBootstrapLoginRecordsAuthenticationMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	authenticator, err := NewBrowserAuthenticator(
+	authenticator := NewBrowserAuthenticator(
 		&config.Config{
 			MasterKey: make([]byte, 32),
 			Auth:      config.Auth{BootstrapToken: "secret"},
@@ -187,10 +184,6 @@ func TestBootstrapLoginRecordsAuthenticationMethod(t *testing.T) {
 		repositories,
 		clientIPs,
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	request := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,

@@ -2,8 +2,6 @@ package config
 
 import (
 	"strings"
-
-	"go.yaml.in/yaml/v3"
 )
 
 // KeyType identifies the private-key algorithm and size used for a certificate.
@@ -19,9 +17,10 @@ const (
 	DefaultKeyType = KeyTypeEC256
 )
 
-// UnmarshalYAML normalizes a configured key type before validation.
-func (k *KeyType) UnmarshalYAML(node *yaml.Node) error {
-	*k = KeyType(strings.ToLower(strings.TrimSpace(node.Value)))
+// UnmarshalText normalizes a configured key type before validation.
+func (k *KeyType) UnmarshalText(text []byte) error {
+	*k = KeyType(strings.ToLower(strings.TrimSpace(string(text))))
+
 	return nil
 }
 

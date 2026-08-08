@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/certvault/certvault/audit"
-	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database"
 	"github.com/certvault/certvault/database/repository"
 )
@@ -148,8 +147,8 @@ func writeTestConfig(t *testing.T) (string, string) {
 		t.Fatal(err)
 	}
 
-	t.Setenv(config.EnvMasterKey, base64.StdEncoding.EncodeToString(make([]byte, 32)))
-	t.Setenv(config.EnvMasterKeyFile, "")
+	t.Setenv("CERTVAULT_MASTER_KEY", base64.StdEncoding.EncodeToString(make([]byte, 32)))
+	t.Setenv("CERTVAULT_MASTER_KEY_FILE", "")
 
 	return configPath, dataDir
 }

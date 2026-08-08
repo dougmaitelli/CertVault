@@ -7,8 +7,8 @@ import (
 )
 
 func TestApplyEnvUsesOIDCClientSecretValue(t *testing.T) {
-	t.Setenv(EnvOIDCClientSecret, "direct-secret")
-	t.Setenv(EnvOIDCClientSecretFile, "")
+	t.Setenv("CERTVAULT_OIDC_CLIENT_SECRET", "direct-secret")
+	t.Setenv("CERTVAULT_OIDC_CLIENT_SECRET_FILE", "")
 
 	configuration := Config{Auth: Auth{OIDC: &OIDC{ClientSecretFile: "/configured/secret"}}}
 
@@ -26,27 +26,27 @@ func TestApplyEnvUsesOIDCClientSecretValue(t *testing.T) {
 }
 
 func TestApplyEnvRejectsOIDCClientSecretValueAndFileTogether(t *testing.T) {
-	t.Setenv(EnvOIDCClientSecret, "direct-secret")
-	t.Setenv(EnvOIDCClientSecretFile, "/run/secrets/oidc_client_secret")
+	t.Setenv("CERTVAULT_OIDC_CLIENT_SECRET", "direct-secret")
+	t.Setenv("CERTVAULT_OIDC_CLIENT_SECRET_FILE", "/run/secrets/oidc_client_secret")
 
 	err := applyEnv(&Config{Auth: Auth{OIDC: &OIDC{}}})
 	if err == nil {
 		t.Fatal("applyEnv accepted both OIDC client secret variables")
 	}
 
-	if !strings.Contains(err.Error(), EnvOIDCClientSecret) ||
-		!strings.Contains(err.Error(), EnvOIDCClientSecretFile) {
+	if !strings.Contains(err.Error(), "CERTVAULT_OIDC_CLIENT_SECRET") ||
+		!strings.Contains(err.Error(), "CERTVAULT_OIDC_CLIENT_SECRET_FILE") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
 func TestApplyEnvConfiguresOIDCFromEnvironment(t *testing.T) {
-	t.Setenv(EnvOIDCIssuerURL, "https://auth.example.com")
-	t.Setenv(EnvOIDCClientID, "certvault")
-	t.Setenv(EnvOIDCClientSecret, "direct-secret")
-	t.Setenv(EnvOIDCClientSecretFile, "")
-	t.Setenv(EnvOIDCScopes, "openid, profile, custom-scope")
-	t.Setenv(EnvOIDCAllowedGroups, "admins, certificate-operators")
+	t.Setenv("CERTVAULT_OIDC_ISSUER_URL", "https://auth.example.com")
+	t.Setenv("CERTVAULT_OIDC_CLIENT_ID", "certvault")
+	t.Setenv("CERTVAULT_OIDC_CLIENT_SECRET", "direct-secret")
+	t.Setenv("CERTVAULT_OIDC_CLIENT_SECRET_FILE", "")
+	t.Setenv("CERTVAULT_OIDC_SCOPES", "openid, profile, custom-scope")
+	t.Setenv("CERTVAULT_OIDC_ALLOWED_GROUPS", "admins, certificate-operators")
 
 	configuration := Config{}
 	if err := applyEnv(&configuration); err != nil {
