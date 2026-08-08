@@ -26,7 +26,7 @@ func (f roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) 
 }
 
 func TestSessionRoundTrip(t *testing.T) {
-	authenticator := &Authenticator{config: &config.Config{MasterKey: make([]byte, 32)}}
+	authenticator := &BrowserAuthenticator{config: &config.Config{MasterKey: make([]byte, 32)}}
 	recorder := httptest.NewRecorder()
 	authenticator.setSession(recorder, sessionPayload{
 		Name:                 "admin@example.com",
@@ -45,7 +45,9 @@ func TestSessionRoundTrip(t *testing.T) {
 	if cookies[0].MaxAge != int(config.DefaultSessionDuration.Seconds()) {
 		t.Fatalf("cookie max age = %d, want %d", cookies[0].MaxAge, int(config.DefaultSessionDuration.Seconds()))
 	}
-	identity, ok := authenticator.verifySession(cookies[0].Value)
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/session", nil)
+	request.AddCookie(cookies[0])
+	identity, ok := authenticator.AuthenticateSession(request)
 	if !ok || identity.Name != "admin@example.com" ||
 		identity.DisplayName != "Certificate Admin" ||
 		identity.Picture != "https://id.example.com/avatar.png" ||
@@ -55,7 +57,7 @@ func TestSessionRoundTrip(t *testing.T) {
 }
 
 func TestSessionUsesConfiguredDuration(t *testing.T) {
-	authenticator := &Authenticator{config: &config.Config{
+	authenticator := &BrowserAuthenticator{config: &config.Config{
 		MasterKey: make([]byte, 32),
 		Auth:      config.Auth{SessionDuration: config.Duration{Duration: 2 * time.Hour}},
 	}}
@@ -106,7 +108,7 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 		}, nil
 	})}
 
-	authenticator, err := New(
+	authenticator, err := NewBrowserAuthenticator(
 		&config.Config{
 			Server: config.Server{PublicURL: "https://certvault.example.com"},
 			Auth: config.Auth{OIDC: &config.OIDC{
@@ -153,7 +155,7 @@ func TestBootstrapLoginRecordsAuthenticationMethod(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	authenticator, err := New(
+	authenticator, err := NewBrowserAuthenticator(
 		&config.Config{
 			MasterKey: make([]byte, 32),
 			Auth:      config.Auth{BootstrapToken: "secret"},

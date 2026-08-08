@@ -2,9 +2,33 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/certvault/certvault/api/auth"
 )
+
+func (a *API) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if a.browserAuthenticator != nil {
+			if identity, ok := a.browserAuthenticator.AuthenticateSession(r); ok {
+				next.ServeHTTP(w, auth.WithIdentity(r, identity))
+				return
+			}
+		}
+
+		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		if token != "" {
+			principal, err := a.repos.APIKeys.Authenticate(r.Context(), token, a.clientIPs.ClientIP(r))
+			if err == nil {
+				identity := auth.Identity{Name: principal.Name, Principal: principal}
+				next.ServeHTTP(w, auth.WithIdentity(r, identity))
+				return
+			}
+		}
+
+		problem(w, http.StatusUnauthorized, "unauthorized", "Authentication is required")
+	})
+}
 
 const (
 	scopeCertificatesRead = "certificates:read"

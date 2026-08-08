@@ -2,7 +2,7 @@
 
 ## Headless mode
 
-Set `server.ui_enabled: false` or `CERTVAULT_UI_ENABLED=false` to run CertVault without the web console. Headless mode does not register frontend assets or the `/auth/*` browser authentication routes; health, readiness, and authenticated API endpoints remain available. Provision API keys with the `certvault api-key` CLI before disabling the UI.
+Set `server.ui_enabled: false` or `CERTVAULT_UI_ENABLED=false` to run CertVault without the web console. Headless mode does not initialize bootstrap or OIDC authentication, accept browser session cookies, or register frontend assets and `/auth/*` routes. Health, readiness, and API-key-authenticated endpoints remain available. Provision API keys with the `certvault api-key` CLI before disabling the UI.
 
 ## Bootstrap administrator
 

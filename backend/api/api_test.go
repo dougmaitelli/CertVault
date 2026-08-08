@@ -161,3 +161,53 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		t.Fatalf("ready with closed database returned %d: %s", unavailable.Code, unavailable.Body.String())
 	}
 }
+
+func TestHeadlessInitializationSkipsBrowserAuthentication(t *testing.T) {
+	dir := t.TempDir()
+	disabled := false
+	cfg := &config.Config{
+		DataDir: dir,
+		Server:  config.Server{UIEnabled: &disabled},
+		Auth: config.Auth{
+			BootstrapTokenFile: filepath.Join(dir, "missing-bootstrap-token"),
+			OIDC: &config.OIDC{
+				ClientSecretFile: filepath.Join(dir, "missing-oidc-secret"),
+			},
+		},
+	}
+	db, err := database.Open(filepath.Join(dir, "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	repositories := repository.New(db)
+	handler, err := New(cfg, db, repositories, nil)
+	if err != nil {
+		t.Fatalf("headless initialization loaded browser authentication: %v", err)
+	}
+	request := httptest.NewRequest(http.MethodGet, "/auth/login", nil)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("headless browser authentication returned %d, want 404", response.Code)
+	}
+
+	_, token, err := repositories.APIKeys.Create(
+		context.Background(),
+		"headless-client",
+		[]string{"certificates:read"},
+		nil,
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request = httptest.NewRequest(http.MethodGet, "/api/v1/certificates", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	response = httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("headless API-key authentication returned %d: %s", response.Code, response.Body.String())
+	}
+}

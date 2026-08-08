@@ -13,10 +13,10 @@ func (a *API) routes() http.Handler {
 
 	if a.cfg.UIEnabled() {
 		mux.HandleFunc("GET /auth/methods", a.authenticationMethods)
-		mux.HandleFunc("GET /auth/login", a.authenticator.Login)
-		mux.HandleFunc("GET "+config.OIDCCallbackPath, a.authenticator.Callback)
-		mux.HandleFunc("POST /auth/bootstrap", a.authenticator.BootstrapLogin)
-		mux.HandleFunc("POST /auth/logout", a.authenticator.Logout)
+		mux.HandleFunc("GET /auth/login", a.browserAuthenticator.Login)
+		mux.HandleFunc("GET "+config.OIDCCallbackPath, a.browserAuthenticator.Callback)
+		mux.HandleFunc("POST /auth/bootstrap", a.browserAuthenticator.BootstrapLogin)
+		mux.HandleFunc("POST /auth/logout", a.browserAuthenticator.Logout)
 	}
 
 	apiMux := http.NewServeMux()
@@ -51,7 +51,7 @@ func (a *API) routes() http.Handler {
 	apiMux.HandleFunc("POST /api/v1/api-keys/{id}/revoke", requireAdministrator(a.revokeAPIKey))
 	apiMux.HandleFunc("DELETE /api/v1/api-keys/{id}", requireAdministrator(a.deleteAPIKey))
 	apiMux.HandleFunc("GET /api/v1/audit", requireAdministrator(a.listAudits))
-	mux.Handle("/api/", a.authenticator.Middleware(apiMux))
+	mux.Handle("/api/", a.authenticate(apiMux))
 
 	if a.cfg.UIEnabled() {
 		mux.HandleFunc("/", a.frontend)

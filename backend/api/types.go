@@ -12,12 +12,12 @@ import (
 )
 
 type API struct {
-	cfg           *config.Config
-	database      *database.Database
-	repos         *repository.Repositories
-	manager       *service.Manager
-	authenticator *auth.Authenticator
-	clientIPs     *certnetwork.ClientIPResolver
+	cfg                  *config.Config
+	database             *database.Database
+	repos                *repository.Repositories
+	manager              *service.Manager
+	browserAuthenticator *auth.BrowserAuthenticator
+	clientIPs            *certnetwork.ClientIPResolver
 }
 
 type createAPIKeyRequest struct {

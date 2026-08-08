@@ -11,7 +11,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type Authenticator struct {
+type BrowserAuthenticator struct {
 	config     *config.Config
 	repos      *repository.Repositories
 	bootstrap  string

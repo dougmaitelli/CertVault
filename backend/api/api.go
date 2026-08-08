@@ -31,17 +31,20 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	authenticator, err := auth.New(c, repos, clientIPs)
-	if err != nil {
-		return nil, err
+	var browserAuthenticator *auth.BrowserAuthenticator
+	if c.UIEnabled() {
+		browserAuthenticator, err = auth.NewBrowserAuthenticator(c, repos, clientIPs)
+		if err != nil {
+			return nil, err
+		}
 	}
 	a := &API{
-		cfg:           c,
-		database:      db,
-		repos:         repos,
-		manager:       manager,
-		authenticator: authenticator,
-		clientIPs:     clientIPs,
+		cfg:                  c,
+		database:             db,
+		repos:                repos,
+		manager:              manager,
+		browserAuthenticator: browserAuthenticator,
+		clientIPs:            clientIPs,
 	}
 	return a.routes(), nil
 }

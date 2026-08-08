@@ -29,12 +29,12 @@ const (
 	authMethodOIDC                 = "oidc"
 )
 
-func New(
+func NewBrowserAuthenticator(
 	cfg *config.Config,
 	repos *repository.Repositories,
 	clientIPs *certnetwork.ClientIPResolver,
-) (*Authenticator, error) {
-	authenticator := &Authenticator{
+) (*BrowserAuthenticator, error) {
+	browserAuthenticator := &BrowserAuthenticator{
 		config:    cfg,
 		repos:     repos,
 		bootstrap: cfg.Auth.BootstrapToken,
@@ -45,7 +45,7 @@ func New(
 		if err != nil {
 			return nil, err
 		}
-		authenticator.bootstrap = strings.TrimSpace(string(contents))
+		browserAuthenticator.bootstrap = strings.TrimSpace(string(contents))
 	}
 	if cfg.Auth.OIDC != nil {
 		secret := cfg.Auth.OIDC.ClientSecret
@@ -56,12 +56,12 @@ func New(
 			}
 			secret = strings.TrimSpace(string(contents))
 		}
-		authenticator.oidcSecret = secret
+		browserAuthenticator.oidcSecret = secret
 	}
-	return authenticator, nil
+	return browserAuthenticator, nil
 }
 
-func (a *Authenticator) oidcClient(ctx context.Context) (*oidc.Provider, *oauth2.Config, error) {
+func (a *BrowserAuthenticator) oidcClient(ctx context.Context) (*oidc.Provider, *oauth2.Config, error) {
 	if a.config.Auth.OIDC == nil {
 		return nil, nil, errors.New("OIDC is not configured")
 	}
@@ -85,27 +85,15 @@ func (a *Authenticator) oidcClient(ctx context.Context) (*oidc.Provider, *oauth2
 	return a.oidc, a.oauth, nil
 }
 
-func (a *Authenticator) Middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if cookie, err := r.Cookie(sessionCookie); err == nil {
-			if identity, ok := a.verifySession(cookie.Value); ok {
-				next.ServeHTTP(w, withIdentity(r, identity))
-				return
-			}
-		}
-		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if token != "" {
-			principal, err := a.repos.APIKeys.Authenticate(r.Context(), token, a.remoteIP(r))
-			if err == nil {
-				next.ServeHTTP(w, withIdentity(r, Identity{Name: principal.Name, Principal: principal}))
-				return
-			}
-		}
-		problem(w, http.StatusUnauthorized, "unauthorized", "Authentication is required")
-	})
+func (a *BrowserAuthenticator) AuthenticateSession(r *http.Request) (Identity, bool) {
+	cookie, err := r.Cookie(sessionCookie)
+	if err != nil {
+		return Identity{}, false
+	}
+	return a.verifySession(cookie.Value)
 }
 
-func (a *Authenticator) BootstrapLogin(w http.ResponseWriter, r *http.Request) {
+func (a *BrowserAuthenticator) BootstrapLogin(w http.ResponseWriter, r *http.Request) {
 	var input bootstrapLoginRequest
 	if decode(r, &input) != nil || a.bootstrap == "" || !hmac.Equal([]byte(input.Token), []byte(a.bootstrap)) {
 		problem(w, http.StatusUnauthorized, "unauthorized", "Invalid bootstrap token")
@@ -127,7 +115,7 @@ func (a *Authenticator) BootstrapLogin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *Authenticator) Login(w http.ResponseWriter, r *http.Request) {
+func (a *BrowserAuthenticator) Login(w http.ResponseWriter, r *http.Request) {
 	if a.config.Auth.OIDC == nil {
 		problem(w, http.StatusNotFound, "oidc_disabled", "OIDC is not configured")
 		return
@@ -149,7 +137,7 @@ func (a *Authenticator) Login(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-func (a *Authenticator) Callback(w http.ResponseWriter, r *http.Request) {
+func (a *BrowserAuthenticator) Callback(w http.ResponseWriter, r *http.Request) {
 	value, ok := a.states.LoadAndDelete(r.URL.Query().Get("state"))
 	if !ok {
 		problem(w, http.StatusBadRequest, "invalid_state", "OIDC state is invalid")
@@ -204,7 +192,7 @@ func (a *Authenticator) Callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func (a *Authenticator) Logout(w http.ResponseWriter, _ *http.Request) {
+func (a *BrowserAuthenticator) Logout(w http.ResponseWriter, _ *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
 		Value:    "",
@@ -222,11 +210,11 @@ func IdentityFromContext(ctx context.Context) (Identity, bool) {
 	return identity, ok
 }
 
-func withIdentity(r *http.Request, identity Identity) *http.Request {
+func WithIdentity(r *http.Request, identity Identity) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), identityKey, identity))
 }
 
-func (a *Authenticator) setSession(w http.ResponseWriter, session sessionPayload) {
+func (a *BrowserAuthenticator) setSession(w http.ResponseWriter, session sessionPayload) {
 	sessionDuration := a.config.SessionDuration()
 	session.ExpiresAt = time.Now().Add(sessionDuration).Unix()
 	contents, _ := json.Marshal(session)
@@ -245,7 +233,7 @@ func (a *Authenticator) setSession(w http.ResponseWriter, session sessionPayload
 	})
 }
 
-func (a *Authenticator) verifySession(value string) (Identity, bool) {
+func (a *BrowserAuthenticator) verifySession(value string) (Identity, bool) {
 	parts := strings.Split(value, ".")
 	if len(parts) != 2 {
 		return Identity{}, false
@@ -307,6 +295,6 @@ func groupAllowed(got, wanted []string) bool {
 	return false
 }
 
-func (a *Authenticator) remoteIP(r *http.Request) string {
+func (a *BrowserAuthenticator) remoteIP(r *http.Request) string {
 	return a.clientIPs.ClientIP(r)
 }
