@@ -40,6 +40,14 @@ type Manager struct {
 	issueMu sync.Mutex
 }
 
+type IssueKind string
+
+const (
+	IssueKindInitial   IssueKind = "initial"
+	IssueKindManual    IssueKind = "manual"
+	IssueKindScheduled IssueKind = "scheduled"
+)
+
 func NewManager(c *config.Config, repos *repository.Repositories, log *slog.Logger) (*Manager, error) {
 	return &Manager{cfg: c, repos: repos, log: log}, nil
 }
@@ -76,7 +84,7 @@ func (m *Manager) reconcile(ctx context.Context) {
 		due := c.CurrentVersion == nil || time.Until(c.CurrentVersion.NotAfter) < time.Duration(c.RenewBeforeSeconds)*time.Second
 		if due {
 			go func(name string) {
-				if e := m.Issue(context.Background(), name, "scheduled"); e != nil {
+				if e := m.Issue(context.Background(), name, IssueKindScheduled); e != nil {
 					m.log.Error("certificate issuance failed", "certificate", name, "error", e)
 				}
 			}(c.Name)
@@ -84,15 +92,15 @@ func (m *Manager) reconcile(ctx context.Context) {
 	}
 }
 
-func (m *Manager) Issue(ctx context.Context, name, kind string) error {
+func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) error {
 	var auditAction string
 
 	switch kind {
-	case "initial":
+	case IssueKindInitial:
 		auditAction = audit.ActionCertificateInitial
-	case "manual":
+	case IssueKindManual:
 		auditAction = audit.ActionCertificateManual
-	case "scheduled":
+	case IssueKindScheduled:
 		auditAction = audit.ActionCertificateScheduled
 	default:
 		return fmt.Errorf("unsupported issuance kind %q", kind)
@@ -113,7 +121,7 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 	lock.Lock()
 	defer lock.Unlock()
 
-	job, e := m.repos.Jobs.Start(ctx, name, kind)
+	job, e := m.repos.Jobs.Start(ctx, name, string(kind))
 	if e != nil {
 		return e
 	}
@@ -145,7 +153,7 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 	)
 	m.fireHooks(context.Background(), "certificate.issued", name, &v, nil)
 
-	if kind != "initial" {
+	if kind != IssueKindInitial {
 		m.fireHooks(context.Background(), "certificate.renewed", name, &v, nil)
 	}
 

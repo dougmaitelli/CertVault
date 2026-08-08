@@ -13,7 +13,7 @@ func TestIssueRejectsUnknownCertificateBeforeCreatingLock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = manager.Issue(context.Background(), "unknown", "manual"); err == nil {
+	if err = manager.Issue(context.Background(), "unknown", IssueKindManual); err == nil {
 		t.Fatal("expected unknown certificate error")
 	}
 
@@ -28,7 +28,7 @@ func TestIssueRejectsUnknownKind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = manager.Issue(context.Background(), "home", "unexpected"); err == nil {
+	if err = manager.Issue(context.Background(), "home", IssueKind("unexpected")); err == nil {
 		t.Fatal("expected unsupported issuance kind error")
 	}
 }

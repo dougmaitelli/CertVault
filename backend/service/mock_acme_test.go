@@ -54,7 +54,7 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = manager.Issue(ctx, "development", "manual"); err != nil {
+	if err = manager.Issue(ctx, "development", IssueKindManual); err != nil {
 		t.Fatal(err)
 	}
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/certvault/certvault/audit"
+	"github.com/certvault/certvault/service"
 )
 
 const (
@@ -63,7 +64,7 @@ func (a *API) renewCertificate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.PathValue("name")
-	go func() { _ = a.manager.Issue(context.Background(), name, "manual") }()
+	go func() { _ = a.manager.Issue(context.Background(), name, service.IssueKindManual) }()
 
 	a.repos.Audits.Record(
 		r.Context(), id.Name, audit.ActionRenewalTrigger, name, "", a.remoteIP(r),
