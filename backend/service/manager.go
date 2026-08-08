@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database/repository"
 	"github.com/certvault/certvault/vault"
@@ -84,6 +85,19 @@ func (m *Manager) reconcile(ctx context.Context) {
 }
 
 func (m *Manager) Issue(ctx context.Context, name, kind string) error {
+	var auditAction string
+
+	switch kind {
+	case "initial":
+		auditAction = audit.ActionCertificateInitial
+	case "manual":
+		auditAction = audit.ActionCertificateManual
+	case "scheduled":
+		auditAction = audit.ActionCertificateScheduled
+	default:
+		return fmt.Errorf("unsupported issuance kind %q", kind)
+	}
+
 	def, ok := m.cfg.Certificate(name)
 	if !ok {
 		return errors.New("unknown certificate")
@@ -126,7 +140,9 @@ func (m *Manager) Issue(ctx context.Context, name, kind string) error {
 		return e
 	}
 
-	m.repos.Audits.Record(ctx, "system", "certificate."+kind, name, "", "")
+	m.repos.Audits.Record(
+		ctx, audit.ActorSystem, auditAction, name, "", "",
+	)
 	m.fireHooks(context.Background(), "certificate.issued", name, &v, nil)
 
 	if kind != "initial" {

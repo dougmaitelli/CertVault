@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database/repository"
 	certnetwork "github.com/certvault/certvault/network"
@@ -25,8 +26,8 @@ const (
 	identityKey         contextKey = "identity"
 	sessionCookie                  = "cv_session"
 	oidcStateLifetime              = 10 * time.Minute
-	authMethodBootstrap            = "bootstrap"
-	authMethodOIDC                 = "oidc"
+	authMethodBootstrap            = audit.DetailAuthBootstrap
+	authMethodOIDC                 = audit.DetailAuthOIDC
 )
 
 func NewBrowserAuthenticator(
@@ -112,15 +113,15 @@ func (a *BrowserAuthenticator) BootstrapLogin(w http.ResponseWriter, r *http.Req
 	}
 
 	a.setSession(w, sessionPayload{
-		Name:                 "bootstrap-admin",
+		Name:                 audit.ActorBootstrapAdmin,
 		DisplayName:          "Bootstrap administrator",
 		AuthenticationMethod: authMethodBootstrap,
 	})
 	a.repos.Audits.Record(
 		r.Context(),
-		"bootstrap-admin",
-		"auth.login",
-		"ui",
+		audit.ActorBootstrapAdmin,
+		audit.ActionAuthLogin,
+		audit.ResourceUI,
 		authMethodBootstrap,
 		a.remoteIP(r),
 	)
@@ -212,7 +213,10 @@ func (a *BrowserAuthenticator) Callback(w http.ResponseWriter, r *http.Request) 
 		Picture:              claims.Picture,
 		AuthenticationMethod: authMethodOIDC,
 	})
-	a.repos.Audits.Record(r.Context(), actor, "auth.login", "ui", authMethodOIDC, a.remoteIP(r))
+	a.repos.Audits.Record(
+		r.Context(), actor, audit.ActionAuthLogin,
+		audit.ResourceUI, authMethodOIDC, a.remoteIP(r),
+	)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 

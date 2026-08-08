@@ -12,12 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database"
 	"github.com/certvault/certvault/database/repository"
 )
-
-const cliActor = "local-cli"
 
 var validScopes = map[string]bool{
 	"certificates:read": true,
@@ -134,7 +133,8 @@ func createAPIKey(args []string, stdout, stderr io.Writer) error {
 		}
 
 		repositories.Audits.Record(
-			context.Background(), cliActor, "api_key.create", key.Name, "", "",
+			context.Background(), audit.ActorLocalCLI,
+			audit.ActionAPIKeyCreate, key.Name, "", "",
 		)
 
 		_, err = fmt.Fprintln(stdout, token)
@@ -170,7 +170,7 @@ func listAPIKeys(args []string, stdout, stderr io.Writer) error {
 }
 
 func revokeAPIKey(args []string, stdout, stderr io.Writer) error {
-	return mutateAPIKey("revoke", "revoked", args, stdout, stderr, func(
+	return mutateAPIKey("revoke", "revoked", audit.ActionAPIKeyRevoke, args, stdout, stderr, func(
 		ctx context.Context, repositories *repository.Repositories, id int64,
 	) (string, error) {
 		return repositories.APIKeys.Revoke(ctx, id)
@@ -178,7 +178,7 @@ func revokeAPIKey(args []string, stdout, stderr io.Writer) error {
 }
 
 func deleteAPIKey(args []string, stdout, stderr io.Writer) error {
-	return mutateAPIKey("delete", "deleted", args, stdout, stderr, func(
+	return mutateAPIKey("delete", "deleted", audit.ActionAPIKeyDelete, args, stdout, stderr, func(
 		ctx context.Context, repositories *repository.Repositories, id int64,
 	) (string, error) {
 		return repositories.APIKeys.Delete(ctx, id)
@@ -188,6 +188,7 @@ func deleteAPIKey(args []string, stdout, stderr io.Writer) error {
 func mutateAPIKey(
 	action string,
 	completedAction string,
+	auditAction string,
 	args []string,
 	stdout, stderr io.Writer,
 	mutation func(context.Context, *repository.Repositories, int64) (string, error),
@@ -218,7 +219,9 @@ func mutateAPIKey(
 			return err
 		}
 
-		repositories.Audits.Record(ctx, cliActor, "api_key."+action, name, "", "")
+		repositories.Audits.Record(
+			ctx, audit.ActorLocalCLI, auditAction, name, "", "",
+		)
 		_, err = fmt.Fprintf(stdout, "%s API key %d (%s)\n", completedAction, id, name)
 
 		return err

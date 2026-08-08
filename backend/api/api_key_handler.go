@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/database/repository"
 )
 
@@ -33,7 +34,10 @@ func (a *API) createAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.repos.Audits.Record(r.Context(), "admin", "api_key.create", key.Name, "", a.remoteIP(r))
+	a.repos.Audits.Record(
+		r.Context(), audit.ActorAdmin, audit.ActionAPIKeyCreate,
+		key.Name, "", a.remoteIP(r),
+	)
 	jsonResponse(w, http.StatusCreated, map[string]any{"api_key": key, "token": token})
 }
 
@@ -51,7 +55,10 @@ func (a *API) revokeAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.repos.Audits.Record(r.Context(), "admin", "api_key.revoke", name, "", a.remoteIP(r))
+	a.repos.Audits.Record(
+		r.Context(), audit.ActorAdmin, audit.ActionAPIKeyRevoke,
+		name, "", a.remoteIP(r),
+	)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -75,6 +82,9 @@ func (a *API) deleteAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.repos.Audits.Record(r.Context(), "admin", "api_key.delete", name, "", a.remoteIP(r))
+	a.repos.Audits.Record(
+		r.Context(), audit.ActorAdmin, audit.ActionAPIKeyDelete,
+		name, "", a.remoteIP(r),
+	)
 	w.WriteHeader(http.StatusNoContent)
 }

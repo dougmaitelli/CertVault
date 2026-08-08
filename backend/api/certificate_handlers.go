@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+
+	"github.com/certvault/certvault/audit"
 )
 
 const (
@@ -63,7 +65,9 @@ func (a *API) renewCertificate(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	go func() { _ = a.manager.Issue(context.Background(), name, "manual") }()
 
-	a.repos.Audits.Record(r.Context(), id.Name, "renewal.trigger", name, "", a.remoteIP(r))
+	a.repos.Audits.Record(
+		r.Context(), id.Name, audit.ActionRenewalTrigger, name, "", a.remoteIP(r),
+	)
 	jsonResponse(w, http.StatusAccepted, map[string]string{"status": "queued"})
 }
 
@@ -101,6 +105,9 @@ func (a *API) downloadCertificate(file string) http.HandlerFunc {
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name+"-"+file))
 		_, _ = w.Write(contents)
 
-		a.repos.Audits.Record(r.Context(), id.Name, "certificate.download", name, file, a.remoteIP(r))
+		a.repos.Audits.Record(
+			r.Context(), id.Name, audit.ActionCertificateDownload,
+			name, file, a.remoteIP(r),
+		)
 	}
 }

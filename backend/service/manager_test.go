@@ -22,6 +22,17 @@ func TestIssueRejectsUnknownCertificateBeforeCreatingLock(t *testing.T) {
 	}
 }
 
+func TestIssueRejectsUnknownKind(t *testing.T) {
+	manager, err := NewManager(&config.Config{}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = manager.Issue(context.Background(), "home", "unexpected"); err == nil {
+		t.Fatal("expected unsupported issuance kind error")
+	}
+}
+
 func TestHookMatchesCertificateAndEvent(t *testing.T) {
 	hook := config.Hook{Events: []string{"certificate.renewed"}}
 	if !hookMatches(hook, "certificate.renewed", "home") {

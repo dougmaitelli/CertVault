@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/service"
 )
 
@@ -31,8 +32,8 @@ func (a *API) deleteACMEAccount(w http.ResponseWriter, r *http.Request) {
 
 	a.repos.Audits.Record(
 		r.Context(),
-		"admin",
-		"acme_account.delete",
+		audit.ActorAdmin,
+		audit.ActionACMEAccountDelete,
 		account.DirectoryURL,
 		"",
 		a.remoteIP(r),

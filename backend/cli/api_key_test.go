@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database"
 	"github.com/certvault/certvault/database/repository"
@@ -88,7 +89,7 @@ func TestAPIKeyLifecycle(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	audits, err := repository.New(db).Audits.Search(context.Background(), repository.AuditFilter{
-		Actors:  []string{cliActor},
+		Actors:  []string{audit.ActorLocalCLI},
 		Page:    1,
 		PerPage: 10,
 	})
