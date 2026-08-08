@@ -34,20 +34,26 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 			},
 		},
 	}
+
 	db, err := database.Open(filepath.Join(dir, "test.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = db.Close() }()
+
 	repositories := repository.New(db)
 	if err = repositories.Certificates.Reconcile(context.Background(), cfg); err != nil {
 		t.Fatal(err)
 	}
+
 	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
 	manager, err := service.NewManager(cfg, repositories, testLogger)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	handler, err := New(cfg, db, repositories, manager)
 	if err != nil {
 		t.Fatal(err)
@@ -61,16 +67,20 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		nil,
 	)
 	handler.ServeHTTP(health, healthRequest)
+
 	if health.Code != http.StatusOK {
 		t.Fatalf("health returned %d", health.Code)
 	}
+
 	var healthBody map[string]string
 	if err = json.Unmarshal(health.Body.Bytes(), &healthBody); err != nil {
 		t.Fatal(err)
 	}
+
 	if healthBody["version"] != cfg.AppVersion {
 		t.Fatalf("health version = %q, want %q", healthBody["version"], cfg.AppVersion)
 	}
+
 	ready := httptest.NewRecorder()
 	readyRequest := httptest.NewRequestWithContext(
 		context.Background(),
@@ -79,6 +89,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		nil,
 	)
 	handler.ServeHTTP(ready, readyRequest)
+
 	if ready.Code != http.StatusOK {
 		t.Fatalf("ready returned %d: %s", ready.Code, ready.Body.String())
 	}
@@ -87,6 +98,7 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	req := httptest.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
@@ -94,8 +106,10 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		nil,
 	)
 	req.Header.Set("Authorization", "Bearer "+token)
+
 	list := httptest.NewRecorder()
 	handler.ServeHTTP(list, req)
+
 	if list.Code != http.StatusOK {
 		t.Fatalf("list returned %d: %s", list.Code, list.Body.String())
 	}
@@ -107,8 +121,10 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		nil,
 	)
 	wrongMethodRequest.Header.Set("Authorization", "Bearer "+token)
+
 	wrongMethod := httptest.NewRecorder()
 	handler.ServeHTTP(wrongMethod, wrongMethodRequest)
+
 	if wrongMethod.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("wrong method returned %d", wrongMethod.Code)
 	}
@@ -120,8 +136,10 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		nil,
 	)
 	unknownRequest.Header.Set("Authorization", "Bearer "+token)
+
 	unknown := httptest.NewRecorder()
 	handler.ServeHTTP(unknown, unknownRequest)
+
 	if unknown.Code != http.StatusNotFound {
 		t.Fatalf("unknown API route returned %d", unknown.Code)
 	}
@@ -133,8 +151,10 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		nil,
 	)
 	privateKeyRequest.Header.Set("Authorization", "Bearer "+token)
+
 	privateKey := httptest.NewRecorder()
 	handler.ServeHTTP(privateKey, privateKeyRequest)
+
 	if privateKey.Code != http.StatusForbidden {
 		t.Fatalf("private key without scope returned %d", privateKey.Code)
 	}
@@ -146,8 +166,10 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 		nil,
 	)
 	adminRequest.Header.Set("Authorization", "Bearer "+token)
+
 	admin := httptest.NewRecorder()
 	handler.ServeHTTP(admin, adminRequest)
+
 	if admin.Code != http.StatusForbidden {
 		t.Fatalf("admin route with machine key returned %d", admin.Code)
 	}
@@ -155,8 +177,10 @@ func TestHealthAndScopedCertificateList(t *testing.T) {
 	if err = db.Close(); err != nil {
 		t.Fatal(err)
 	}
+
 	unavailable := httptest.NewRecorder()
 	handler.ServeHTTP(unavailable, readyRequest)
+
 	if unavailable.Code != http.StatusServiceUnavailable {
 		t.Fatalf("ready with closed database returned %d: %s", unavailable.Code, unavailable.Body.String())
 	}
@@ -175,20 +199,25 @@ func TestHeadlessInitializationSkipsBrowserAuthentication(t *testing.T) {
 			},
 		},
 	}
+
 	db, err := database.Open(filepath.Join(dir, "test.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = db.Close() }()
 
 	repositories := repository.New(db)
+
 	handler, err := New(cfg, db, repositories, nil)
 	if err != nil {
 		t.Fatalf("headless initialization loaded browser authentication: %v", err)
 	}
-	request := httptest.NewRequest(http.MethodGet, "/auth/login", nil)
+
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/auth/login", nil)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
+
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("headless browser authentication returned %d, want 404", response.Code)
 	}
@@ -203,10 +232,13 @@ func TestHeadlessInitializationSkipsBrowserAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	request = httptest.NewRequest(http.MethodGet, "/api/v1/certificates", nil)
+
+	request = httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/certificates", nil)
 	request.Header.Set("Authorization", "Bearer "+token)
+
 	response = httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
+
 	if response.Code != http.StatusOK {
 		t.Fatalf("headless API-key authentication returned %d: %s", response.Code, response.Body.String())
 	}

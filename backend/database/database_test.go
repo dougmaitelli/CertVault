@@ -8,10 +8,12 @@ import (
 
 func TestOpenMigratesSchema(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "nested", "data", "test.db")
+
 	db, err := Open(databasePath)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = db.Close() }()
 
 	models := []any{
@@ -49,6 +51,7 @@ func TestAPIKeyCertificateForeignKeys(t *testing.T) {
 	if err = db.ORM().Create(&certificate).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	key := APIKey{
 		Name:       "node",
 		Prefix:     "cv_live_node",
@@ -59,10 +62,12 @@ func TestAPIKeyCertificateForeignKeys(t *testing.T) {
 	if err = db.ORM().Create(&key).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	access := APIKeyCertificate{APIKeyID: key.ID, CertificateID: certificate.ID}
 	if err = db.ORM().Create(&access).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	version := CertificateVersion{
 		CertificateID: certificate.ID,
 		Path:          "versions/1",
@@ -76,6 +81,7 @@ func TestAPIKeyCertificateForeignKeys(t *testing.T) {
 	if err = db.ORM().Create(&version).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	job := Job{
 		CertificateID: certificate.ID,
 		Kind:          "manual",
@@ -85,6 +91,7 @@ func TestAPIKeyCertificateForeignKeys(t *testing.T) {
 	if err = db.ORM().Create(&job).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	if err = db.ORM().Delete(&certificate).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -93,13 +100,16 @@ func TestAPIKeyCertificateForeignKeys(t *testing.T) {
 	if err = db.ORM().Model(&APIKeyCertificate{}).Count(&count).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	if count != 0 {
 		t.Fatalf("certificate access rows after certificate deletion = %d, want 0", count)
 	}
+
 	for _, model := range []any{&CertificateVersion{}, &Job{}} {
 		if err = db.ORM().Model(model).Count(&count).Error; err != nil {
 			t.Fatal(err)
 		}
+
 		if count != 0 {
 			t.Fatalf("%T rows after certificate deletion = %d, want 0", model, count)
 		}

@@ -17,14 +17,17 @@ func RunAuditRetention(ctx context.Context, audits *repository.AuditRepository, 
 			log.Error("clean old audit events", "error", err)
 			return
 		}
+
 		if deleted > 0 {
 			log.Info("cleaned old audit events", "deleted", deleted)
 		}
 	}
 
 	cleanup()
+
 	ticker := time.NewTicker(auditCleanupInterval)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():

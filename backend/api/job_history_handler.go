@@ -23,11 +23,13 @@ func (a *API) jobHistory(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusBadRequest, "invalid_pagination", err.Error())
 		return
 	}
+
 	perPage, err := paginationValue(r, "per_page", defaultPageSize, maxPageSize)
 	if err != nil {
 		problem(w, http.StatusBadRequest, "invalid_pagination", err.Error())
 		return
 	}
+
 	result, err := a.repos.Jobs.Search(r.Context(), repository.JobFilter{
 		Certificates: r.URL.Query()["certificate"], Kinds: r.URL.Query()["operation"],
 		Statuses: r.URL.Query()["status"], Page: page, PerPage: perPage,
@@ -36,11 +38,13 @@ func (a *API) jobHistory(w http.ResponseWriter, r *http.Request) {
 		respond(w, nil, err)
 		return
 	}
+
 	certificates, operations, statuses, err := a.repos.Jobs.FilterOptions(r.Context())
 	if err != nil {
 		respond(w, nil, err)
 		return
 	}
+
 	respond(w, jobHistoryResponse{Items: result.Items, Total: result.Total, Page: page, PerPage: perPage,
 		TotalPages: int((result.Total + int64(perPage) - 1) / int64(perPage)), Certificates: certificates,
 		Operations: operations, Statuses: statuses}, nil)

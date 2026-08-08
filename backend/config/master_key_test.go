@@ -16,6 +16,7 @@ func TestLoadMasterKeyFromEnvironment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !bytes.Equal(actual, expected) {
 		t.Fatalf("master key = %x, want %x", actual, expected)
 	}
@@ -29,6 +30,7 @@ func TestLoadMasterKeyRejectsValueAndFileTogether(t *testing.T) {
 	if err == nil {
 		t.Fatal("loadMasterKey accepted both master key variables")
 	}
+
 	if !strings.Contains(err.Error(), EnvMasterKey) ||
 		!strings.Contains(err.Error(), EnvMasterKeyFile) {
 		t.Fatalf("unexpected error: %v", err)

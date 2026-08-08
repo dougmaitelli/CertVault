@@ -32,15 +32,19 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 			},
 		},
 	}
+
 	db, err := database.Open(filepath.Join(dataDir, "certvault.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	t.Cleanup(func() { _ = db.Close() })
+
 	repositories := repository.New(db)
 	if err = repositories.Certificates.Reconcile(ctx, cfg); err != nil {
 		t.Fatal(err)
 	}
+
 	manager, err := NewManager(
 		cfg,
 		repositories,
@@ -53,13 +57,16 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 	if err = manager.Issue(ctx, "development", "manual"); err != nil {
 		t.Fatal(err)
 	}
+
 	version, err := repositories.Certificates.CurrentVersion(ctx, "development")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if version.Issuer != "CN=CertVault Development CA" {
 		t.Fatalf("issuer = %q", version.Issuer)
 	}
+
 	if len(version.Domains) != 2 {
 		t.Fatalf("domains = %#v", version.Domains)
 	}
@@ -68,17 +75,21 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	block, _ := pem.Decode(certificatePEM)
 	if block == nil {
 		t.Fatal("mock certificate is not PEM encoded")
 	}
+
 	certificate, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err = certificate.VerifyHostname("service.example.test"); err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err = manager.ReadFile(version, "private.key"); err != nil {
 		t.Fatal(err)
 	}
@@ -87,6 +98,7 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(jobs) != 1 || jobs[0].Status != "succeeded" {
 		t.Fatalf("jobs = %#v", jobs)
 	}

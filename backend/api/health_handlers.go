@@ -25,6 +25,7 @@ func (a *API) ready(w http.ResponseWriter, r *http.Request) {
 		checks["database"] = "unavailable"
 		ready = false
 	}
+
 	if err := checkWritableDirectory(a.cfg.DataDir); err != nil {
 		checks["storage"] = "unavailable"
 		ready = false
@@ -35,6 +36,7 @@ func (a *API) ready(w http.ResponseWriter, r *http.Request) {
 			"status": "not_ready",
 			"checks": checks,
 		})
+
 		return
 	}
 
@@ -49,10 +51,12 @@ func checkWritableDirectory(path string) error {
 	if err != nil {
 		return err
 	}
+
 	name := file.Name()
 	if err := file.Close(); err != nil {
 		_ = os.Remove(name)
 		return err
 	}
+
 	return os.Remove(name)
 }

@@ -11,14 +11,17 @@ func TestRunHelp(t *testing.T) {
 	if err := Run([]string{"api-key", "--help"}, &output, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(output.String(), "certvault api-key") {
 		t.Fatalf("API-key help = %q", output.String())
 	}
 
 	output.Reset()
+
 	if err := Run([]string{"--help"}, &output, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(output.String(), "certvault <check-config|api-key>") {
 		t.Fatalf("root help = %q", output.String())
 	}
@@ -26,6 +29,7 @@ func TestRunHelp(t *testing.T) {
 
 func TestRunCheckConfig(t *testing.T) {
 	configPath, _ := writeTestConfig(t)
+
 	var output bytes.Buffer
 	if err := Run(
 		[]string{"check-config", "--config", configPath},
@@ -34,6 +38,7 @@ func TestRunCheckConfig(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
+
 	if output.String() != "configuration valid\n" {
 		t.Fatalf("check-config output = %q", output.String())
 	}

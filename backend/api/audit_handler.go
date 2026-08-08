@@ -23,6 +23,7 @@ func (a *API) listAudits(w http.ResponseWriter, r *http.Request) {
 		problem(w, http.StatusBadRequest, "invalid_pagination", err.Error())
 		return
 	}
+
 	perPage, err := paginationValue(r, "per_page", defaultPageSize, maxPageSize)
 	if err != nil {
 		problem(w, http.StatusBadRequest, "invalid_pagination", err.Error())
@@ -41,6 +42,7 @@ func (a *API) listAudits(w http.ResponseWriter, r *http.Request) {
 		respond(w, nil, err)
 		return
 	}
+
 	actors, actions, resources, err := a.repos.Audits.FilterOptions(r.Context())
 	if err != nil {
 		respond(w, nil, err)

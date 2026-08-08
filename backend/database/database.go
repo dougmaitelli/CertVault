@@ -23,7 +23,9 @@ func Open(path string) (*Database, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return nil, fmt.Errorf("create database directory: %w", err)
 	}
+
 	dsn := fmt.Sprintf("%s?_busy_timeout=5000&_foreign_keys=on&_journal_mode=WAL", path)
+
 	orm, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -35,6 +37,7 @@ func Open(path string) (*Database, error) {
 	if err != nil {
 		return nil, fmt.Errorf("access connection pool: %w", err)
 	}
+
 	sqlDB.SetMaxOpenConns(1)
 	sqlDB.SetMaxIdleConns(1)
 
@@ -43,6 +46,7 @@ func Open(path string) (*Database, error) {
 		_ = sqlDB.Close()
 		return nil, err
 	}
+
 	return db, nil
 }
 
@@ -58,6 +62,7 @@ func (d *Database) migrate() error {
 	); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}
+
 	return nil
 }
 

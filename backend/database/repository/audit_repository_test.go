@@ -26,17 +26,21 @@ func TestAuditSearchFiltersAndPaginates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if page.Total != 2 || len(page.Items) != 1 || page.Items[0].Action != "certificate.renew" {
 		t.Fatalf("unexpected first page: %#v", page)
 	}
+
 	page, err = audits.Search(ctx, AuditFilter{Actions: []string{"api_key.create", "certificate.download"}, Page: 1, PerPage: 25})
 	if err != nil || page.Total != 2 {
 		t.Fatalf("unexpected multi-action filter: %#v %v", page, err)
 	}
+
 	page, err = audits.Search(ctx, AuditFilter{Resources: []string{"deploy", "example.com"}, Page: 1, PerPage: 25})
 	if err != nil || page.Total != 3 {
 		t.Fatalf("unexpected multi-resource filter: %#v %v", page, err)
 	}
+
 	actors, actions, resources, err := audits.FilterOptions(ctx)
 	if err != nil || len(actors) != 2 || len(actions) != 3 || len(resources) != 2 {
 		t.Fatalf("unexpected filter options: actors=%#v actions=%#v resources=%#v err=%v", actors, actions, resources, err)
@@ -46,10 +50,12 @@ func TestAuditSearchFiltersAndPaginates(t *testing.T) {
 	if err != nil || page.Total != 1 || page.Items[0].Actor != "node" {
 		t.Fatalf("unexpected text search: %#v %v", page, err)
 	}
+
 	page, err = audits.Search(ctx, AuditFilter{Query: "certificate.download", Page: 1, PerPage: 25})
 	if err != nil || page.Total != 1 || page.Items[0].Actor != "node" {
 		t.Fatalf("action was not included in text search: %#v %v", page, err)
 	}
+
 	page, err = audits.Search(ctx, AuditFilter{Query: "node", Page: 1, PerPage: 25})
 	if err != nil || page.Total != 1 || page.Items[0].Action != "certificate.download" {
 		t.Fatalf("actor was not included in text search: %#v %v", page, err)
@@ -64,10 +70,12 @@ func TestAuditSearchFiltersAndPaginates(t *testing.T) {
 	if err = db.ORM().Create(&old).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	deleted, err := audits.DeleteBefore(ctx, time.Now().Add(-24*time.Hour))
 	if err != nil || deleted != 1 {
 		t.Fatalf("unexpected audit cleanup: deleted=%d err=%v", deleted, err)
 	}
+
 	page, err = audits.Search(ctx, AuditFilter{Page: 1, PerPage: 25})
 	if err != nil || page.Total != 3 {
 		t.Fatalf("cleanup removed retained events: %#v %v", page, err)

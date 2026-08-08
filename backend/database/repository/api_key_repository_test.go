@@ -25,8 +25,10 @@ func TestAPIKeyAuthenticationAndRevocation(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+
 	repository := repositories.APIKeys
 	ctx := context.Background()
+
 	_, token, err := repository.Create(
 		ctx,
 		"node",
@@ -37,27 +39,34 @@ func TestAPIKeyAuthenticationAndRevocation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	principal, err := repository.Authenticate(ctx, token, "127.0.0.1")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !principal.Allows("private_keys:read", "home") || principal.Allows("private_keys:read", "other") {
 		t.Fatal("scope enforcement failed")
 	}
+
 	keys, err := repository.List(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(keys) != 1 {
 		t.Fatal("key not listed")
 	}
+
 	name, err := repository.Revoke(ctx, keys[0].ID)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if name != "node" {
 		t.Fatalf("revoked API key name = %q", name)
 	}
+
 	if _, err = repository.Authenticate(ctx, token, "127.0.0.1"); err == nil {
 		t.Fatal("revoked key authenticated")
 	}
@@ -78,7 +87,9 @@ func TestAPIKeyCanOnlyBeDeletedAfterRevocation(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+
 	repository := repositories.APIKeys
+
 	key, _, err := repository.Create(
 		context.Background(),
 		"node",
@@ -89,30 +100,38 @@ func TestAPIKeyCanOnlyBeDeletedAfterRevocation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err = repository.Delete(context.Background(), key.ID); !errors.Is(err, ErrAPIKeyNotRevoked) {
 		t.Fatalf("deleting active API key returned %v", err)
 	}
+
 	if _, err = repository.Revoke(context.Background(), key.ID); err != nil {
 		t.Fatal(err)
 	}
+
 	name, err := repository.Delete(context.Background(), key.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if name != "node" {
 		t.Fatalf("deleted API key name = %q", name)
 	}
+
 	keys, err := repository.List(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(keys) != 0 {
 		t.Fatalf("API keys after deletion = %#v", keys)
 	}
+
 	var accessCount int64
 	if err = db.ORM().Model(&database.APIKeyCertificate{}).Count(&accessCount).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	if accessCount != 0 {
 		t.Fatalf("API key certificate rows after deletion = %d", accessCount)
 	}
@@ -140,6 +159,7 @@ func TestAPIKeyRejectsUnknownCertificate(t *testing.T) {
 	if err = db.ORM().Model(&database.APIKey{}).Count(&count).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	if count != 0 {
 		t.Fatalf("rolled-back API keys = %d, want 0", count)
 	}
@@ -153,6 +173,7 @@ func TestAPIKeyWildcardUsesAllCertificatesFlag(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	repository := New(db).APIKeys
+
 	key, token, err := repository.Create(
 		context.Background(),
 		"all-nodes",
@@ -163,13 +184,16 @@ func TestAPIKeyWildcardUsesAllCertificatesFlag(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(key.Certificates) != 1 || key.Certificates[0] != "*" {
 		t.Fatalf("certificates = %#v", key.Certificates)
 	}
+
 	principal, err := repository.Authenticate(context.Background(), token, "127.0.0.1")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !principal.Allows("certificates:read", "any-certificate") {
 		t.Fatal("wildcard API key did not allow an arbitrary certificate")
 	}
@@ -178,6 +202,7 @@ func TestAPIKeyWildcardUsesAllCertificatesFlag(t *testing.T) {
 	if err = db.ORM().Model(&database.APIKeyCertificate{}).Count(&accessCount).Error; err != nil {
 		t.Fatal(err)
 	}
+
 	if accessCount != 0 {
 		t.Fatalf("wildcard join rows = %d, want 0", accessCount)
 	}

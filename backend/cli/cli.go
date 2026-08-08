@@ -14,6 +14,7 @@ func IsInvocation(args []string) bool {
 	if len(args) == 0 {
 		return false
 	}
+
 	switch args[0] {
 	case "api-key", "check-config", "help", "-h", "--help":
 		return true
@@ -30,6 +31,7 @@ func Run(args []string, stdout, stderr io.Writer) error {
 	}
 
 	var err error
+
 	switch args[0] {
 	case "api-key":
 		err = RunAPIKey(args[1:], stdout, stderr)
@@ -41,26 +43,33 @@ func Run(args []string, stdout, stderr io.Writer) error {
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+
 	if errors.Is(err, flag.ErrHelp) {
 		return nil
 	}
+
 	return err
 }
 
 func checkConfig(args []string, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("check-config", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+
 	configPath := flags.String("config", configuredPath(), "configuration file")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
+
 	if flags.NArg() != 0 {
 		return fmt.Errorf("check-config does not accept positional arguments")
 	}
+
 	if _, err := config.Load(*configPath); err != nil {
 		return fmt.Errorf("load configuration: %w", err)
 	}
+
 	_, err := fmt.Fprintln(stdout, "configuration valid")
+
 	return err
 }
 

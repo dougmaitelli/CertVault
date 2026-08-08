@@ -15,7 +15,9 @@ func NotFound(err error) bool {
 
 func findCertificate(db *gorm.DB, name string) (database.Certificate, error) {
 	var certificate database.Certificate
+
 	err := db.Where(&database.Certificate{Name: name}).First(&certificate).Error
+
 	return certificate, err
 }
 
@@ -24,6 +26,7 @@ func certificateFromModel(model database.Certificate) (Certificate, error) {
 	if err != nil {
 		return Certificate{}, err
 	}
+
 	return Certificate{
 		Name: model.Name, Domains: domains, KeyType: config.KeyType(model.KeyType), Status: model.Status,
 		RenewBeforeSeconds: model.RenewBeforeSeconds, LastError: model.LastError,
@@ -35,6 +38,7 @@ func versionFromModel(model database.CertificateVersion) (Version, error) {
 	if err != nil {
 		return Version{}, err
 	}
+
 	return Version{
 		ID: model.ID, CertificateName: model.Certificate.Name, Path: model.Path,
 		Serial: model.Serial, Issuer: model.Issuer, FingerprintSHA256: model.FingerprintSHA256,
@@ -49,7 +53,9 @@ func encodeStrings(values []string) (string, error) {
 
 func decodeStrings(value string) ([]string, error) {
 	var values []string
+
 	err := json.Unmarshal([]byte(value), &values)
+
 	return values, err
 }
 
@@ -59,5 +65,6 @@ func contains(values []string, wanted string) bool {
 			return true
 		}
 	}
+
 	return false
 }

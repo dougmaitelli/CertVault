@@ -15,6 +15,7 @@ linters:
     - prealloc
     - revive
     - unconvert
+    - wsl_v5
   settings:
     errcheck:
       check-type-assertions: true

@@ -8,14 +8,17 @@ import (
 func TestApplyEnvUsesOIDCClientSecretValue(t *testing.T) {
 	t.Setenv(EnvOIDCClientSecret, "direct-secret")
 	t.Setenv(EnvOIDCClientSecretFile, "")
+
 	configuration := Config{Auth: Auth{OIDC: &OIDC{ClientSecretFile: "/configured/secret"}}}
 
 	if err := applyEnv(&configuration); err != nil {
 		t.Fatal(err)
 	}
+
 	if configuration.Auth.OIDC.ClientSecret != "direct-secret" {
 		t.Fatalf("OIDC client secret = %q", configuration.Auth.OIDC.ClientSecret)
 	}
+
 	if configuration.Auth.OIDC.ClientSecretFile != "" {
 		t.Fatalf("OIDC client secret file = %q, want empty", configuration.Auth.OIDC.ClientSecretFile)
 	}
@@ -29,6 +32,7 @@ func TestApplyEnvRejectsOIDCClientSecretValueAndFileTogether(t *testing.T) {
 	if err == nil {
 		t.Fatal("applyEnv accepted both OIDC client secret variables")
 	}
+
 	if !strings.Contains(err.Error(), EnvOIDCClientSecret) ||
 		!strings.Contains(err.Error(), EnvOIDCClientSecretFile) {
 		t.Fatalf("unexpected error: %v", err)
@@ -46,18 +50,22 @@ func TestApplyEnvConfiguresOIDCFromEnvironment(t *testing.T) {
 	if err := applyEnv(&configuration); err != nil {
 		t.Fatal(err)
 	}
+
 	if configuration.Auth.OIDC == nil {
 		t.Fatal("OIDC was not configured")
 	}
+
 	if configuration.Auth.OIDC.IssuerURL != "https://auth.example.com" ||
 		configuration.Auth.OIDC.ClientID != "certvault" ||
 		configuration.Auth.OIDC.ClientSecret != "direct-secret" {
 		t.Fatalf("unexpected OIDC configuration: %#v", configuration.Auth.OIDC)
 	}
+
 	expectedGroups := []string{"admins", "certificate-operators"}
 	if len(configuration.Auth.OIDC.AllowedGroups) != len(expectedGroups) {
 		t.Fatalf("allowed groups = %#v", configuration.Auth.OIDC.AllowedGroups)
 	}
+
 	for index, expected := range expectedGroups {
 		if configuration.Auth.OIDC.AllowedGroups[index] != expected {
 			t.Fatalf("allowed groups = %#v", configuration.Auth.OIDC.AllowedGroups)
@@ -90,6 +98,7 @@ func TestValidateRemovesTrailingSlashesFromOIDCIssuer(t *testing.T) {
 	if err := configuration.Validate(); err != nil {
 		t.Fatal(err)
 	}
+
 	if configuration.Auth.OIDC.IssuerURL != "https://id.example.com/realms/homelab" {
 		t.Fatalf("OIDC issuer URL = %q", configuration.Auth.OIDC.IssuerURL)
 	}

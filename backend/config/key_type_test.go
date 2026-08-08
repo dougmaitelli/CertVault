@@ -13,6 +13,7 @@ func TestKeyTypeUnmarshalYAML(t *testing.T) {
 	if err := yaml.Unmarshal([]byte("key_type: EC384\n"), &value); err != nil {
 		t.Fatal(err)
 	}
+
 	if value.KeyType != KeyTypeEC384 {
 		t.Fatalf("key type = %q, want %q", value.KeyType, KeyTypeEC384)
 	}
@@ -30,6 +31,7 @@ func TestKeyTypeValid(t *testing.T) {
 			t.Errorf("expected %q to be valid", keyType)
 		}
 	}
+
 	if KeyType("unsupported").Valid() {
 		t.Fatal("unsupported key type reported as valid")
 	}

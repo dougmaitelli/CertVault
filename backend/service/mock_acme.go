@@ -22,14 +22,17 @@ func mockCertificate(def config.Certificate) (*certificate.Resource, error) {
 	if len(def.Domains) == 0 {
 		return nil, fmt.Errorf("certificate %q has no domains", def.Name)
 	}
+
 	keyType, err := certcrypto.ToKeyType(string(def.KeyType))
 	if err != nil {
 		return nil, fmt.Errorf("certificate %q key type: %w", def.Name, err)
 	}
+
 	privateKey, err := certcrypto.GeneratePrivateKey(keyType)
 	if err != nil {
 		return nil, err
 	}
+
 	privateKeyDER, err := x509.MarshalPKCS8PrivateKey(privateKey)
 	if err != nil {
 		return nil, err
@@ -39,10 +42,12 @@ func mockCertificate(def config.Certificate) (*certificate.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	caSerial, err := randomSerialNumber()
 	if err != nil {
 		return nil, err
 	}
+
 	now := time.Now().UTC()
 	caTemplate := &x509.Certificate{
 		SerialNumber:          caSerial,
@@ -53,6 +58,7 @@ func mockCertificate(def config.Certificate) (*certificate.Resource, error) {
 		BasicConstraintsValid: true,
 		IsCA:                  true,
 	}
+
 	caDER, err := x509.CreateCertificate(rand.Reader, caTemplate, caTemplate, caKey.Public(), caKey)
 	if err != nil {
 		return nil, err
@@ -62,6 +68,7 @@ func mockCertificate(def config.Certificate) (*certificate.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	leafTemplate := &x509.Certificate{
 		SerialNumber: serial,
 		Subject: pkix.Name{
@@ -74,6 +81,7 @@ func mockCertificate(def config.Certificate) (*certificate.Resource, error) {
 		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	}
+
 	leafDER, err := x509.CreateCertificate(
 		rand.Reader,
 		leafTemplate,

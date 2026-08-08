@@ -11,6 +11,7 @@ func TestClientIPIgnoresHeadersFromUntrustedPeer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	request := httptest.NewRequestWithContext(context.Background(), "GET", "/", nil)
 	request.RemoteAddr = "192.0.2.10:1234"
 	request.Header.Set("X-Forwarded-For", "203.0.113.8")
@@ -25,6 +26,7 @@ func TestClientIPUsesTrustedProxyChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	request := httptest.NewRequestWithContext(context.Background(), "GET", "/", nil)
 	request.RemoteAddr = "10.0.0.5:1234"
 	request.Header.Set("X-Forwarded-For", "198.51.100.7, 192.168.1.10")
@@ -45,6 +47,7 @@ func TestClientIPRejectsMalformedForwardedChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	request := httptest.NewRequestWithContext(context.Background(), "GET", "/", nil)
 	request.RemoteAddr = "10.0.0.5:1234"
 	request.Header.Set("X-Forwarded-For", "198.51.100.7, invalid")

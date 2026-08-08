@@ -15,6 +15,7 @@ func TestNegativeAuditRetentionIsRejected(t *testing.T) {
 		},
 		Audit: Audit{Retention: Duration{Duration: -time.Hour}},
 	}
+
 	err := cfg.Validate()
 	if err == nil || !strings.Contains(err.Error(), "audit.retention") {
 		t.Fatalf("negative audit retention error = %v", err)

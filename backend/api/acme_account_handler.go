@@ -25,8 +25,10 @@ func (a *API) deleteACMEAccount(w http.ResponseWriter, r *http.Request) {
 		default:
 			problem(w, http.StatusInternalServerError, "acme_account_delete_failed", err.Error())
 		}
+
 		return
 	}
+
 	a.repos.Audits.Record(
 		r.Context(),
 		"admin",

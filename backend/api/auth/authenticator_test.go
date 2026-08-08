@@ -38,15 +38,19 @@ func TestSessionRoundTrip(t *testing.T) {
 
 	response := recorder.Result()
 	defer func() { _ = response.Body.Close() }()
+
 	cookies := response.Cookies()
 	if len(cookies) != 1 {
 		t.Fatalf("cookies = %d, want 1", len(cookies))
 	}
+
 	if cookies[0].MaxAge != int(config.DefaultSessionDuration.Seconds()) {
 		t.Fatalf("cookie max age = %d, want %d", cookies[0].MaxAge, int(config.DefaultSessionDuration.Seconds()))
 	}
-	request := httptest.NewRequest(http.MethodGet, "/api/v1/session", nil)
+
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/session", nil)
 	request.AddCookie(cookies[0])
+
 	identity, ok := authenticator.AuthenticateSession(request)
 	if !ok || identity.Name != "admin@example.com" ||
 		identity.DisplayName != "Certificate Admin" ||
@@ -74,20 +78,26 @@ func TestGroupAllowed(t *testing.T) {
 	if !groupAllowed([]string{"operators"}, nil) {
 		t.Fatal("empty allowlist rejected a group")
 	}
+
 	if !groupAllowed([]string{"users", "operators"}, []string{"operators"}) {
 		t.Fatal("matching group was rejected")
 	}
+
 	if groupAllowed([]string{"users"}, []string{"operators"}) {
 		t.Fatal("non-matching group was accepted")
 	}
 }
 
 func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
-	var available atomic.Bool
-	var discoveries atomic.Int32
+	var (
+		available   atomic.Bool
+		discoveries atomic.Int32
+	)
+
 	issuer := "https://id.example.com"
 	client := &http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
 		discoveries.Add(1)
+
 		if !available.Load() {
 			return &http.Response{
 				StatusCode: http.StatusServiceUnavailable,
@@ -95,12 +105,14 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 				Header:     make(http.Header),
 			}, nil
 		}
+
 		contents, _ := json.Marshal(map[string]any{
 			"issuer":                 issuer,
 			"authorization_endpoint": issuer + "/authorize",
 			"token_endpoint":         issuer + "/token",
 			"jwks_uri":               issuer + "/keys",
 		})
+
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(string(contents))),
@@ -123,6 +135,7 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if discoveries.Load() != 0 {
 		t.Fatal("OIDC discovery ran during authenticator initialization")
 	}
@@ -131,13 +144,16 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 	loginRequest = loginRequest.WithContext(oidc.ClientContext(loginRequest.Context(), client))
 	response := httptest.NewRecorder()
 	authenticator.Login(response, loginRequest)
+
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("unavailable OIDC login returned %d", response.Code)
 	}
 
 	available.Store(true)
+
 	response = httptest.NewRecorder()
 	authenticator.Login(response, loginRequest)
+
 	if response.Code != http.StatusFound {
 		t.Fatalf("recovered OIDC login returned %d: %s", response.Code, response.Body.String())
 	}
@@ -151,10 +167,12 @@ func TestBootstrapLoginRecordsAuthenticationMethod(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	repositories := repository.New(db)
+
 	clientIPs, err := certnetwork.NewClientIPResolver(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	authenticator, err := NewBrowserAuthenticator(
 		&config.Config{
 			MasterKey: make([]byte, 32),
@@ -175,6 +193,7 @@ func TestBootstrapLoginRecordsAuthenticationMethod(t *testing.T) {
 	)
 	response := httptest.NewRecorder()
 	authenticator.BootstrapLogin(response, request)
+
 	if response.Code != http.StatusNoContent {
 		t.Fatalf("bootstrap login returned %d", response.Code)
 	}
@@ -183,6 +202,7 @@ func TestBootstrapLoginRecordsAuthenticationMethod(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(audits) != 1 || audits[0].Detail != authMethodBootstrap {
 		t.Fatalf("bootstrap audit events = %#v", audits)
 	}

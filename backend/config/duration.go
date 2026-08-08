@@ -29,14 +29,19 @@ func (d *Duration) UnmarshalText(text []byte) error {
 		if err != nil {
 			return fmt.Errorf("invalid day duration %q: %w", value, err)
 		}
+
 		const day = 24 * time.Hour
 		if days > int64(^uint64(0)>>1)/int64(day) || days < -int64(^uint64(0)>>1)/int64(day) {
 			return fmt.Errorf("day duration %q is out of range", value)
 		}
+
 		d.Duration = time.Duration(days) * day
+
 		return nil
 	}
+
 	duration, err := time.ParseDuration(value)
 	d.Duration = duration
+
 	return err
 }

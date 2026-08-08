@@ -20,6 +20,7 @@ func TestParseLogLevel(t *testing.T) {
 			t.Errorf("ParseLogLevel(%q): %v", input, err)
 			continue
 		}
+
 		if actual != expected {
 			t.Errorf("ParseLogLevel(%q) = %v, want %v", input, actual, expected)
 		}

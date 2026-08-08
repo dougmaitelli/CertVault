@@ -7,10 +7,12 @@ func (a *API) session(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
 	name := id.DisplayName
 	if name == "" {
 		name = id.Name
 	}
+
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"name":                  name,
 		"email":                 id.Email,

@@ -37,12 +37,14 @@ func (a *API) routes() http.Handler {
 		"POST /api/v1/certificates/{name}/renew",
 		a.requireScope(scopeRenewalsTrigger, "name", a.renewCertificate),
 	)
+
 	for artifact, scope := range certificateArtifacts {
 		apiMux.Handle(
 			"GET /api/v1/certificates/{name}/"+artifact,
 			a.requireScope(scope, "name", a.downloadCertificate(artifact)),
 		)
 	}
+
 	apiMux.HandleFunc("GET /api/v1/jobs/history", requireAdministrator(a.jobHistory))
 	apiMux.HandleFunc("GET /api/v1/acme-accounts", requireAdministrator(a.listACMEAccounts))
 	apiMux.HandleFunc("DELETE /api/v1/acme-accounts/{id}", requireAdministrator(a.deleteACMEAccount))
@@ -56,6 +58,7 @@ func (a *API) routes() http.Handler {
 	if a.cfg.UIEnabled() {
 		mux.HandleFunc("/", a.frontend)
 	}
+
 	return a.security(mux)
 }
 

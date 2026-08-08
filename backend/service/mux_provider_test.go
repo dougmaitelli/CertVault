@@ -10,10 +10,12 @@ import (
 
 func TestMuxProviderRequiresInheritedCredentialEnvironmentVariable(t *testing.T) {
 	const tokenVariable = "CERTVAULT_TEST_DNS_TOKEN"
+
 	previous, existed := os.LookupEnv(tokenVariable)
 	if err := os.Unsetenv(tokenVariable); err != nil {
 		t.Fatal(err)
 	}
+
 	t.Cleanup(func() {
 		if existed {
 			_ = os.Setenv(tokenVariable, previous)

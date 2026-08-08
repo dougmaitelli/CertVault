@@ -18,14 +18,17 @@ func (r *CertificateRepository) Reconcile(ctx context.Context, cfg *config.Confi
 	return r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, definition := range cfg.Certificates {
 			enabled := definition.Enabled == nil || *definition.Enabled
+
 			renewBefore := definition.RenewBefore.Duration
 			if renewBefore == 0 {
 				renewBefore = config.DefaultRenewBefore
 			}
+
 			keyType := definition.KeyType
 			if keyType == "" {
 				keyType = config.DefaultKeyType
 			}
+
 			domains, err := encodeStrings(definition.Domains)
 			if err != nil {
 				return err
@@ -39,6 +42,7 @@ func (r *CertificateRepository) Reconcile(ctx context.Context, cfg *config.Confi
 				Enabled:            enabled,
 				UpdatedAt:          time.Now().UTC(),
 			}
+
 			result := tx.Where(&database.Certificate{Name: definition.Name}).
 				Assign(updates).
 				FirstOrCreate(&model)
@@ -46,12 +50,14 @@ func (r *CertificateRepository) Reconcile(ctx context.Context, cfg *config.Confi
 				return result.Error
 			}
 		}
+
 		return nil
 	})
 }
 
 func (r *CertificateRepository) List(ctx context.Context) ([]Certificate, error) {
 	var models []database.Certificate
+
 	err := r.database.ORM().WithContext(ctx).
 		Where(&database.Certificate{Enabled: true}).
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "name"}}).
@@ -59,6 +65,7 @@ func (r *CertificateRepository) List(ctx context.Context) ([]Certificate, error)
 	if err != nil {
 		return nil, err
 	}
+
 	latestJobs, err := r.latestJobs(ctx, models)
 	if err != nil {
 		return nil, err
@@ -70,39 +77,49 @@ func (r *CertificateRepository) List(ctx context.Context) ([]Certificate, error)
 		if err != nil {
 			return nil, err
 		}
+
 		version, err := r.currentVersion(ctx, model.ID)
 		if err != nil && !NotFound(err) {
 			return nil, err
 		}
+
 		certificate.CurrentVersion = version
 		certificate.LatestJob = latestJobs[model.ID]
 		certificates = append(certificates, certificate)
 	}
+
 	return certificates, nil
 }
 
 func (r *CertificateRepository) Get(ctx context.Context, name string) (Certificate, error) {
 	var model database.Certificate
+
 	err := r.database.ORM().WithContext(ctx).
 		Where(&database.Certificate{Name: name, Enabled: true}).
 		First(&model).Error
 	if err != nil {
 		return Certificate{}, err
 	}
+
 	certificate, err := certificateFromModel(model)
 	if err != nil {
 		return Certificate{}, err
 	}
+
 	version, err := r.currentVersion(ctx, model.ID)
 	if err != nil && !NotFound(err) {
 		return Certificate{}, err
 	}
+
 	certificate.CurrentVersion = version
+
 	latestJobs, err := r.latestJobs(ctx, []database.Certificate{model})
 	if err != nil {
 		return Certificate{}, err
 	}
+
 	certificate.LatestJob = latestJobs[model.ID]
+
 	return certificate, nil
 }
 
@@ -111,11 +128,14 @@ func (r *CertificateRepository) latestJobs(ctx context.Context, certificates []d
 	if len(certificates) == 0 {
 		return latest, nil
 	}
+
 	ids := make([]int64, 0, len(certificates))
 	for _, certificate := range certificates {
 		ids = append(ids, certificate.ID)
 	}
+
 	var models []database.Job
+
 	err := r.database.ORM().WithContext(ctx).Preload("Certificate").
 		Where("jobs.id IN (?)", r.database.ORM().Model(&database.Job{}).
 			Select("MAX(id)").Where("certificate_id IN ?", ids).Group("certificate_id")).
@@ -123,10 +143,12 @@ func (r *CertificateRepository) latestJobs(ctx context.Context, certificates []d
 	if err != nil {
 		return nil, err
 	}
+
 	for _, model := range models {
 		job := jobFromModel(model)
 		latest[model.CertificateID] = &job
 	}
+
 	return latest, nil
 }
 
@@ -135,11 +157,13 @@ func (r *CertificateRepository) CurrentVersion(ctx context.Context, name string)
 	if err != nil {
 		return nil, err
 	}
+
 	return r.currentVersion(ctx, certificate.ID)
 }
 
 func (r *CertificateRepository) currentVersion(ctx context.Context, certificateID int64) (*Version, error) {
 	var model database.CertificateVersion
+
 	err := r.database.ORM().WithContext(ctx).
 		Preload("Certificate").
 		Where(&database.CertificateVersion{CertificateID: certificateID}).
@@ -148,7 +172,9 @@ func (r *CertificateRepository) currentVersion(ctx context.Context, certificateI
 	if err != nil {
 		return nil, err
 	}
+
 	version, err := versionFromModel(model)
+
 	return &version, err
 }
 
@@ -157,7 +183,9 @@ func (r *CertificateRepository) Versions(ctx context.Context, name string) ([]Ve
 	if err != nil {
 		return nil, err
 	}
+
 	var models []database.CertificateVersion
+
 	err = r.database.ORM().WithContext(ctx).
 		Preload("Certificate").
 		Where(&database.CertificateVersion{CertificateID: certificate.ID}).
@@ -166,14 +194,17 @@ func (r *CertificateRepository) Versions(ctx context.Context, name string) ([]Ve
 	if err != nil {
 		return nil, err
 	}
+
 	versions := make([]Version, 0, len(models))
 	for _, model := range models {
 		version, err := versionFromModel(model)
 		if err != nil {
 			return nil, err
 		}
+
 		versions = append(versions, version)
 	}
+
 	return versions, nil
 }
 
@@ -182,11 +213,13 @@ func (r *CertificateRepository) AddVersion(ctx context.Context, version Version)
 	if err != nil {
 		return err
 	}
+
 	return r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		certificate, err := findCertificate(tx, version.CertificateName)
 		if err != nil {
 			return err
 		}
+
 		model := database.CertificateVersion{
 			CertificateID:     certificate.ID,
 			Path:              version.Path,
@@ -201,6 +234,7 @@ func (r *CertificateRepository) AddVersion(ctx context.Context, version Version)
 		if err := tx.Create(&model).Error; err != nil {
 			return err
 		}
+
 		return tx.Model(&database.Certificate{}).
 			Where(&database.Certificate{ID: certificate.ID}).
 			Updates(map[string]any{

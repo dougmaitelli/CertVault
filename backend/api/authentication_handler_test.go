@@ -20,6 +20,7 @@ func TestAuthenticationMethods(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &methods); err != nil {
 		t.Fatal(err)
 	}
+
 	if !methods["oidc"] || !methods["bootstrap"] {
 		t.Fatalf("authentication methods = %#v", methods)
 	}

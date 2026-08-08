@@ -21,7 +21,9 @@ func (l *LogLevel) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
+
 	*l = LogLevel(level)
+
 	return nil
 }
 
@@ -36,9 +38,11 @@ func ParseLogLevel(value string) (slog.Level, error) {
 	if normalized == "WARNING" {
 		normalized = "WARN"
 	}
+
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(normalized)); err != nil {
 		return 0, fmt.Errorf("invalid server.log_level %q: %w", value, err)
 	}
+
 	return level, nil
 }

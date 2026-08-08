@@ -4,6 +4,7 @@ import "testing"
 
 func TestApplyEnvUsesPublicDNSResolversByDefault(t *testing.T) {
 	t.Setenv(EnvACMEDNSResolvers, "")
+
 	configuration := Config{}
 
 	if err := applyEnv(&configuration); err != nil {
@@ -16,6 +17,7 @@ func TestApplyEnvUsesPublicDNSResolversByDefault(t *testing.T) {
 
 func TestApplyEnvOverridesDNSResolvers(t *testing.T) {
 	t.Setenv(EnvACMEDNSResolvers, "9.9.9.9:53, 8.8.8.8")
+
 	configuration := Config{ACME: ACME{DNSResolvers: []string{"192.168.1.1:53"}}}
 
 	if err := applyEnv(&configuration); err != nil {
@@ -28,9 +30,11 @@ func TestApplyEnvOverridesDNSResolvers(t *testing.T) {
 
 func assertDNSResolvers(t *testing.T, actual, expected []string) {
 	t.Helper()
+
 	if len(actual) != len(expected) {
 		t.Fatalf("DNS resolvers = %#v, want %#v", actual, expected)
 	}
+
 	for index := range expected {
 		if actual[index] != expected[index] {
 			t.Fatalf("DNS resolvers = %#v, want %#v", actual, expected)

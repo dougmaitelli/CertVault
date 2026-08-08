@@ -13,10 +13,12 @@ import (
 
 func TestFrontendServesIndexForApplicationRoute(t *testing.T) {
 	uiDir := t.TempDir()
+
 	index := []byte("<!doctype html><title>CertVault</title>")
 	if err := os.WriteFile(filepath.Join(uiDir, "index.html"), index, 0o600); err != nil {
 		t.Fatal(err)
 	}
+
 	t.Setenv(config.EnvUIDir, uiDir)
 
 	request := httptest.NewRequestWithContext(
@@ -32,6 +34,7 @@ func TestFrontendServesIndexForApplicationRoute(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("frontend route returned %d", response.Code)
 	}
+
 	if response.Body.String() != string(index) {
 		t.Fatalf("frontend route returned %q", response.Body.String())
 	}
@@ -39,21 +42,26 @@ func TestFrontendServesIndexForApplicationRoute(t *testing.T) {
 
 func TestFrontendDoesNotFollowSymlinksOutsideUIRoot(t *testing.T) {
 	parent := t.TempDir()
+
 	uiDir := filepath.Join(parent, "ui")
 	if err := os.Mkdir(uiDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
+
 	index := []byte("safe index")
 	if err := os.WriteFile(filepath.Join(uiDir, "index.html"), index, 0o600); err != nil {
 		t.Fatal(err)
 	}
+
 	secretPath := filepath.Join(parent, "secret.txt")
 	if err := os.WriteFile(secretPath, []byte("outside root"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.Symlink(secretPath, filepath.Join(uiDir, "escape.txt")); err != nil {
 		t.Fatal(err)
 	}
+
 	t.Setenv(config.EnvUIDir, uiDir)
 
 	request := httptest.NewRequestWithContext(
@@ -77,17 +85,19 @@ func TestHeadlessModeDoesNotRegisterUIOrBrowserAuthenticationRoutes(t *testing.T
 	}}).routes()
 
 	for _, route := range []string{"/", "/certificates", "/auth/methods", "/auth/login"} {
-		request := httptest.NewRequest(http.MethodGet, route, nil)
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, route, nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
+
 		if response.Code != http.StatusNotFound {
 			t.Errorf("headless route %s returned %d, want 404", route, response.Code)
 		}
 	}
 
-	request := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/health", nil)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
+
 	if response.Code != http.StatusOK {
 		t.Fatalf("headless health route returned %d", response.Code)
 	}

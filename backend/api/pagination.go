@@ -16,9 +16,11 @@ func paginationValue(r *http.Request, name string, fallback, max int) (int, erro
 	if raw == "" {
 		return fallback, nil
 	}
+
 	value, err := strconv.Atoi(raw)
 	if err != nil || value < 1 || value > max {
 		return 0, errors.New(name + " must be between 1 and " + strconv.Itoa(max))
 	}
+
 	return value, nil
 }

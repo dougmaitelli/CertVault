@@ -65,6 +65,7 @@ func (p Principal) Allows(scope, certificate string) bool {
 	if !contains(p.Scopes, scope) && !contains(p.Scopes, "*") {
 		return false
 	}
+
 	return certificate == "" || p.AllCertificates || contains(p.Certificates, certificate)
 }
 

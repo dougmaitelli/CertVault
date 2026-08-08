@@ -17,8 +17,11 @@ import (
 
 func TestAPIKeyLifecycle(t *testing.T) {
 	configPath, dataDir := writeTestConfig(t)
-	var output bytes.Buffer
-	var errors bytes.Buffer
+
+	var (
+		output bytes.Buffer
+		errors bytes.Buffer
+	)
 
 	err := RunAPIKey([]string{
 		"create",
@@ -31,41 +34,49 @@ func TestAPIKeyLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create API key: %v (%s)", err, errors.String())
 	}
+
 	token := strings.TrimSpace(output.String())
 	if !strings.HasPrefix(token, "cv_live_") || strings.Count(token, ".") != 1 {
 		t.Fatalf("created token = %q", token)
 	}
 
 	output.Reset()
+
 	if err = RunAPIKey(
 		[]string{"list", "--config", configPath}, &output, &errors,
 	); err != nil {
 		t.Fatalf("list API keys: %v", err)
 	}
+
 	var keys []repository.APIKey
 	if err = json.Unmarshal(output.Bytes(), &keys); err != nil {
 		t.Fatalf("decode listed API keys: %v", err)
 	}
+
 	if len(keys) != 1 || keys[0].Name != "traefik" || keys[0].ID != 1 {
 		t.Fatalf("listed API keys = %#v", keys)
 	}
 
 	output.Reset()
+
 	if err = RunAPIKey(
 		[]string{"revoke", "--config", configPath, "--id", "1"}, &output, &errors,
 	); err != nil {
 		t.Fatalf("revoke API key: %v", err)
 	}
+
 	if output.String() != "revoked API key 1 (traefik)\n" {
 		t.Fatalf("revoke output = %q", output.String())
 	}
 
 	output.Reset()
+
 	if err = RunAPIKey(
 		[]string{"delete", "--config", configPath, "--id", "1"}, &output, &errors,
 	); err != nil {
 		t.Fatalf("delete API key: %v", err)
 	}
+
 	if output.String() != "deleted API key 1 (traefik)\n" {
 		t.Fatalf("delete output = %q", output.String())
 	}
@@ -75,6 +86,7 @@ func TestAPIKeyLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = db.Close() }()
+
 	audits, err := repository.New(db).Audits.Search(context.Background(), repository.AuditFilter{
 		Actors:  []string{cliActor},
 		Page:    1,
@@ -83,6 +95,7 @@ func TestAPIKeyLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if audits.Total != 3 {
 		t.Fatalf("CLI audit events = %d, want 3", audits.Total)
 	}
@@ -125,6 +138,7 @@ func writeTestConfig(t *testing.T) (string, string) {
 	t.Helper()
 	dataDir := t.TempDir()
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
+
 	contents := "data_dir: " + dataDir + "\n" +
 		"acme:\n" +
 		"  email: test@example.com\n" +
@@ -132,7 +146,9 @@ func writeTestConfig(t *testing.T) (string, string) {
 	if err := os.WriteFile(configPath, []byte(contents), 0600); err != nil {
 		t.Fatal(err)
 	}
+
 	t.Setenv(config.EnvMasterKey, base64.StdEncoding.EncodeToString(make([]byte, 32)))
 	t.Setenv(config.EnvMasterKeyFile, "")
+
 	return configPath, dataDir
 }

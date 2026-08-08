@@ -31,6 +31,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
+
 	var browserAuthenticator *auth.BrowserAuthenticator
 	if c.UIEnabled() {
 		browserAuthenticator, err = auth.NewBrowserAuthenticator(c, repos, clientIPs)
@@ -38,6 +39,7 @@ func New(
 			return nil, err
 		}
 	}
+
 	a := &API{
 		cfg:                  c,
 		database:             db,
@@ -46,6 +48,7 @@ func New(
 		browserAuthenticator: browserAuthenticator,
 		clientIPs:            clientIPs,
 	}
+
 	return a.routes(), nil
 }
 
@@ -54,11 +57,13 @@ func (a *API) frontend(w http.ResponseWriter, r *http.Request) {
 	if rootPath == "" {
 		rootPath = "/app/ui"
 	}
+
 	root, err := os.OpenRoot(rootPath)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
+
 	defer func() { _ = root.Close() }()
 
 	assetPath := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
@@ -66,20 +71,25 @@ func (a *API) frontend(w http.ResponseWriter, r *http.Request) {
 		serveFrontendIndex(w, r, root)
 		return
 	}
+
 	info, err := root.Stat(assetPath)
 	if err != nil || info.IsDir() {
 		serveFrontendIndex(w, r, root)
 		return
 	}
+
 	asset, err := root.Open(assetPath)
 	if err != nil {
 		serveFrontendIndex(w, r, root)
 		return
 	}
+
 	defer func() { _ = asset.Close() }()
+
 	if contentType := mime.TypeByExtension(path.Ext(assetPath)); contentType != "" {
 		w.Header().Set("Content-Type", contentType)
 	}
+
 	http.ServeContent(w, r, path.Base(assetPath), info.ModTime(), asset)
 }
 
@@ -90,11 +100,13 @@ func serveFrontendIndex(w http.ResponseWriter, r *http.Request, root *os.Root) {
 		return
 	}
 	defer func() { _ = index.Close() }()
+
 	info, err := index.Stat()
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	http.ServeContent(w, r, "index.html", info.ModTime(), index)
 }
@@ -103,6 +115,7 @@ func decode(r *http.Request, v any) error {
 	r.Body = http.MaxBytesReader(nil, r.Body, 1<<20)
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
+
 	return d.Decode(v)
 }
 
@@ -122,10 +135,12 @@ func respond(w http.ResponseWriter, v any, e error) {
 		jsonResponse(w, 200, v)
 		return
 	}
+
 	if repository.NotFound(e) {
 		problem(w, 404, "not_found", "Resource not found")
 		return
 	}
+
 	problem(w, 500, "internal_error", e.Error())
 }
 

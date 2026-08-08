@@ -42,6 +42,7 @@ func (r *AuditRepository) DeleteBefore(ctx context.Context, cutoff time.Time) (i
 	result := r.database.ORM().WithContext(ctx).
 		Where("at < ?", cutoff).
 		Delete(&database.AuditEvent{})
+
 	return result.RowsAffected, result.Error
 }
 
@@ -55,12 +56,15 @@ func (r *AuditRepository) Search(ctx context.Context, filter AuditFilter) (Audit
 	if value := likeValue(filter.Query); value != "" {
 		query = query.Where(`actor LIKE ? ESCAPE '\' OR action LIKE ? ESCAPE '\' OR resource LIKE ? ESCAPE '\' OR detail LIKE ? ESCAPE '\' OR ip LIKE ? ESCAPE '\'`, value, value, value, value, value)
 	}
+
 	if len(filter.Actors) > 0 {
 		query = query.Where("actor IN ?", filter.Actors)
 	}
+
 	if len(filter.Actions) > 0 {
 		query = query.Where("action IN ?", filter.Actions)
 	}
+
 	if len(filter.Resources) > 0 {
 		query = query.Where("resource IN ?", filter.Resources)
 	}
@@ -71,6 +75,7 @@ func (r *AuditRepository) Search(ctx context.Context, filter AuditFilter) (Audit
 	}
 
 	var models []database.AuditEvent
+
 	err := query.
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "id"}, Desc: true}).
 		Limit(filter.PerPage).
@@ -79,6 +84,7 @@ func (r *AuditRepository) Search(ctx context.Context, filter AuditFilter) (Audit
 	if err != nil {
 		return AuditSearchResult{}, err
 	}
+
 	audits := make([]Audit, 0, len(models))
 	for _, model := range models {
 		audits = append(audits, Audit{
@@ -86,6 +92,7 @@ func (r *AuditRepository) Search(ctx context.Context, filter AuditFilter) (Audit
 			Resource: model.Resource, Detail: model.Detail, IP: model.IP,
 		})
 	}
+
 	return AuditSearchResult{Items: audits, Total: total}, nil
 }
 
@@ -94,10 +101,13 @@ func (r *AuditRepository) FilterOptions(ctx context.Context) (actors, actions, r
 	if err = query.Distinct("actor").Order("actor").Pluck("actor", &actors).Error; err != nil {
 		return nil, nil, nil, err
 	}
+
 	if err = query.Distinct("action").Order("action").Pluck("action", &actions).Error; err != nil {
 		return nil, nil, nil, err
 	}
+
 	err = query.Distinct("resource").Order("resource").Pluck("resource", &resources).Error
+
 	return actors, actions, resources, err
 }
 
@@ -106,6 +116,8 @@ func likeValue(value string) string {
 	if value == "" {
 		return ""
 	}
+
 	value = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(value)
+
 	return "%" + value + "%"
 }

@@ -12,6 +12,7 @@ func TestHookRejectsUnknownCertificate(t *testing.T) {
 		Certificates:   []Certificate{{Name: "home", Domains: []string{"home.example"}, Credential: "dns"}},
 		Hooks:          []Hook{{Name: "deploy", Certificates: []string{"unknown"}}},
 	}
+
 	err := cfg.Validate()
 	if err == nil || !strings.Contains(err.Error(), `hook "deploy" references unknown certificate "unknown"`) {
 		t.Fatalf("unknown hook certificate error = %v", err)

@@ -15,6 +15,7 @@ func Encrypt(key, plaintext []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, err
@@ -26,6 +27,7 @@ func Encrypt(key, plaintext []byte) ([]byte, error) {
 	}
 
 	out := append(append([]byte{}, magic...), nonce...)
+
 	return gcm.Seal(out, nonce, plaintext, nil), nil
 }
 
@@ -34,6 +36,7 @@ func Decrypt(key, ciphertext []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, err
@@ -43,5 +46,6 @@ func Decrypt(key, ciphertext []byte) ([]byte, error) {
 	if len(ciphertext) < len(magic)+n || string(ciphertext[:len(magic)]) != string(magic) {
 		return nil, errors.New("invalid encrypted data")
 	}
+
 	return gcm.Open(nil, ciphertext[len(magic):len(magic)+n], ciphertext[len(magic)+n:], nil)
 }

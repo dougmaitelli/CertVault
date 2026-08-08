@@ -32,10 +32,12 @@ const (
 func runServer(args []string, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("certvault server", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+
 	configPath := flags.String("config", config.Path(), "configuration file")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
+
 	if flags.NArg() != 0 {
 		return fmt.Errorf("unexpected argument %q", flags.Arg(0))
 	}
@@ -49,11 +51,14 @@ func runServer(args []string, stdout, stderr io.Writer) error {
 		stdout,
 		&slog.HandlerOptions{Level: cfg.Server.LogLevel.Level()},
 	))
+
 	db, err := database.Open(filepath.Join(cfg.DataDir, "certvault.db"))
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}
+
 	defer func() { _ = db.Close() }()
+
 	repositories := repository.New(db)
 	if err := repositories.Certificates.Reconcile(context.Background(), cfg); err != nil {
 		return fmt.Errorf("reconcile configuration: %w", err)
@@ -63,13 +68,16 @@ func runServer(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("initialize manager: %w", err)
 	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
+
 	if cfg.HasAutomaticIssuance() {
 		go manager.Run(ctx)
 	} else {
 		log.Info("automatic certificate issuance disabled")
 	}
+
 	if cfg.Audit.Retention.Duration > 0 {
 		go service.RunAuditRetention(ctx, repositories.Audits, cfg.Audit.Retention.Duration, log)
 	}
@@ -78,6 +86,7 @@ func runServer(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("initialize API: %w", err)
 	}
+
 	server := &http.Server{
 		Addr:              cfg.Server.Listen,
 		Handler:           handler,
@@ -87,8 +96,10 @@ func runServer(args []string, stdout, stderr io.Writer) error {
 		IdleTimeout:       httpIdleTimeout,
 	}
 	serveErrors := make(chan error, 1)
+
 	go func() {
 		log.Info("server listening", "address", cfg.Server.Listen)
+
 		if serveErr := server.ListenAndServe(); serveErr != nil &&
 			!errors.Is(serveErr, http.ErrServerClosed) {
 			serveErrors <- serveErr
@@ -99,7 +110,9 @@ func runServer(args []string, stdout, stderr io.Writer) error {
 	case <-ctx.Done():
 		shutdown, stop := context.WithTimeout(context.Background(), httpShutdownTimeout)
 		defer stop()
+
 		_ = server.Shutdown(shutdown)
+
 		return nil
 	case serveErr := <-serveErrors:
 		return fmt.Errorf("serve: %w", serveErr)
