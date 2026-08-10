@@ -41,7 +41,7 @@ jobs:
       - run: mkdocs build --strict
 
       - if: github.event_name != 'pull_request'
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
