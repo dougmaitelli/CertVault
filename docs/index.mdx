@@ -1,0 +1,53 @@
+---
+title: CertVault
+description: Issue, renew, protect, and distribute TLS certificates across your homelab.
+template: splash
+hero:
+  tagline: One focused control plane for issuing, renewing, protecting, and distributing every TLS certificate in your homelab.
+  image:
+    file: ../screenshots/certificates.png
+    alt: CertVault certificate inventory dashboard
+  actions:
+    - text: Get started
+      link: /CertVault/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/dougmaitelli/CertVault
+      icon: external
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## One vault for every TLS certificate
+
+CertVault automates DNS-01 issuance while keeping certificate material protected and distribution tightly scoped.
+
+<CardGrid>
+  <Card title="Automated issuance" icon="rocket">
+    Obtain wildcard and multi-domain certificates through any DNS provider supported by lego.
+  </Card>
+  <Card title="Protected material" icon="heart">
+    Keep ACME account keys and certificate private keys authenticated-encrypted at rest.
+  </Card>
+  <Card title="Controlled delivery" icon="code-branch">
+    Give clients only the operations and certificate artifacts they are explicitly allowed to use.
+  </Card>
+</CardGrid>
+
+## Operational clarity
+
+The responsive console brings validity, renewal activity, version history, ACME accounts, API keys, and audit events into one place. [Explore operations](./operations/).
+
+## Simple by design
+
+```text
+DNS provider ── DNS-01 ──> CertVault ── encrypted versions ──> persistent volume
+                              │
+                              ├── web console for administrators
+                              └── scoped HTTPS API for certificate consumers
+```
+
+:::caution[Protect private-key access]
+CertVault can return private keys. Do not expose it over plaintext HTTP outside a trusted local development environment.
+:::

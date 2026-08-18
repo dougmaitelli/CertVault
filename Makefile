@@ -7,7 +7,8 @@ export GOLANGCI_LINT_CACHE
 	build build-backend build-frontend test test-backend test-frontend \
 	format format-backend format-frontend format-check \
 	format-check-backend format-check-frontend lint lint-backend lint-frontend \
-	vet check tools clean docker config-check dev docs-dev
+	vet check tools clean docker config-check dev \
+	docs-install docs-dev docs-check docs-build docs-preview
 
 DEV_DIR := $(CURDIR)/.cache/dev
 DEV_CONFIG := $(CURDIR)/config/config.dev.yaml
@@ -88,9 +89,21 @@ screenshots-docker:
 docker:
 	docker compose build
 
+docs-install:
+	pnpm --dir docs install
+
 docs-dev:
-	@echo "CertVault docs: http://localhost:8000"
-	docker run --rm -it -p 8000:8000 -v "$(CURDIR):/docs" squidfunk/mkdocs-material
+	@echo "CertVault docs: http://localhost:4321/CertVault/"
+	pnpm --dir docs dev
+
+docs-check:
+	pnpm --dir docs check
+
+docs-build:
+	pnpm --dir docs build
+
+docs-preview:
+	pnpm --dir docs preview
 
 config-check:
 	cd backend && go run . check-config --config ../config/config.yaml

@@ -1,9 +1,16 @@
-# Configuration
+---
+title: Configuration
+description: Configure CertVault's server, certificates, credentials, and environment overrides.
+---
 
 CertVault reads YAML from `/config/config.yaml` by default. The reference file includes every supported section with annotated examples.
 
-[View the full configuration reference](https://github.com/dougmaitelli/CertVault/blob/master/config/config.example.yaml){ .md-button }
-[Download the YAML file](https://raw.githubusercontent.com/dougmaitelli/CertVault/master/config/config.example.yaml){ .md-button }
+- [View the full configuration reference](https://github.com/dougmaitelli/CertVault/blob/master/config/config.example.yaml)
+- [Download the YAML file](https://raw.githubusercontent.com/dougmaitelli/CertVault/master/config/config.example.yaml)
+
+:::caution[Administrator authentication is required]
+When the web console is enabled, configure a bootstrap administrator token or OIDC so administrators can sign in. Before exposing CertVault to an untrusted network, configure and verify OIDC; if you retain bootstrap access for emergencies, protect it as a long, random secret. See the [authentication guide](../authentication/).
+:::
 
 ## Core settings
 

@@ -1,6 +1,13 @@
-# Getting started
+---
+title: Getting started
+description: Configure and run CertVault with Docker Compose, then prepare it for production.
+---
 
 This guide runs CertVault with Docker Compose and Let's Encrypt staging.
+
+:::caution[Configure authentication before exposing CertVault]
+The web console requires either a bootstrap administrator token or OIDC. This guide configures a bootstrap token for the initial login. Do not omit it or make CertVault reachable from an untrusted network until OIDC is configured and you have verified that administrator login works. See the [authentication guide](../authentication/).
+:::
 
 ## 1. Create the configuration
 

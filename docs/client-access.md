@@ -1,4 +1,7 @@
-# Client access
+---
+title: Client access
+description: Create scoped API keys and securely retrieve certificate artifacts.
+---
 
 API keys let clients fetch certificate material without administrator access.
 

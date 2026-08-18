@@ -1,4 +1,7 @@
-# Authentication
+---
+title: Authentication
+description: Configure headless access, bootstrap administration, and OpenID Connect.
+---
 
 ## Headless mode
 

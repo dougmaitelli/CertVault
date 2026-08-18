@@ -1,4 +1,7 @@
-# Security
+---
+title: Security
+description: Understand CertVault's storage, network, and container security model.
+---
 
 CertVault handles private keys and DNS credentials. Treat the service as security-sensitive infrastructure.
 

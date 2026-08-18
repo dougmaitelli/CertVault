@@ -1,6 +1,9 @@
 /web/node_modules/
 /web/dist/
 /web/*.tsbuildinfo
+/docs/node_modules/
+/docs/dist/
+/docs/.astro/
 /.pnpm-store/
 /secrets/
 /data/

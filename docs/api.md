@@ -1,4 +1,7 @@
-# API reference
+---
+title: API reference
+description: Use CertVault's HTTP endpoints and download its OpenAPI specification.
+---
 
 The client-facing API uses bearer API keys:
 
@@ -30,4 +33,4 @@ All certificate endpoints also enforce the API key’s certificate allowlist.
 
 Administrator endpoints use browser sessions and are not available to API keys.
 
-[Download the OpenAPI specification](openapi.yaml){ .md-button }
+[Download the OpenAPI specification](/CertVault/openapi.yaml)

@@ -5,15 +5,11 @@ on:
     branches: [master]
     paths:
       - docs/**
-      - mkdocs.yml
-      - requirements-docs.txt
       - .github/workflows/pages.yml
   pull_request:
     branches: [master]
     paths:
       - docs/**
-      - mkdocs.yml
-      - requirements-docs.txt
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -29,16 +25,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: requirements-docs.txt
+          fetch-depth: 0
 
-      - run: pip install -r requirements-docs.txt
+      - uses: pnpm/action-setup@v6
 
-      - run: mkdocs build --strict
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: docs
+
+      - run: pnpm check
+        working-directory: docs
+
+      - run: pnpm build
+        working-directory: docs
 
       - if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v6
@@ -46,7 +51,7 @@ jobs:
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:
-          path: site
+          path: docs/dist
 
   deploy:
     if: github.event_name != 'pull_request'

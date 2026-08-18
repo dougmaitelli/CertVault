@@ -1,4 +1,7 @@
-# Operations
+---
+title: Operations
+description: Manage renewal, audit retention, hooks, and health checks.
+---
 
 ## Renewal
 
