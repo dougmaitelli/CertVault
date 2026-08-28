@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/certvault/certvault/config"
 	"github.com/certvault/certvault/database"
@@ -54,8 +55,23 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	notifications := make(chan sentNotification, 1)
+	manager.notify = channelNotifier{notifications}
+
 	if err = manager.Issue(ctx, "development", IssueKindManual); err != nil {
 		t.Fatal(err)
+	}
+
+	select {
+	case notification := <-notifications:
+		if notification.title != "Certificate renewed" || notification.typeName != NotificationSuccess {
+			t.Fatalf("notification = %#v", notification)
+		}
+		if notification.body != `Certificate "development" was renewed successfully.` {
+			t.Fatalf("notification body = %q", notification.body)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for issuance notification")
 	}
 
 	version, err := repositories.Certificates.CurrentVersion(ctx, "development")
@@ -102,4 +118,26 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 	if len(jobs) != 1 || jobs[0].Status != "succeeded" {
 		t.Fatalf("jobs = %#v", jobs)
 	}
+}
+
+type sentNotification struct {
+	title    string
+	body     string
+	typeName NotificationType
+}
+
+type channelNotifier struct {
+	notifications chan<- sentNotification
+}
+
+func (channelNotifier) Configured() bool { return true }
+
+func (n channelNotifier) Notify(
+	_ context.Context,
+	title string,
+	body string,
+	typeName NotificationType,
+) error {
+	n.notifications <- sentNotification{title: title, body: body, typeName: typeName}
+	return nil
 }

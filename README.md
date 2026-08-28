@@ -51,6 +51,7 @@ CertVault is a self-hosted ACME certificate controller for homelabs. It obtains 
 - Hashed, revocable API keys scoped by operation and certificate
 - Optional OIDC Authorization + PKCE login
 - Signed webhooks and restricted executable hooks
+- Apprise notifications for certificate issuance, renewal, and failures
 - Responsive React Console
 - Non-root, capability-free Docker deployment
 
@@ -215,6 +216,9 @@ Global values can be overridden with:
 | `CERTVAULT_OIDC_CLIENT_SECRET_FILE` | Path to a file containing the OIDC client secret |
 | `CERTVAULT_OIDC_SCOPES` | Comma-separated OIDC scopes; must include `openid` |
 | `CERTVAULT_OIDC_ALLOWED_GROUPS` | Comma-separated administrator group allowlist |
+| `CERTVAULT_APPRISE_URL` | Apprise REST notification endpoint |
+| `CERTVAULT_APPRISE_URLS` | Comma-separated inline Apprise delivery URLs |
+| `CERTVAULT_APPRISE_TAGS` | Comma-separated Apprise routing tags |
 
 Some values may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.
 

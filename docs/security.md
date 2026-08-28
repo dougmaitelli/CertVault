@@ -10,6 +10,7 @@ CertVault handles private keys and DNS credentials. Treat the service as securit
 - Certificate and ACME account private keys are encrypted with AES-256-GCM.
 - The master key is external to SQLite and must be backed up separately.
 - Raw API keys and DNS credentials are not stored in SQLite.
+- Apprise endpoints and inline delivery URLs are read from configuration and are not stored in SQLite.
 - Certificate versions use temporary files and atomic renames.
 
 ## Network exposure
@@ -30,6 +31,8 @@ cap_drop:
 ```
 
 Mount configuration and secret files read-only. Back up the persistent volume and master key together.
+
+Notification URLs commonly embed credentials. Supply them through protected deployment configuration and never expose them in logs or support requests.
 
 ## Vulnerability reporting
 

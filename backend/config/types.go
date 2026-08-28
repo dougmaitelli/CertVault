@@ -7,11 +7,18 @@ type Config struct {
 	ACME           ACME                     `yaml:"acme"`
 	Auth           Auth                     `yaml:"auth"`
 	Audit          Audit                    `yaml:"audit"`
+	Notifications  Notifications            `yaml:"notifications"`
 	DNSCredentials map[string]DNSCredential `yaml:"dns_credentials"`
 	Zones          []Zone                   `yaml:"zones"`
 	Certificates   []Certificate            `yaml:"certificates"`
 	Hooks          []Hook                   `yaml:"hooks"`
 	MasterKey      MasterKey                `yaml:"-" env:"CERTVAULT_MASTER_KEY" file:"true"`
+}
+
+type Notifications struct {
+	AppriseURL  string   `yaml:"apprise_url" env:"CERTVAULT_APPRISE_URL"`
+	AppriseURLs []string `yaml:"apprise_urls" env:"CERTVAULT_APPRISE_URLS"`
+	AppriseTags []string `yaml:"apprise_tags" env:"CERTVAULT_APPRISE_TAGS"`
 }
 
 type Server struct {

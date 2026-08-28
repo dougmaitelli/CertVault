@@ -49,6 +49,15 @@ auth:
 audit:
   retention: 90d
 
+# Optional Apprise REST API delivery for issuance, renewal, and failure alerts.
+# Notification URLs often contain credentials; prefer environment variables or
+# deployment secrets over committing them to this file.
+# notifications:
+#   apprise_url: http://apprise:8000/notify/certvault
+#   apprise_tags: [admin, homelab]
+#   apprise_urls:
+#     - discord://webhook_id/webhook_token
+
 # Credential names are user-defined. Provider names and environment variables
 # are documented at https://go-acme.github.io/lego/dns/.
 dns_credentials:

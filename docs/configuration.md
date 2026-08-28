@@ -28,6 +28,7 @@ When the web console is enabled, configure a bootstrap administrator token or OI
 | `acme.directory_url` | ACME v2 directory |
 | `acme.accept_terms` | Must be `true` |
 | `acme.automatic_issuance` | Global automatic issuance switch |
+| `notifications.apprise_url` | Apprise REST notification endpoint |
 
 Durations accept Go duration syntax and whole days, such as `12h`, `30d`, and `90d`.
 
@@ -72,7 +73,12 @@ Supported key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `r
 | `CERTVAULT_OIDC_CLIENT_SECRET_FILE` | File containing the OIDC client secret |
 | `CERTVAULT_OIDC_SCOPES` | Comma-separated OIDC scopes; must include `openid` |
 | `CERTVAULT_OIDC_ALLOWED_GROUPS` | Comma-separated administrator groups |
+| `CERTVAULT_APPRISE_URL` | Apprise REST notification endpoint |
+| `CERTVAULT_APPRISE_URLS` | Comma-separated inline Apprise delivery URLs |
+| `CERTVAULT_APPRISE_TAGS` | Comma-separated Apprise routing tags |
 
 Do not set both a direct secret and its `_FILE` counterpart.
 
 Bootstrap authentication is optional. Omit `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN`, `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE`, and `auth.bootstrap_token_file` to disable it. Configure OIDC if administrators still need web-console access.
+
+See [Notifications](../notifications/) for Apprise setup and delivery behavior.

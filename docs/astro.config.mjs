@@ -45,6 +45,7 @@ export default defineConfig({
             { label: "Authentication", slug: "authentication" },
             { label: "Security", slug: "security" },
             { label: "Operations", slug: "operations" },
+            { label: "Notifications", slug: "notifications" },
           ],
         },
         {

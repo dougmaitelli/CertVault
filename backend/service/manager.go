@@ -36,6 +36,7 @@ type Manager struct {
 	cfg     *config.Config
 	repos   *repository.Repositories
 	log     *slog.Logger
+	notify  notifier
 	locks   sync.Map
 	issueMu sync.Mutex
 }
@@ -51,7 +52,7 @@ const (
 const pathEnvironmentVariable = "PATH"
 
 func NewManager(c *config.Config, repos *repository.Repositories, log *slog.Logger) (*Manager, error) {
-	return &Manager{cfg: c, repos: repos, log: log}, nil
+	return &Manager{cfg: c, repos: repos, log: log, notify: newAppriseNotifier(c.Notifications)}, nil
 }
 
 func (m *Manager) Run(ctx context.Context) {
@@ -129,7 +130,10 @@ func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) error 
 	}
 
 	var result error
-	defer func() { _ = m.repos.Jobs.Finish(context.Background(), job, result) }()
+	defer func() {
+		_ = m.repos.Jobs.Finish(context.Background(), job, result)
+		m.notifyIssuance(name, kind, result)
+	}()
 
 	resource, e := m.obtain(ctx, def)
 	if e != nil {
@@ -160,6 +164,36 @@ func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) error 
 	}
 
 	return nil
+}
+
+func (m *Manager) notifyIssuance(name string, kind IssueKind, issueErr error) {
+	if !m.notify.Configured() {
+		return
+	}
+
+	title := "Certificate issued"
+	body := fmt.Sprintf("Certificate %q was issued successfully.", name)
+	typeName := NotificationSuccess
+
+	if kind != IssueKindInitial {
+		title = "Certificate renewed"
+		body = fmt.Sprintf("Certificate %q was renewed successfully.", name)
+	}
+
+	if issueErr != nil {
+		title = "Certificate issuance failed"
+		body = fmt.Sprintf("Certificate %q could not be issued: %s", name, issueErr)
+		typeName = NotificationFailure
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), notificationTimeout)
+		defer cancel()
+
+		if err := m.notify.Notify(ctx, title, body, typeName); err != nil {
+			m.log.Error("Apprise notification failed", "certificate", name, "error", err)
+		}
+	}()
 }
 
 func (m *Manager) obtain(ctx context.Context, def config.Certificate) (*certificate.Resource, error) {

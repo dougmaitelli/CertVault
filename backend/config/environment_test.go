@@ -118,6 +118,27 @@ func TestApplyEnvOverridesDNSResolvers(t *testing.T) {
 	assertDNSResolvers(t, configuration.ACME.DNSResolvers, expected)
 }
 
+func TestApplyEnvConfiguresApprise(t *testing.T) {
+	t.Setenv("CERTVAULT_APPRISE_URL", "http://apprise:8000/notify/certvault")
+	t.Setenv("CERTVAULT_APPRISE_URLS", "discord://one, slack://two")
+	t.Setenv("CERTVAULT_APPRISE_TAGS", "admin, homelab")
+
+	configuration := Config{}
+	if err := applyEnv(&configuration); err != nil {
+		t.Fatal(err)
+	}
+
+	if configuration.Notifications.AppriseURL != "http://apprise:8000/notify/certvault" {
+		t.Fatalf("Apprise URL = %q", configuration.Notifications.AppriseURL)
+	}
+	if !slices.Equal(configuration.Notifications.AppriseURLs, []string{"discord://one", "slack://two"}) {
+		t.Fatalf("Apprise URLs = %#v", configuration.Notifications.AppriseURLs)
+	}
+	if !slices.Equal(configuration.Notifications.AppriseTags, []string{"admin", "homelab"}) {
+		t.Fatalf("Apprise tags = %#v", configuration.Notifications.AppriseTags)
+	}
+}
+
 func assertDNSResolvers(t *testing.T, actual, expected []string) {
 	t.Helper()
 
