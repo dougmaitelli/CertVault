@@ -1,7 +1,7 @@
 ARG APP_VERSION=dev
 
 FROM node:26-alpine AS ui
-RUN npm install --global pnpm@11.20.0
+RUN npm install --global pnpm@11.24.0
 WORKDIR /src/web
 COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
