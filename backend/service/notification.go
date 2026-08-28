@@ -84,14 +84,17 @@ func (n *appriseNotifier) Notify(
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+
 	resp, err := n.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("send Apprise notification: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, maxAppriseErrorBody))
+
 		detail := strings.TrimSpace(string(bodyBytes))
 		if detail == "" {
 			return fmt.Errorf("send Apprise notification: HTTP %s", resp.Status)

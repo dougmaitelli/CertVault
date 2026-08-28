@@ -131,9 +131,11 @@ func TestApplyEnvConfiguresApprise(t *testing.T) {
 	if configuration.Notifications.AppriseURL != "http://apprise:8000/notify/certvault" {
 		t.Fatalf("Apprise URL = %q", configuration.Notifications.AppriseURL)
 	}
+
 	if !slices.Equal(configuration.Notifications.AppriseURLs, []string{"discord://one", "slack://two"}) {
 		t.Fatalf("Apprise URLs = %#v", configuration.Notifications.AppriseURLs)
 	}
+
 	if !slices.Equal(configuration.Notifications.AppriseTags, []string{"admin", "homelab"}) {
 		t.Fatalf("Apprise tags = %#v", configuration.Notifications.AppriseTags)
 	}

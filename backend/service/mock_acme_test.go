@@ -67,6 +67,7 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 		if notification.title != "Certificate renewed" || notification.typeName != NotificationSuccess {
 			t.Fatalf("notification = %#v", notification)
 		}
+
 		if notification.body != `Certificate "development" was renewed successfully.` {
 			t.Fatalf("notification body = %q", notification.body)
 		}
