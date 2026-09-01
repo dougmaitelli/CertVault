@@ -10,6 +10,7 @@ const repositoryDirectory = path.join(webDirectory, "..");
 const screenshotDirectory = path.join(repositoryDirectory, "screenshots");
 const port = 8089;
 const baseURL = `http://127.0.0.1:${port}`;
+const publicURL = "https://certvault.example.com";
 
 const daysFromNow = (days) =>
   new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
@@ -182,6 +183,14 @@ async function startVite() {
 }
 
 async function mockAPI(page) {
+  await page.route(`${publicURL}/**`, async (route) => {
+    const requestURL = new URL(route.request().url());
+    const response = await route.fetch({
+      url: `${baseURL}${requestURL.pathname}${requestURL.search}`,
+    });
+    await route.fulfill({ response });
+  });
+
   await page.route("**/api/v1/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     const endpoint = pathname.replace("/api/v1/", "");
@@ -213,6 +222,23 @@ async function mockAPI(page) {
           statuses: [...new Set(jobs.map((job) => job.status))].sort(),
         },
       });
+    if (endpoint === "api-keys" && route.request().method() === "POST") {
+      return route.fulfill({
+        json: {
+          api_key: {
+            id: 3,
+            name: "Caddy deployment",
+            prefix: "cv_live_demo",
+            scopes: ["certificates:read", "private_keys:read"],
+            certificates: ["*"],
+            created_at: daysFromNow(0),
+            last_used_at: null,
+            revoked: false,
+          },
+          token: "cv_live_demo_synthetic_api_key_for_documentation",
+        },
+      });
+    }
     if (endpoint === "api-keys") return route.fulfill({ json: apiKeys });
     if (endpoint === "acme-accounts" && route.request().method() === "GET") {
       return route.fulfill({ json: accounts });
@@ -267,7 +293,7 @@ async function main() {
     const page = await context.newPage();
     await mockAPI(page);
 
-    await page.goto(`${baseURL}/certificates`, { waitUntil: "networkidle" });
+    await page.goto(`${publicURL}/certificates`, { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "homelab-wildcard" }).waitFor();
     await capture(page, "certificates.png");
 
@@ -275,13 +301,25 @@ async function main() {
     await page.getByRole("heading", { name: "Version history" }).waitFor();
     await capture(page, "certificate-details.png");
 
-    await page.goto(`${baseURL}/acme-accounts`, { waitUntil: "networkidle" });
+    await page.goto(`${publicURL}/acme-accounts`, { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "acme.example.com" }).waitFor();
     await capture(page, "acme-accounts.png");
 
-    await page.goto(`${baseURL}/api-keys`, { waitUntil: "networkidle" });
+    await page.goto(`${publicURL}/api-keys`, { waitUntil: "networkidle" });
     await page.getByText("Traefik deployment").waitFor();
     await capture(page, "api-keys.png");
+
+    await page.getByRole("button", { name: "Create API key" }).click();
+    await page.getByLabel("Name").fill("Caddy deployment");
+    await page
+      .getByLabel("Any certificate, including certificates added later")
+      .check();
+    await page.getByRole("button", { name: "Create key" }).click();
+    await page.getByRole("heading", { name: "Automatic download" }).waitFor();
+    await page
+      .getByLabel("Command after files change (optional)")
+      .fill("systemctl reload caddy");
+    await capture(page, "installation-command.png");
   } finally {
     await browser?.close();
     stopVite();

@@ -37,6 +37,12 @@ CertVault is a self-hosted ACME certificate controller for homelabs. It obtains 
 <p><em>Client access — scoped, revocable API keys with certificate allowlists and usage visibility.</em></p>
 </td>
 </tr>
+<tr>
+<td colspan="2">
+<a href="screenshots/installation-command.png"><img src="screenshots/installation-command.png" alt="Installation command builder"></a>
+<p><em>Installation command builder — configure certificate files, destination, sync schedule, and a post-update reload command.</em></p>
+</td>
+</tr>
 </table>
 
 ## Features
