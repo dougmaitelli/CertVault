@@ -297,9 +297,11 @@ async function main() {
     await page.getByRole("heading", { name: "homelab-wildcard" }).waitFor();
     await capture(page, "certificates.png");
 
+    await page.setViewportSize({ width: 1400, height: 1100 });
     await page.getByRole("heading", { name: "homelab-wildcard" }).click();
-    await page.getByRole("heading", { name: "Version history" }).waitFor();
+    await page.getByText("Previous version", { exact: true }).waitFor();
     await capture(page, "certificate-details.png");
+    await page.setViewportSize({ width: 1400, height: 900 });
 
     await page.goto(`${publicURL}/acme-accounts`, { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "acme.example.com" }).waitFor();
