@@ -43,6 +43,10 @@
   width: 100%;
 }
 
+.login .error {
+  margin-top: 22px;
+}
+
 .login .oidc {
   display: block;
   margin-top: 24px;

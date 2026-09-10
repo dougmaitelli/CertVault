@@ -17,7 +17,7 @@ Requirements:
 - Go 1.25.10 or the version declared by `backend/go.mod`
 - Node.js 24 or newer with pnpm 11.20.0
 - OpenSSL for generation of local development secrets
-- Docker only for container builds or containerized screenshot generation
+- Docker for container builds and the canonical browser test environment
 
 Install dependencies and start the mock ACME development environment:
 
@@ -50,13 +50,16 @@ This verifies Go and frontend formatting, runs `go vet`, golangci-lint, ESLint, 
 
 New behavior should include tests at the closest useful layer. Security-sensitive behavior must be enforced by the backend even when the UI also prevents an invalid action.
 
-For visible UI changes, regenerate or include screenshots when they materially help review:
+For visible UI changes, run the browser integration and visual regression suite:
 
 ```sh
-make screenshots
+make test-e2e-docker
 ```
 
-Use `make screenshots-docker` when a local Playwright browser is unavailable.
+Review intentional baseline changes using the workflow in
+[web/e2e/README.md](web/e2e/README.md). CI uploads browser reports, traces,
+and screenshot differences. `make screenshots` and `make screenshots-docker`
+remain available for documentation screenshots.
 
 ## Pull requests
 

@@ -1,7 +1,7 @@
 .shell {
   display: grid;
   grid-template-columns: 260px 1fr;
-  min-height: 100vh;
+  height: 100dvh;
   isolation: isolate;
 }
 
@@ -9,7 +9,7 @@
   position: sticky;
   top: 0;
   display: flex;
-  height: 100vh;
+  height: 100%;
   z-index: 2;
   padding: 28px 18px 14px;
   flex-direction: column;
@@ -78,9 +78,23 @@
 .shell main {
   display: flex;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   padding: 42px 5vw 16px;
   flex-direction: column;
   position: relative;
+}
+
+.shell main > * {
+  flex-shrink: 0;
+}
+
+.shell main:has(.modal) {
+  overflow-y: hidden;
+}
+
+.shell main > .error {
+  margin-bottom: 24px;
 }
 
 .shell .content-footer {
@@ -164,6 +178,7 @@
 @media (max-width: 800px) {
   .shell {
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .shell aside {

@@ -288,6 +288,9 @@ Frontend commands can also be run independently from `web/` with `pnpm run forma
 
 Regenerate the README screenshots from deterministic mocked API data with `make screenshots`. This requires Playwright's Chromium browser (`cd web && pnpm exec playwright install chromium`). To use Playwright's prebuilt browser container instead, run `make screenshots-docker` with Docker available.
 
+Browser integration and visual regression coverage runs with `make test-e2e-docker`.
+See [the browser test guide](web/e2e/README.md) for coverage, debugging, and baseline updates.
+
 The API outline is in [`docs/openapi.yaml`](docs/openapi.yaml).
 
 ## License

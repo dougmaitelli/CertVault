@@ -4,7 +4,7 @@ GOLANGCI_LINT_CACHE := $(CURDIR)/.cache/golangci-lint
 export GOLANGCI_LINT_CACHE
 
 .PHONY: dependencies dependencies-backend dependencies-frontend screenshots screenshots-docker \
-	build build-backend build-frontend test test-backend test-frontend \
+	build build-backend build-frontend test test-backend test-frontend test-e2e test-e2e-docker \
 	format format-backend format-frontend format-check \
 	format-check-backend format-check-frontend lint lint-backend lint-frontend \
 	vet check tools clean docker config-check dev \
@@ -123,3 +123,9 @@ dev: dependencies
 		trap 'kill $$backend_pid 2>/dev/null || true' EXIT INT TERM; \
 		cd ../web; \
 		pnpm run dev
+
+test-e2e:
+	cd web && pnpm run typecheck:e2e && pnpm run test:e2e
+
+test-e2e-docker:
+	cd web && pnpm run test:e2e:docker

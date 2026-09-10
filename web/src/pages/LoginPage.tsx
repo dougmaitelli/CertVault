@@ -55,6 +55,8 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
     </form>
   );
 
+  if (!methods && !error) return <div className="splash">CertVault</div>;
+
   return (
     <main className="login">
       <section>

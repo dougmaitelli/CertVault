@@ -15,3 +15,5 @@ certvault
 /.bin/
 /.cache/
 /.env
+/web/playwright-report/
+/web/test-results/

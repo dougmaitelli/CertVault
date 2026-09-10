@@ -4,13 +4,17 @@
   inset: 0;
   display: grid;
   place-items: center;
+  padding: 24px;
   background: rgb(2 8 10 / 48%);
   backdrop-filter: blur(8px) saturate(110%);
 }
 
 .modal section {
   position: relative;
-  width: min(580px, 90vw);
+  width: min(580px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 30px;
   border: 1px solid rgb(220 255 248 / 16%);
   border-radius: 20px;
