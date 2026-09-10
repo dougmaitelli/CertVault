@@ -46,10 +46,11 @@ block merges on failures.
    change. Run again without the update flag before committing.
 
 Normal runs never create or update baselines. The direct `test:e2e:update`
-command is for use within the canonical environment. Playwright and its Docker
-browser image are pinned to the same version; update them together and review
-new baselines when upgrading. Local screenshots on other distributions may
-render differently.
+command is for use within the canonical environment. Both Playwright dependencies
+must use the same exact version. Dependabot groups them in one update, and the
+Docker runner derives the browser image version from that pin. When upgrading,
+review any rendering differences before updating affected baselines. Local
+screenshots on other distributions may render differently.
 
 ## Coverage and boundaries
 
