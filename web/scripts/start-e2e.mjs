@@ -9,7 +9,14 @@ for (const [command, args, cwd] of [
   ["pnpm", ["run", "build"], path.join(root, "web")],
   [
     "go",
-    ["build", "-tags=e2e", "-o", "../.cache/e2e/server", "./e2e"],
+    [
+      "build",
+      "-buildvcs=false",
+      "-tags=e2e",
+      "-o",
+      "../.cache/e2e/server",
+      "./e2e",
+    ],
     path.join(root, "backend"),
   ],
 ]) {
