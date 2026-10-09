@@ -18,6 +18,7 @@ type API struct {
 	manager              *service.Manager
 	browserAuthenticator *auth.BrowserAuthenticator
 	clientIPs            *certnetwork.ClientIPResolver
+	bundles              bundleCache
 }
 
 type createAPIKeyRequest struct {

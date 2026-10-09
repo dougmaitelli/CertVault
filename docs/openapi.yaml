@@ -46,6 +46,26 @@ paths:
       summary: Download the current full chain
       parameters: [{name: name, in: path, required: true, schema: {type: string}}]
       responses: {"200": {description: PEM full chain}}
+  /certificates/{name}/bundle.tar:
+    get:
+      summary: Download selected artifacts from one certificate version
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+        - name: files
+          in: query
+          required: true
+          description: Comma-separated unique artifacts. Each requires its corresponding read scope.
+          schema: {type: string, example: "fullchain.crt,private.key"}
+        - {name: If-None-Match, in: header, schema: {type: string}}
+      responses:
+        "200":
+          description: Version-consistent tar bundle
+          headers: {ETag: {schema: {type: string}, description: Version and artifact-set validator}}
+          content: {application/x-tar: {schema: {type: string, format: binary}}}
+        "304": {description: Bundle unchanged}
+        "400": {description: Invalid or duplicate artifacts}
+        "403": {description: Missing scope or certificate permission}
+        "404": {description: Certificate disabled or no current version}
   /certificates/{name}/private.key:
     get:
       summary: Download the decrypted current private key

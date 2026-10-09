@@ -38,6 +38,8 @@ func (a *API) routes() http.Handler {
 		a.requireScope(scopeRenewalsTrigger, "name", a.renewCertificate),
 	)
 
+	apiMux.HandleFunc("GET /api/v1/certificates/{name}/bundle.tar", a.downloadBundle)
+
 	for artifact, scope := range certificateArtifacts {
 		apiMux.Handle(
 			"GET /api/v1/certificates/{name}/"+artifact,
