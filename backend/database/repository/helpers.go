@@ -21,6 +21,10 @@ func findCertificate(db *gorm.DB, name string) (database.Certificate, error) {
 	return certificate, err
 }
 
+func findEnabledCertificate(db *gorm.DB, name string) (database.Certificate, error) {
+	return findCertificate(db.Where("enabled = ?", true), name)
+}
+
 func certificateFromModel(model database.Certificate) (Certificate, error) {
 	domains, err := decodeStrings(model.Domains)
 	if err != nil {

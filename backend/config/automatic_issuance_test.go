@@ -72,3 +72,23 @@ func loadAutomaticIssuanceConfig(t *testing.T, setting string) *Config {
 
 	return configuration
 }
+
+func TestDisabledCertificateNeverAutomaticallyIssues(t *testing.T) {
+	enabled := true
+	disabled := false
+	configuration := Config{
+		ACME: ACME{AutomaticIssuance: true},
+		Certificates: []Certificate{
+			{Name: "inactive", Enabled: &disabled, AutomaticIssuance: &enabled},
+			{Name: "active"},
+		},
+	}
+
+	if !configuration.HasAutomaticIssuance() {
+		t.Fatal("active certificate should keep scheduler running")
+	}
+
+	if configuration.ShouldAutomaticallyIssue(configuration.Certificates[0]) {
+		t.Fatal("disabled certificate bypassed enabled status with automatic issuance override")
+	}
+}

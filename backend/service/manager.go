@@ -110,8 +110,8 @@ func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) (resul
 	}
 
 	def, ok := m.cfg.Certificate(name)
-	if !ok {
-		return errors.New("unknown certificate")
+	if !ok || (def.Enabled != nil && !*def.Enabled) {
+		return errors.New("unknown or disabled certificate")
 	}
 
 	lockAny, _ := m.locks.LoadOrStore(name, &sync.Mutex{})

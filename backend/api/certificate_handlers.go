@@ -64,6 +64,11 @@ func (a *API) renewCertificate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.PathValue("name")
+	if _, err := a.repos.Certificates.Get(r.Context(), name); err != nil {
+		respond(w, nil, err)
+		return
+	}
+
 	go func() { _ = a.manager.Issue(context.Background(), name, service.IssueKindManual) }()
 
 	a.repos.Audits.Record(

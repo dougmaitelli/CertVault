@@ -34,24 +34,37 @@ func (r *CertificateRepository) Reconcile(ctx context.Context, cfg *config.Confi
 				return err
 			}
 
-			model := database.Certificate{Name: definition.Name}
-			updates := database.Certificate{
-				Domains:            domains,
-				KeyType:            string(keyType),
-				RenewBeforeSeconds: int64(renewBefore.Seconds()),
-				Enabled:            enabled,
-				UpdatedAt:          time.Now().UTC(),
+			values := map[string]any{
+				"name":                 definition.Name,
+				"domains":              domains,
+				"key_type":             string(keyType),
+				"renew_before_seconds": int64(renewBefore.Seconds()),
+				"enabled":              enabled,
+				"updated_at":           time.Now().UTC(),
 			}
 
-			result := tx.Where(&database.Certificate{Name: definition.Name}).
-				Assign(updates).
-				FirstOrCreate(&model)
+			result := tx.Model(&database.Certificate{}).Clauses(clause.OnConflict{
+				Columns: []clause.Column{{Name: "name"}},
+				DoUpdates: clause.AssignmentColumns([]string{
+					"domains", "key_type", "renew_before_seconds", "enabled", "updated_at",
+				}),
+			}).Create(values)
 			if result.Error != nil {
 				return result.Error
 			}
 		}
 
-		return nil
+		names := make([]string, 0, len(cfg.Certificates))
+		for _, definition := range cfg.Certificates {
+			names = append(names, definition.Name)
+		}
+
+		absent := tx.Model(&database.Certificate{}).Where("enabled = ?", true)
+		if len(names) > 0 {
+			absent = absent.Where("name NOT IN ?", names)
+		}
+
+		return absent.Updates(map[string]any{"enabled": false, "updated_at": time.Now().UTC()}).Error
 	})
 }
 
@@ -153,7 +166,7 @@ func (r *CertificateRepository) latestJobs(ctx context.Context, certificates []d
 }
 
 func (r *CertificateRepository) CurrentVersion(ctx context.Context, name string) (*Version, error) {
-	certificate, err := findCertificate(r.database.ORM().WithContext(ctx), name)
+	certificate, err := findEnabledCertificate(r.database.ORM().WithContext(ctx), name)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +192,7 @@ func (r *CertificateRepository) currentVersion(ctx context.Context, certificateI
 }
 
 func (r *CertificateRepository) Versions(ctx context.Context, name string) ([]Version, error) {
-	certificate, err := findCertificate(r.database.ORM().WithContext(ctx), name)
+	certificate, err := findEnabledCertificate(r.database.ORM().WithContext(ctx), name)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +228,7 @@ func (r *CertificateRepository) AddVersion(ctx context.Context, version Version)
 	}
 
 	return r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		certificate, err := findCertificate(tx, version.CertificateName)
+		certificate, err := findEnabledCertificate(tx, version.CertificateName)
 		if err != nil {
 			return err
 		}

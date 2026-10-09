@@ -27,7 +27,7 @@ type JobSearchResult struct {
 }
 
 func (r *JobRepository) Start(ctx context.Context, name, kind string) (int64, error) {
-	certificate, err := findCertificate(r.database.ORM().WithContext(ctx), name)
+	certificate, err := findEnabledCertificate(r.database.ORM().WithContext(ctx), name)
 	if err != nil {
 		return 0, err
 	}

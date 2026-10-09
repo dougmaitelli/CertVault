@@ -218,6 +218,10 @@ func (c *Config) Certificate(name string) (Certificate, bool) {
 }
 
 func (c *Config) ShouldAutomaticallyIssue(certificate Certificate) bool {
+	if certificate.Enabled != nil && !*certificate.Enabled {
+		return false
+	}
+
 	if certificate.AutomaticIssuance != nil {
 		return *certificate.AutomaticIssuance
 	}

@@ -47,6 +47,8 @@ certificates:
     enabled: true
 ```
 
+Certificates default to enabled. After restarting with `enabled: false` or removing a certificate definition, CertVault hides it from certificate listings and returns 404 for its details, version history, downloads, and renewal requests. Initial, scheduled, and manual issuance are blocked. Stored artifacts, version history, and API-key permissions are retained; restoring an enabled definition with the same name restores access to its previous versions. Revoke existing API keys separately if their access should not return when the certificate is re-enabled.
+
 Supported key types are `ec256` (default), `ec384`, `rsa2048`, `rsa3072`, and `rsa4096`.
 
 ## Environment overrides

@@ -3,11 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/certvault/certvault/config"
@@ -241,5 +243,107 @@ func TestHeadlessInitializationSkipsBrowserAuthentication(t *testing.T) {
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("headless API-key authentication returned %d: %s", response.Code, response.Body.String())
+	}
+}
+
+func TestDisabledCertificateAccess(t *testing.T) {
+	for _, removed := range []bool{false, true} {
+		t.Run(fmt.Sprintf("removed=%t", removed), func(t *testing.T) {
+			ctx := context.Background()
+			dir := t.TempDir()
+			cfg := &config.Config{DataDir: dir, MasterKey: make([]byte, 32), ACME: config.ACME{Mock: true}, Certificates: []config.Certificate{{Name: "home", Domains: []string{"example.com"}}}}
+
+			db, err := database.Open(filepath.Join(dir, "test.db"))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Cleanup(func() { _ = db.Close() })
+
+			repos := repository.New(db)
+			if err = repos.Certificates.Reconcile(ctx, cfg); err != nil {
+				t.Fatal(err)
+			}
+
+			manager, err := service.NewManager(cfg, repos, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if err = manager.Issue(ctx, "home", service.IssueKindInitial); err != nil {
+				t.Fatal(err)
+			}
+
+			handler, err := New(cfg, db, repos, manager)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, access := range [][]string{{"home"}, {"*"}} {
+				_, token, err := repos.APIKeys.Create(ctx, "existing", []string{scopeCertificatesRead, scopePrivateKeysRead, scopeRenewalsTrigger}, access, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				request := func(method, path string) *httptest.ResponseRecorder {
+					r := httptest.NewRequestWithContext(ctx, method, path, nil)
+					r.Header.Set("Authorization", "Bearer "+token)
+
+					w := httptest.NewRecorder()
+					handler.ServeHTTP(w, r)
+
+					return w
+				}
+				if w := request(http.MethodGet, "/api/v1/certificates/home/private.key"); w.Code != http.StatusOK {
+					t.Fatalf("enabled download = %d: %s", w.Code, w.Body.String())
+				}
+
+				disabled := false
+
+				cfg.Certificates[0].Enabled = &disabled
+				if removed {
+					cfg.Certificates = nil
+				}
+
+				if err = repos.Certificates.Reconcile(ctx, cfg); err != nil {
+					t.Fatal(err)
+				}
+
+				for _, suffix := range []string{"", "/versions", "/certificate.crt", "/chain.crt", "/fullchain.crt", "/private.key", "/renew"} {
+					method := http.MethodGet
+					if suffix == "/renew" {
+						method = http.MethodPost
+					}
+
+					if w := request(method, "/api/v1/certificates/home"+suffix); w.Code != http.StatusNotFound {
+						t.Fatalf("%s %s = %d: %s", method, suffix, w.Code, w.Body.String())
+					}
+				}
+
+				if w := request(http.MethodGet, "/api/v1/certificates"); w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != "[]" {
+					t.Fatalf("disabled list: %d %s", w.Code, w.Body.String())
+				}
+
+				for _, kind := range []service.IssueKind{service.IssueKindInitial, service.IssueKindManual, service.IssueKindScheduled} {
+					if err = manager.Issue(ctx, "home", kind); err == nil {
+						t.Fatalf("disabled %s issuance succeeded", kind)
+					}
+				}
+
+				jobs, err := repos.Jobs.List(ctx, 10)
+				if err != nil || len(jobs) != 1 {
+					t.Fatalf("disabled request created job: %#v %v", jobs, err)
+				}
+
+				cfg.Certificates = []config.Certificate{{Name: "home", Domains: []string{"example.com"}}}
+				if err = repos.Certificates.Reconcile(ctx, cfg); err != nil {
+					t.Fatal(err)
+				}
+
+				if w := request(http.MethodGet, "/api/v1/certificates/home/private.key"); w.Code != http.StatusOK {
+					t.Fatalf("restored download = %d", w.Code)
+				}
+			}
+		})
 	}
 }
