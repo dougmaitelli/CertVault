@@ -95,7 +95,7 @@ func (m *Manager) reconcile(ctx context.Context) {
 	}
 }
 
-func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) error {
+func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) (result error) {
 	var auditAction audit.Action
 
 	switch kind {
@@ -129,39 +129,46 @@ func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) error 
 		return e
 	}
 
-	var result error
+	var issuedVersion *repository.Version
+
 	defer func() {
-		_ = m.repos.Jobs.Finish(context.Background(), job, result)
+		if err := m.repos.Jobs.Finish(context.Background(), job, result); err != nil {
+			m.log.Error("finish certificate issuance job", "certificate", name, "job", job, "error", err)
+			result = errors.Join(result, fmt.Errorf("finish issuance job: %w", err))
+		}
+
+		if result != nil {
+			m.fireHooks(context.Background(), "certificate.failed", name, issuedVersion, result)
+		} else {
+			m.fireHooks(context.Background(), "certificate.issued", name, issuedVersion, nil)
+
+			if kind != IssueKindInitial {
+				m.fireHooks(context.Background(), "certificate.renewed", name, issuedVersion, nil)
+			}
+		}
+
 		m.notifyIssuance(name, kind, result)
 	}()
 
 	resource, e := m.obtain(ctx, def)
 	if e != nil {
-		result = e
-		m.fireHooks(context.Background(), "certificate.failed", name, nil, e)
-
 		return e
 	}
 
 	v, e := m.save(name, resource)
 	if e != nil {
-		result = e
 		return e
 	}
 
 	if e = m.repos.Certificates.AddVersion(ctx, v); e != nil {
-		result = e
 		return e
 	}
+
+	issuedVersion = &v
 
 	m.repos.Audits.Record(
 		ctx, audit.ActorSystem, auditAction, name, "", "",
 	)
-	m.fireHooks(context.Background(), "certificate.issued", name, &v, nil)
-
-	if kind != IssueKindInitial {
-		m.fireHooks(context.Background(), "certificate.renewed", name, &v, nil)
-	}
 
 	return nil
 }
