@@ -7,6 +7,7 @@ import (
 
 	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/database"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -105,16 +106,18 @@ func (r *AuditRepository) Search(ctx context.Context, filter AuditFilter) (Audit
 }
 
 func (r *AuditRepository) FilterOptions(ctx context.Context) (actors, actions, resources []string, err error) {
-	query := r.database.ORM().WithContext(ctx).Model(&database.AuditEvent{})
-	if err = query.Distinct("actor").Order("actor").Pluck("actor", &actors).Error; err != nil {
+	query := func() *gorm.DB {
+		return r.database.ORM().WithContext(ctx).Model(&database.AuditEvent{})
+	}
+	if err = query().Distinct("actor").Order("actor").Pluck("actor", &actors).Error; err != nil {
 		return nil, nil, nil, err
 	}
 
-	if err = query.Distinct("action").Order("action").Pluck("action", &actions).Error; err != nil {
+	if err = query().Distinct("action").Order("action").Pluck("action", &actions).Error; err != nil {
 		return nil, nil, nil, err
 	}
 
-	err = query.Distinct("resource").Order("resource").Pluck("resource", &resources).Error
+	err = query().Distinct("resource").Order("resource").Pluck("resource", &resources).Error
 
 	return actors, actions, resources, err
 }

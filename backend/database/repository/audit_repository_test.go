@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -44,6 +45,12 @@ func TestAuditSearchFiltersAndPaginates(t *testing.T) {
 	actors, actions, resources, err := audits.FilterOptions(ctx)
 	if err != nil || len(actors) != 2 || len(actions) != 3 || len(resources) != 2 {
 		t.Fatalf("unexpected filter options: actors=%#v actions=%#v resources=%#v err=%v", actors, actions, resources, err)
+	}
+
+	if !slices.Equal(actors, []string{"admin", "node"}) ||
+		!slices.Equal(actions, []string{"api_key.create", "certificate.download", "certificate.renew"}) ||
+		!slices.Equal(resources, []string{"deploy", "example.com"}) {
+		t.Fatalf("filter options are not sorted independently: actors=%v actions=%v resources=%v", actors, actions, resources)
 	}
 
 	page, err = audits.Search(ctx, AuditFilter{Query: "fullchain", Page: 1, PerPage: 25})

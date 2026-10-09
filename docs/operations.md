@@ -20,6 +20,41 @@ audit:
 
 Expired events are removed once at startup and every 24 hours afterward.
 
+Choose retention based on your audit history requirements and daily event volume.
+Each artifact download returning HTTP `200` adds an event; unchanged downloads
+returning `304` do not. Authentication, issuance, and administrative actions add
+events too. For example, 10,000 events per day with `90d` retention means roughly
+900,000 retained rows, plus events awaiting the next daily cleanup. This is a
+capacity-planning example, not a tested capacity limit. Omitting retention allows
+the table to grow without a bound.
+
+SQLite indexes audit timestamps for retention and actors, actions, and resources
+for exact filters. Existing databases receive these indexes during startup
+migration; building them takes longer with larger audit histories. Filter choices
+use covering indexes, which still scan index entries as history grows. Free-text
+search matches substrings across actors,
+actions, resources, details, and IP addresses; ordinary indexes cannot accelerate
+the leading-wildcard match. Apply exact filters alongside text search to narrow
+the rows examined. Pagination bounds the returned rows, but matching totals and
+deep page offsets can still require substantial work.
+
+Monitor audit row counts, database size, and query latency at your expected
+volume. Database operations share one connection, so long searches and large
+retention deletions can delay other requests. Deleted SQLite space can be reused;
+retention does not automatically shrink the database file.
+
+To compare indexed and unindexed queries against a synthetic 100,000-event
+history, run from `backend/`:
+
+```shell
+go test ./database/repository -run '^$' -bench BenchmarkAuditQueries100K -benchmem
+```
+
+The benchmark covers exact filters, filter choices, and substring searches with
+and without an exact filter. Its timing depends on the machine and event
+distribution; repeat it with representative data before choosing a retention
+window for a busy deployment.
+
 ## Hooks
 
 Supported events are:

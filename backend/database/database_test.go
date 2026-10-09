@@ -1,10 +1,74 @@
 package database
 
 import (
+	"context"
+	"database/sql"
 	"path/filepath"
 	"testing"
 	"time"
 )
+
+func TestOpenAddsAuditIndexesToExistingDatabase(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "legacy.db")
+	ctx := context.Background()
+
+	legacy, err := sql.Open("sqlite3", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = legacy.Close() })
+
+	if _, err = legacy.ExecContext(ctx, `CREATE TABLE audit_events (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		at DATETIME NOT NULL,
+		actor TEXT NOT NULL,
+		action TEXT NOT NULL,
+		resource TEXT NOT NULL,
+		detail TEXT NOT NULL DEFAULT '',
+		ip TEXT NOT NULL DEFAULT ''
+	)`); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = legacy.ExecContext(ctx, `INSERT INTO audit_events (at, actor, action, resource)
+		VALUES (?, 'admin', 'auth.login', 'ui')`, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = legacy.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Reopening also verifies that repeated migrations keep indexes and data intact.
+	for range 2 {
+		db, err := Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Cleanup(func() { _ = db.Close() })
+
+		for _, index := range []string{"idx_audit_at", "idx_audit_actor", "idx_audit_action", "idx_audit_resource"} {
+			if !db.ORM().Migrator().HasIndex(&AuditEvent{}, index) {
+				t.Errorf("missing audit index %s", index)
+			}
+		}
+
+		var event AuditEvent
+		if err = db.ORM().First(&event).Error; err != nil {
+			t.Fatal(err)
+		}
+
+		if event.ID != 1 || event.Actor != "admin" || event.Action != "auth.login" {
+			t.Fatalf("migration changed the audit event: %#v", event)
+		}
+
+		if err = db.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
 
 func TestOpenMigratesSchema(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "nested", "data", "test.db")

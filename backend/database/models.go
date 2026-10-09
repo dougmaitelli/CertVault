@@ -73,10 +73,10 @@ func (APIKeyCertificate) TableName() string { return "api_key_certificates" }
 
 type AuditEvent struct {
 	ID       int64     `gorm:"primaryKey;autoIncrement"`
-	At       time.Time `gorm:"not null"`
-	Actor    string    `gorm:"not null"`
-	Action   string    `gorm:"not null"`
-	Resource string    `gorm:"not null"`
+	At       time.Time `gorm:"not null;index:idx_audit_at"`
+	Actor    string    `gorm:"not null;index:idx_audit_actor"`
+	Action   string    `gorm:"not null;index:idx_audit_action"`
+	Resource string    `gorm:"not null;index:idx_audit_resource"`
 	Detail   string    `gorm:"not null;default:''"`
 	IP       string    `gorm:"not null;default:''"`
 }
