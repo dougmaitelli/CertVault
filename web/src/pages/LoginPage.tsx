@@ -5,9 +5,10 @@ import type { AuthenticationMethods } from "../api/types";
 
 type LoginPageProps = {
   onAuthenticated: () => Promise<void>;
+  notice?: string;
 };
 
-export function LoginPage({ onAuthenticated }: LoginPageProps) {
+export function LoginPage({ onAuthenticated, notice }: LoginPageProps) {
   const [methods, setMethods] = useState<AuthenticationMethods>();
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
@@ -63,6 +64,12 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
         <div className="brand-logo">CV</div>
         <h1>CertVault</h1>
         <p>Central certificate management for your network.</p>
+
+        {notice && (
+          <div className="error" role="alert">
+            {notice}
+          </div>
+        )}
 
         {methods?.oidc && (
           <a className="action-button success oidc" href="/auth/login">

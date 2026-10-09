@@ -22,19 +22,23 @@ export function CertificatesPage({
     (certificate) => certificate.name === selectedName,
   );
   const [layout, setLayout] = useState<"list" | "grid">("list");
+  const [renewalError, setRenewalError] = useState("");
   const [requestedRenewals, setRequestedRenewals] = useState<
     Partial<Record<string, number>>
   >({});
 
   const renew = async (certificate: Certificate) => {
     const name = certificate.name;
+    setRenewalError("");
     const latestJobID = certificate.latest_job?.id ?? 0;
     setRequestedRenewals((current) => ({
       ...current,
       [name]: latestJobID,
     }));
     try {
-      await api(`certificates/${name}/renew`, { method: "POST" });
+      await api(`certificates/${encodeURIComponent(name)}/renew`, {
+        method: "POST",
+      });
       await reload();
     } catch (error) {
       setRequestedRenewals((current) => {
@@ -42,7 +46,7 @@ export function CertificatesPage({
         delete pending[name];
         return pending;
       });
-      throw error;
+      setRenewalError(`Unable to renew ${name}: ${String(error)}`);
     }
   };
 
@@ -60,6 +64,11 @@ export function CertificatesPage({
 
   return (
     <>
+      {renewalError && (
+        <div className="error" role="alert">
+          {renewalError}
+        </div>
+      )}
       <div className="stats">
         <Stat value={certificates.length} label="Managed certificates" />
         <Stat

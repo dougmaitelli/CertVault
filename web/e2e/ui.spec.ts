@@ -507,6 +507,127 @@ test("empty console", async ({ page }) => {
   await screenshot(page, "api-keys-empty.png");
 });
 
+test("expired session leaves the console and supports signing in again", async ({
+  page,
+  context,
+}) => {
+  await login(page);
+  await context.clearCookies();
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "Your session expired. Sign in again.",
+  );
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("navigation")).toHaveCount(0);
+  await expect(page.locator("article")).toHaveCount(0);
+
+  await page
+    .getByLabel("Break-glass administrator token")
+    .fill("certvault-e2e-admin");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("navigation")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("Operational");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("unauthorized page requests also expire the session", async ({ page }) => {
+  await login(page);
+  await page.route("**/api/v1/jobs/history?*", (route) =>
+    route.fulfill({ status: 401, json: { detail: "Authentication required" } }),
+  );
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "history", exact: true })
+    .click();
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "Your session expired. Sign in again.",
+  );
+  await expect(page.getByRole("navigation")).toHaveCount(0);
+});
+
+test("certificate polling reports stale data and recovers automatically", async ({
+  page,
+}) => {
+  await login(page);
+  await page.route("**/api/v1/certificates", (route) =>
+    route.fulfill({ status: 503, json: { detail: "Temporarily unavailable" } }),
+  );
+
+  await expect(page.locator("main > .error")).toContainText(
+    "displayed data may be outdated",
+  );
+  await expect(page.locator("main > .error")).toContainText(
+    "Temporarily unavailable",
+  );
+  await expect(page.getByRole("status")).toHaveText("Warning");
+  await expect(page.locator("article")).toHaveCount(3);
+  expect((await page.request.get("/api/v1/health")).ok()).toBeTruthy();
+  expect((await page.request.get("/api/v1/ready")).ok()).toBeTruthy();
+
+  await page.unroute("**/api/v1/certificates");
+  await expect(page.locator("main > .error")).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveText("Operational");
+});
+
+test("renewal request failures are visible and can be retried", async ({
+  page,
+}) => {
+  await login(page);
+  await page.route("**/api/v1/certificates/internal-gateway/renew", (route) =>
+    route.fulfill({
+      status: 503,
+      json: { detail: "Renewal service unavailable" },
+    }),
+  );
+  const card = page.getByRole("article").filter({
+    has: page.getByRole("heading", { name: "internal-gateway", exact: true }),
+  });
+  await card.getByRole("button", { name: "Renew", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Unable to renew internal-gateway: Error: Renewal service unavailable",
+  );
+  await expect(
+    card.getByRole("button", { name: "Renew", exact: true }),
+  ).toBeEnabled();
+
+  await page.unroute("**/api/v1/certificates/internal-gateway/renew");
+  await card.getByRole("button", { name: "Renew", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(card.getByText("valid", { exact: true })).toBeVisible();
+  await expect(
+    card.getByRole("button", { name: "Renew", exact: true }),
+  ).toBeEnabled();
+});
+
+test("ACME account polling failures recover independently of certificate polling", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-08-16T12:00:00Z") });
+  await login(page);
+  await page.route("**/api/v1/acme-accounts", (route) =>
+    route.fulfill({
+      status: 503,
+      json: { detail: "Account storage unavailable" },
+    }),
+  );
+  await page.clock.fastForward(30_000);
+  await expect(page.locator("main > .error")).toContainText(
+    "Unable to refresh ACME accounts",
+  );
+  await expect(page.getByRole("status")).toHaveText("Warning");
+
+  const certificateRefresh = page.waitForResponse("**/api/v1/certificates");
+  await page.clock.fastForward(2_000);
+  expect((await certificateRefresh).ok()).toBeTruthy();
+  await expect(page.getByRole("status")).toHaveText("Warning");
+
+  await page.unroute("**/api/v1/acme-accounts");
+  await page.clock.fastForward(30_000);
+  await expect(page.locator("main > .error")).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveText("Operational");
+});
+
 test("API failure is visible and reload recovers", async ({ page }) => {
   await login(page);
 
@@ -515,10 +636,11 @@ test("API failure is visible and reload recovers", async ({ page }) => {
   );
 
   await page.reload();
-  await expect(
-    page.getByText("Error: Temporarily unavailable", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("status")).toHaveText("Operational");
+  await expect(page.locator("main > .error")).toContainText(
+    "Error: Temporarily unavailable",
+  );
+  await expect(page.locator("main > .error")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("Warning");
 
   const banner = await page.locator("main > .error").boundingBox();
   const stats = await page.locator(".stats").boundingBox();
@@ -531,9 +653,7 @@ test("API failure is visible and reload recovers", async ({ page }) => {
 
   await page.reload();
   await expect(page.locator("article")).toHaveCount(3);
-  await expect(
-    page.getByText("Error: Temporarily unavailable", { exact: true }),
-  ).toHaveCount(0);
+  await expect(page.locator("main > .error")).toHaveCount(0);
 
   await page.route("**/api/v1/certificates/*/versions", (route) =>
     route.fulfill({ status: 503, json: { detail: "Unable to load versions" } }),

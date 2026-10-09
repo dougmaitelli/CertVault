@@ -56,7 +56,11 @@ export function ConsoleLayout({
             <i /> {healthLabel(health)}
           </div>
         </div>
-        {error && <div className="error">{error}</div>}
+        {error && (
+          <div className="error" role="alert">
+            {error}
+          </div>
+        )}
         <Outlet />
         <footer className="content-footer">
           <span>{version} · </span>
