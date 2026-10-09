@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/certvault/certvault/config"
 	"github.com/go-acme/lego/v5/challenge"
@@ -27,9 +30,51 @@ func (m *muxProvider) forDomain(domain string) (challenge.Provider, error) {
 		return provider, nil
 	}
 
-	restore := map[string]*string{}
+	provider, err := withCredentialEnvironment(credential.Environment, func() (challenge.Provider, error) {
+		return dns.NewDNSChallengeProviderByName(credential.Provider)
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	for key, value := range credential.Environment {
+	m.providers[name] = provider
+
+	return provider, nil
+}
+
+// Provider constructors read process-wide environment, including inherited values.
+// Serialize setup and restoration across all managers.
+var credentialEnvironmentMu sync.Mutex
+
+func withCredentialEnvironment(environment map[string]string, create func() (challenge.Provider, error)) (provider challenge.Provider, result error) {
+	credentialEnvironmentMu.Lock()
+	defer credentialEnvironmentMu.Unlock()
+
+	restore := map[string]*string{}
+	defer func() {
+		for key, value := range restore {
+			var err error
+			if value == nil {
+				err = os.Unsetenv(key)
+			} else {
+				err = os.Setenv(key, *value)
+			}
+
+			if err != nil {
+				result = errors.Join(result, fmt.Errorf("restore DNS credential environment variable %s: %w", key, err))
+			}
+		}
+	}()
+
+	keys := make([]string, 0, len(environment))
+	for key := range environment {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		value := environment[key]
 		if value == "" {
 			if _, exists := os.LookupEnv(key); !exists {
 				return nil, fmt.Errorf("DNS credential environment variable %s is not set", key)
@@ -38,50 +83,32 @@ func (m *muxProvider) forDomain(domain string) (challenge.Provider, error) {
 			continue
 		}
 
-		old, exists := os.LookupEnv(key)
-		if exists {
-			copy := old
-			restore[key] = &copy
-		} else {
-			restore[key] = nil
-		}
-
 		if strings.HasSuffix(key, config.EnvFileSuffix) {
 			contents, err := os.ReadFile(value)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("read DNS credential environment variable %s: %w", key, err)
 			}
 
-			if err := os.Setenv(
-				strings.TrimSuffix(key, config.EnvFileSuffix),
-				strings.TrimSpace(string(contents)),
-			); err != nil {
-				return nil, err
+			key = strings.TrimSuffix(key, config.EnvFileSuffix)
+			value = strings.TrimSpace(string(contents))
+		}
+
+		// Snapshot each actual target once, even if both KEY and KEY_FILE are set.
+		if _, saved := restore[key]; !saved {
+			old, exists := os.LookupEnv(key)
+			if exists {
+				restore[key] = &old
+			} else {
+				restore[key] = nil
 			}
-		} else if err := os.Setenv(key, value); err != nil {
-			return nil, err
+		}
+
+		if err := os.Setenv(key, value); err != nil {
+			return nil, fmt.Errorf("set DNS credential environment variable %s: %w", key, err)
 		}
 	}
 
-	provider, providerErr := dns.NewDNSChallengeProviderByName(credential.Provider)
-
-	for key, value := range restore {
-		if value == nil {
-			if err := os.Unsetenv(key); err != nil {
-				return nil, err
-			}
-		} else if err := os.Setenv(key, *value); err != nil {
-			return nil, err
-		}
-	}
-
-	if providerErr != nil {
-		return nil, providerErr
-	}
-
-	m.providers[name] = provider
-
-	return provider, nil
+	return create()
 }
 
 func (m *muxProvider) Present(ctx context.Context, domain, token, keyAuth string) error {
