@@ -17,7 +17,10 @@ export function CertificatesPage({
   certificates,
   reload,
 }: CertificatesPageProps) {
-  const [selected, setSelected] = useState<Certificate>();
+  const [selectedName, setSelectedName] = useState<string>();
+  const selected = certificates.find(
+    (certificate) => certificate.name === selectedName,
+  );
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [requestedRenewals, setRequestedRenewals] = useState<
     Partial<Record<string, number>>
@@ -100,7 +103,7 @@ export function CertificatesPage({
         {certificates.map((certificate) => (
           <article
             key={certificate.name}
-            onClick={() => setSelected(certificate)}
+            onClick={() => setSelectedName(certificate.name)}
           >
             <div className="row">
               <h3>{certificate.name}</h3>
@@ -165,7 +168,7 @@ export function CertificatesPage({
         <CertificateDetails
           key={selected.name}
           certificate={selected}
-          onClose={() => setSelected(undefined)}
+          onClose={() => setSelectedName(undefined)}
         />
       )}
     </>

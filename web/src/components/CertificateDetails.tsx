@@ -15,9 +15,15 @@ export function CertificateDetails({
   certificate,
   onClose,
 }: CertificateDetailsProps) {
-  const [versions, setVersions] = useState<CertificateVersion[]>([]);
-  const [versionsLoading, setVersionsLoading] = useState(true);
-  const [versionsError, setVersionsError] = useState("");
+  const versionRequest = `${certificate.name}:${certificate.current_version?.id ?? "pending"}`;
+  const [versionResult, setVersionResult] = useState<{
+    request: string;
+    versions: CertificateVersion[];
+    error?: string;
+  }>();
+  const versionsLoading = versionResult?.request !== versionRequest;
+  const versions = versionsLoading ? [] : versionResult.versions;
+  const versionsError = versionsLoading ? "" : versionResult.error;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -26,22 +32,26 @@ export function CertificateDetails({
       `certificates/${encodeURIComponent(certificate.name)}/versions`,
       { signal: controller.signal },
     )
-      .then(setVersions)
-      .catch((error: unknown) => {
+      .then((versions) => {
         if (!controller.signal.aborted) {
-          setVersionsError(
-            error instanceof Error ? error.message : "Unable to load versions",
-          );
+          setVersionResult({ request: versionRequest, versions });
         }
       })
-      .finally(() => {
+      .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          setVersionsLoading(false);
+          setVersionResult({
+            request: versionRequest,
+            versions: [],
+            error:
+              error instanceof Error
+                ? error.message
+                : "Unable to load versions",
+          });
         }
       });
 
     return () => controller.abort();
-  }, [certificate.name]);
+  }, [certificate.name, versionRequest]);
 
   return (
     <Modal onClose={onClose}>

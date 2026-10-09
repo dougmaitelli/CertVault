@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { X509Certificate, createPrivateKey } from "node:crypto";
-import type { APIKeyCreationResponse } from "../src/api/types";
+import type { APIKeyCreationResponse, Certificate } from "../src/api/types";
 import { expect, login, navigate, screenshot, test } from "./fixtures";
 
 test("login validation, session persistence and logout", async ({ page }) => {
@@ -107,6 +107,55 @@ test("renewal persists and downloads real certificate and private key", async ({
     page.getByRole("row").filter({ hasText: "internal-gateway" }),
   ).toContainText("succeeded");
 });
+
+for (const name of ["homelab-wildcard", "internal-gateway"]) {
+  test(`open certificate details refresh after issuance for ${name}`, async ({
+    page,
+  }) => {
+    await login(page);
+    await page.getByRole("heading", { name, exact: true }).click();
+    const modal = page.locator(".modal");
+    await expect(modal.getByText("Loading versions…")).toHaveCount(0);
+    const previousVersionCount = await modal
+      .locator(".version-timeline li")
+      .count();
+    const initialResponse = await page.request.get(
+      `/api/v1/certificates/${name}`,
+    );
+    const initial = (await initialResponse.json()) as Certificate;
+
+    expect(
+      (await page.request.post(`/api/v1/certificates/${name}/renew`)).status(),
+    ).toBe(202);
+    let updated: Certificate = initial;
+    await expect
+      .poll(async () => {
+        const response = await page.request.get(`/api/v1/certificates/${name}`);
+        updated = (await response.json()) as Certificate;
+        return updated.current_version?.id;
+      })
+      .not.toBe(initial.current_version?.id);
+
+    await expect(
+      modal.getByText(`Serial: ${updated.current_version!.serial}`, {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      modal.getByText(
+        `SHA-256: ${updated.current_version!.fingerprint_sha256}`,
+        {
+          exact: true,
+        },
+      ),
+    ).toBeVisible();
+    await expect(modal.locator(".version-timeline li")).toHaveCount(
+      previousVersionCount + 1,
+    );
+    await expect(modal.locator(".version-timeline li.current")).toHaveCount(1);
+    await expect(modal.locator("a[aria-disabled=true]")).toHaveCount(0);
+  });
+}
 
 test("API key form validation, scoped access, revoke and delete", async ({
   page,
