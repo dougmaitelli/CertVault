@@ -352,6 +352,11 @@ test("install command builder defaults, customization and copying", async ({
   await screenshot(page, "installation-command-customized.png", helper);
 
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await expect(
+    helper.getByLabel("Automatically update the client (requires HTTPS)"),
+  ).toBeDisabled();
+  await expect(command).not.toContainText("--auto-update");
+
   await helper
     .getByRole("button", { name: "Copy command", exact: true })
     .click();

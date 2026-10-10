@@ -55,6 +55,9 @@ export function APIUsageHelper({
     defaultDestination(certificates[0]?.name ?? ""),
   );
   const [outputNames, setOutputNames] = useState(defaultOutputNames);
+  const [autoUpdate, setAutoUpdate] = useState(
+    window.location.protocol === "https:",
+  );
   const [reloadCommand, setReloadCommand] = useState("");
   const [schedule, setSchedule] = useState<string>(schedules[0].value);
   const [copied, setCopied] = useState(false);
@@ -81,10 +84,11 @@ export function APIUsageHelper({
         return `--file ${shellQuote(specification)}`;
       });
     return [
-      `curl -fsSL ${shellQuote(installer)}`,
+      `curl ${autoUpdate ? "--proto '=https' --proto-redir '=https' " : ""}-fsSL ${shellQuote(installer)}`,
       `| ${executor} -s --`,
       `--server ${shellQuote(window.location.origin)}`,
       `--certificate ${shellQuote(certificate)}`,
+      ...(autoUpdate ? ["--auto-update"] : []),
       ...fileArguments,
       `--destination ${shellQuote(destination)}`,
       `--schedule ${shellQuote(schedule)}`,
@@ -93,6 +97,7 @@ export function APIUsageHelper({
         : []),
     ].join(" \\\n  ");
   }, [
+    autoUpdate,
     certificate,
     destination,
     files,
@@ -212,6 +217,15 @@ export function APIUsageHelper({
           />
         </label>
       </div>
+      <label className="api-usage-auto-update">
+        <input
+          type="checkbox"
+          checked={autoUpdate}
+          disabled={window.location.protocol !== "https:"}
+          onChange={(event) => setAutoUpdate(event.target.checked)}
+        />
+        Automatically update the client (requires HTTPS)
+      </label>
       <div className="api-command">
         <code>{command}</code>
         <button

@@ -107,3 +107,14 @@
     flex-direction: column;
   }
 }
+
+.api-usage-auto-update {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.api-usage-auto-update input {
+  width: auto;
+}

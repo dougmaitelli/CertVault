@@ -18,6 +18,48 @@ components:
         detail: { type: string }
 security: [{apiKey: []}]
 paths:
+  /client/update/key.pem:
+    servers: [{url: /}]
+    get:
+      security: []
+      summary: Public client update signing key pinned during HTTPS installation
+      responses:
+        "200":
+          description: PEM-encoded public key
+          content:
+            application/x-pem-file:
+              schema: {type: string}
+        "503": {description: Client update assets or signing key unavailable}
+  /client/update/manifest:
+    servers: [{url: /}]
+    get:
+      security: []
+      summary: Signed protocol-1 client update manifest
+      responses:
+        "200":
+          description: Four lines containing protocol, SHA-256 revision, archive size, and base64 signature; the signature covers the first three lines including their newlines
+          content:
+            text/plain:
+              schema: {type: string}
+        "503": {description: Client update assets or signing key unavailable}
+  /client/update/{revision}.tar:
+    servers: [{url: /}]
+    get:
+      security: []
+      summary: Immutable client code archive identified by its SHA-256
+      parameters:
+        - name: revision
+          in: path
+          required: true
+          schema: {type: string, pattern: '^[0-9a-f]{64}$'}
+      responses:
+        "200":
+          description: Tar archive containing launcher.sh, sync.sh, and update.sh
+          content:
+            application/x-tar:
+              schema: {type: string, format: binary}
+        "404": {description: Requested revision is not supplied by this server release}
+        "503": {description: Client update assets or signing key unavailable}
   /health:
     get:
       security: []

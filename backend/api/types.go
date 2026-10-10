@@ -19,6 +19,7 @@ type API struct {
 	browserAuthenticator *auth.BrowserAuthenticator
 	clientIPs            *certnetwork.ClientIPResolver
 	bundles              bundleCache
+	clientUpdates        clientUpdateStore
 }
 
 type createAPIKeyRequest struct {
