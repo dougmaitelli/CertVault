@@ -4,10 +4,8 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -384,15 +382,12 @@ func (m *Manager) provider(c config.Certificate) (challenge.Provider, error) {
 }
 
 func (m *Manager) save(name string, r *certificate.Resource) (repository.Version, error) {
-	block, _ := pem.Decode(r.Certificate)
-	if block == nil {
-		return repository.Version{}, errors.New("ACME response contained no certificate")
-	}
-
-	cert, e := x509.ParseCertificate(block.Bytes)
+	artifacts, e := normalizeCertificateArtifacts(r)
 	if e != nil {
 		return repository.Version{}, e
 	}
+
+	cert := artifacts.certificate
 
 	now := time.Now().UTC()
 	version := now.Format("20060102T150405.000000000Z")
@@ -408,12 +403,10 @@ func (m *Manager) save(name string, r *certificate.Resource) (repository.Version
 		return repository.Version{}, e
 	}
 
-	fullChain := append(append([]byte{}, r.Certificate...), r.IssuerCertificate...)
-
 	files := map[string][]byte{
-		"certificate.crt": r.Certificate,
-		"chain.crt":       r.IssuerCertificate,
-		"fullchain.crt":   fullChain,
+		"certificate.crt": artifacts.leaf,
+		"chain.crt":       artifacts.chain,
+		"fullchain.crt":   artifacts.fullChain,
 		"private.key.enc": key,
 	}
 	for n, b := range files {

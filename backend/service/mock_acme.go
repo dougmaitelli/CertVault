@@ -93,12 +93,15 @@ func mockCertificate(def config.Certificate) (*certificate.Resource, error) {
 		return nil, err
 	}
 
+	leaf := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leafDER})
+	issuer := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER})
+	// Match Lego's Bundle:true response, including the repeated issuer field.
 	return &certificate.Resource{
 		Domains:           def.Domains,
 		KeyType:           keyType,
 		PrivateKey:        pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privateKeyDER}),
-		Certificate:       pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leafDER}),
-		IssuerCertificate: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER}),
+		Certificate:       append(append([]byte(nil), leaf...), issuer...),
+		IssuerCertificate: issuer,
 	}, nil
 }
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/pem"
@@ -93,9 +94,13 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	block, _ := pem.Decode(certificatePEM)
+	block, rest := pem.Decode(certificatePEM)
 	if block == nil {
 		t.Fatal("mock certificate is not PEM encoded")
+	}
+
+	if len(bytes.TrimSpace(rest)) != 0 {
+		t.Fatal("certificate.crt contains more than the leaf")
 	}
 
 	certificate, err := x509.ParseCertificate(block.Bytes)
@@ -105,6 +110,30 @@ func TestMockACMEIssuanceUsesRealStorageWorkflow(t *testing.T) {
 
 	if err = certificate.VerifyHostname("service.example.test"); err != nil {
 		t.Fatal(err)
+	}
+
+	chainPEM, err := manager.ReadFile(version, "chain.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	issuerBlock, rest := pem.Decode(chainPEM)
+	if issuerBlock == nil || len(bytes.TrimSpace(rest)) != 0 {
+		t.Fatal("mock chain must contain exactly one issuer")
+	}
+
+	issuer, err := x509.ParseCertificate(issuerBlock.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = certificate.CheckSignatureFrom(issuer); err != nil {
+		t.Fatal(err)
+	}
+
+	fullChain, err := manager.ReadFile(version, "fullchain.crt")
+	if err != nil || !bytes.Equal(fullChain, append(bytes.Clone(certificatePEM), chainPEM...)) {
+		t.Fatalf("mock full chain is duplicated or inconsistent: %v", err)
 	}
 
 	if _, err = manager.ReadFile(version, "private.key"); err != nil {
@@ -141,4 +170,16 @@ func (n channelNotifier) Notify(
 ) error {
 	n.notifications <- sentNotification{title: title, body: body, typeName: typeName}
 	return nil
+}
+
+func TestMockACMEResponseMatchesLegoBundleFormat(t *testing.T) {
+	resource, err := mockCertificate(config.Certificate{Name: "mock", Domains: []string{"example.test"}, KeyType: config.KeyTypeEC256})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	block, remaining := pem.Decode(resource.Certificate)
+	if block == nil || !bytes.Equal(remaining, resource.IssuerCertificate) || len(remaining) == 0 {
+		t.Fatal("mock does not return leaf plus bundled issuer and a separate issuer field")
+	}
 }
