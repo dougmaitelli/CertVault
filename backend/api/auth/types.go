@@ -20,7 +20,7 @@ type BrowserAuthenticator struct {
 	oidc       *oidc.Provider
 	oauth      *oauth2.Config
 	clientIPs  *certnetwork.ClientIPResolver
-	states     sync.Map
+	states     oidcStateStore
 }
 
 type Identity struct {

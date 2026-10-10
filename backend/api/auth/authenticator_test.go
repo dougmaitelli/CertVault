@@ -135,6 +135,8 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 		nil,
 	)
 
+	t.Cleanup(authenticator.states.close)
+
 	if discoveries.Load() != 0 {
 		t.Fatal("OIDC discovery ran during authenticator initialization")
 	}
@@ -146,6 +148,14 @@ func TestOIDCDiscoveryIsLazyAndRetryable(t *testing.T) {
 
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("unavailable OIDC login returned %d", response.Code)
+	}
+
+	authenticator.states.mu.Lock()
+	retained := len(authenticator.states.flows)
+	authenticator.states.mu.Unlock()
+
+	if retained != 0 {
+		t.Fatal("failed discovery retained login state")
 	}
 
 	available.Store(true)

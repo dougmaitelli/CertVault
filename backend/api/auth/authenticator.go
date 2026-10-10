@@ -34,6 +34,10 @@ func NewBrowserAuthenticator(
 	repos *repository.Repositories,
 	clientIPs *certnetwork.ClientIPResolver,
 ) *BrowserAuthenticator {
+	if clientIPs == nil {
+		clientIPs = &certnetwork.ClientIPResolver{}
+	}
+
 	browserAuthenticator := &BrowserAuthenticator{
 		config:    cfg,
 		repos:     repos,
@@ -115,38 +119,38 @@ func (a *BrowserAuthenticator) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, oauth, err := a.oidcClient(r.Context())
-	if err != nil {
-		problem(w, http.StatusServiceUnavailable, "oidc_unavailable", err.Error())
+	state, flow, admitted := a.states.reserve(a.remoteIP(r))
+	if !admitted {
+		w.Header().Set("Retry-After", "60")
+		problem(w, http.StatusTooManyRequests, "login_rate_limited", "Too many OIDC login attempts; retry later")
+
 		return
 	}
 
-	state := randomToken()
-	nonce := randomToken()
-	verifier := oauth2.GenerateVerifier()
-	a.states.Store(state, oidcState{nonce: nonce, verifier: verifier, at: time.Now()})
+	_, oauth, err := a.oidcClient(r.Context())
+	if err != nil {
+		a.states.take(state)
+		problem(w, http.StatusServiceUnavailable, "oidc_unavailable", err.Error())
+
+		return
+	}
+
 	http.Redirect(
 		w,
 		r,
-		oauth.AuthCodeURL(state, oidc.Nonce(nonce), oauth2.S256ChallengeOption(verifier)),
+		oauth.AuthCodeURL(state, oidc.Nonce(flow.nonce), oauth2.S256ChallengeOption(flow.verifier)),
 		http.StatusFound,
 	)
 }
 
 func (a *BrowserAuthenticator) Callback(w http.ResponseWriter, r *http.Request) {
-	value, ok := a.states.LoadAndDelete(r.URL.Query().Get("state"))
+	state, ok, expired := a.states.take(r.URL.Query().Get("state"))
 	if !ok {
 		problem(w, http.StatusBadRequest, "invalid_state", "OIDC state is invalid")
 		return
 	}
 
-	state, ok := value.(oidcState)
-	if !ok {
-		problem(w, http.StatusBadRequest, "invalid_state", "OIDC state is invalid")
-		return
-	}
-
-	if time.Since(state.at) > oidcStateLifetime {
+	if expired {
 		problem(w, http.StatusBadRequest, "expired_state", "OIDC state expired")
 		return
 	}

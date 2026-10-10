@@ -48,6 +48,10 @@ Register this redirect URI with the OIDC provider:
 
 OIDC uses Authorization Code flow with PKCE. Scopes default to `openid`, `profile`, `email`, and `groups`; configure them with `auth.oidc.scopes` or the comma-separated `CERTVAULT_OIDC_SCOPES` override. The `openid` scope is required. If `allowed_groups` is empty, every successfully authenticated identity becomes an administrator; configuring an allowlist is strongly recommended.
 
+OIDC login flows expire after ten minutes. One shared timer removes abandoned flows and idle rate-limit entries every minute, and stops when the store is idle. The store admits at most 1,024 flows globally and 16 outstanding flows per client IP. Login admission uses token buckets: eight attempts per minute per IP with a burst of eight, and eight attempts per second globally with a burst of 32. Its per-IP rate-limit map is also capped at 1,024 entries.
+
+Rejected `/auth/login` requests return 429 with `Retry-After: 60` before OIDC discovery. Client addresses follow `server.trusted_proxies`; users behind a shared proxy or NAT share an IP budget unless trusted forwarding is configured correctly. Flow consumption remains single-use, expiry is checked at callback time, and a failed discovery releases the reserved flow immediately.
+
 ## Administrator and client boundaries
 
 Web sessions are administrators. API keys are client identities constrained by scopes and certificate allowlists. API keys cannot access audit logs, ACME-account management, API-key management, or the administrator job-history endpoint.
