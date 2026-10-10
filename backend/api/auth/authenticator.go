@@ -129,12 +129,13 @@ func (a *BrowserAuthenticator) Login(w http.ResponseWriter, r *http.Request) {
 
 	_, oauth, err := a.oidcClient(r.Context())
 	if err != nil {
-		a.states.take(state)
+		a.states.discard(state)
 		problem(w, http.StatusServiceUnavailable, "oidc_unavailable", err.Error())
 
 		return
 	}
 
+	a.setOIDCFlowCookie(w, state, flow.browserToken, false)
 	http.Redirect(
 		w,
 		r,
@@ -143,12 +144,45 @@ func (a *BrowserAuthenticator) Login(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
+func (a *BrowserAuthenticator) oidcFlowCookieName(state string) string {
+	if strings.HasPrefix(a.config.Server.PublicURL, "https://") {
+		return "__Host-cv_oidc_" + state
+	}
+
+	return "cv_oidc_" + state
+}
+
+func (a *BrowserAuthenticator) setOIDCFlowCookie(w http.ResponseWriter, state, token string, clear bool) {
+	cookie := &http.Cookie{
+		Name: a.oidcFlowCookieName(state), Value: token, Path: "/",
+		HttpOnly: true, Secure: strings.HasPrefix(a.config.Server.PublicURL, "https://"),
+		SameSite: http.SameSiteLaxMode, MaxAge: int(oidcStateLifetime.Seconds()),
+		Expires: time.Now().Add(oidcStateLifetime),
+	}
+	if clear {
+		cookie.MaxAge = -1
+		cookie.Expires = time.Unix(1, 0)
+	}
+
+	http.SetCookie(w, cookie)
+}
+
 func (a *BrowserAuthenticator) Callback(w http.ResponseWriter, r *http.Request) {
-	state, ok, expired := a.states.take(r.URL.Query().Get("state"))
+	key := r.URL.Query().Get("state")
+
+	cookie, err := r.Cookie(a.oidcFlowCookieName(key))
+	if err != nil {
+		problem(w, http.StatusBadRequest, "invalid_state", "OIDC state is invalid")
+		return
+	}
+
+	state, ok, expired := a.states.take(key, cookie.Value)
 	if !ok {
 		problem(w, http.StatusBadRequest, "invalid_state", "OIDC state is invalid")
 		return
 	}
+
+	a.setOIDCFlowCookie(w, key, "", true)
 
 	if expired {
 		problem(w, http.StatusBadRequest, "expired_state", "OIDC state expired")

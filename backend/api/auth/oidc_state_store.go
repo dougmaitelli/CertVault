@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/hmac"
 	"sync"
 	"time"
 
@@ -77,7 +78,7 @@ func (s *oidcStateStore) reserve(peer string) (string, oidcState, bool) {
 	}
 
 	key := randomToken()
-	state := oidcState{nonce: randomToken(), verifier: oauth2.GenerateVerifier(), at: now}
+	state := oidcState{browserToken: randomToken(), nonce: randomToken(), verifier: oauth2.GenerateVerifier(), at: now}
 
 	if s.flows == nil {
 		s.flows = make(map[string]oidcFlow)
@@ -108,18 +109,27 @@ func (s *oidcStateStore) remove(key string, flow oidcFlow) {
 	}
 }
 
-func (s *oidcStateStore) take(key string) (oidcState, bool, bool) {
+func (s *oidcStateStore) take(key, browserToken string) (oidcState, bool, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	flow, exists := s.flows[key]
-	if !exists {
+	if !exists || browserToken == "" || !hmac.Equal([]byte(flow.state.browserToken), []byte(browserToken)) {
 		return oidcState{}, false, false
 	}
 
 	s.remove(key, flow)
 
 	return flow.state, true, !time.Now().Before(flow.state.at.Add(oidcStateLifetime))
+}
+
+func (s *oidcStateStore) discard(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if flow, exists := s.flows[key]; exists {
+		s.remove(key, flow)
+	}
 }
 
 func (s *oidcStateStore) sweep() {

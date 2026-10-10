@@ -37,7 +37,7 @@ func TestOIDCAbandonedFlowsExpireAutomatically(t *testing.T) {
 			t.Fatal("abandoned entries or cleanup timer remain")
 		}
 
-		if _, exists, _ := store.take(key); exists {
+		if _, exists, _ := store.take(key, "unused"); exists {
 			t.Fatal("expired state available")
 		}
 	})
@@ -85,12 +85,12 @@ func TestOIDCPerClientRateAndOutstandingLimits(t *testing.T) {
 		t.Cleanup(store.close)
 
 		for range oidcLoginBurst {
-			key, _, ok := store.reserve("peer")
+			key, flow, ok := store.reserve("peer")
 			if !ok {
 				t.Fatal("initial burst rejected")
 			}
 
-			store.take(key)
+			store.take(key, flow.browserToken)
 		}
 
 		if _, _, ok := store.reserve("peer"); ok {
@@ -147,9 +147,11 @@ func TestOIDCConcurrentAdmissionAndOneUse(t *testing.T) {
 
 		store.mu.Lock()
 
-		var key string
+		var key, browserToken string
 		for value := range store.flows {
 			key = value
+			browserToken = store.flows[value].state.browserToken
+
 			break
 		}
 		store.mu.Unlock()
@@ -158,7 +160,7 @@ func TestOIDCConcurrentAdmissionAndOneUse(t *testing.T) {
 
 		for range 20 {
 			wg.Go(func() {
-				if _, ok, expired := store.take(key); ok && !expired {
+				if _, ok, expired := store.take(key, browserToken); ok && !expired {
 					consumed.Add(1)
 				}
 			})
@@ -179,7 +181,10 @@ func TestOIDCLoginAdmissionAndCallbackExpiry(t *testing.T) {
 		a.oidc = &oidc.Provider{}
 		a.oauth = &oauth2.Config{ClientID: "client", Endpoint: oauth2.Endpoint{AuthURL: "https://id.example.com/authorize"}}
 
-		var state string
+		var (
+			state      string
+			flowCookie *http.Cookie
+		)
 
 		for i := range oidcLoginBurst + 1 {
 			request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/auth/login", nil)
@@ -199,6 +204,8 @@ func TestOIDCLoginAdmissionAndCallbackExpiry(t *testing.T) {
 				}
 
 				state = location.Query().Get("state")
+				flowCookie = response.Result().Cookies()[0]
+
 				if state == "" || location.Query().Get("nonce") == "" || location.Query().Get("code_challenge") == "" {
 					t.Fatal("missing state, nonce, or PKCE")
 				}
@@ -211,6 +218,7 @@ func TestOIDCLoginAdmissionAndCallbackExpiry(t *testing.T) {
 
 		response := httptest.NewRecorder()
 		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/auth/callback?state="+state, nil)
+		request.AddCookie(flowCookie)
 		a.Callback(response, request)
 
 		if response.Code != http.StatusBadRequest {

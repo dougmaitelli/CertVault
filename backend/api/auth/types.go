@@ -34,9 +34,10 @@ type Identity struct {
 }
 
 type oidcState struct {
-	nonce    string
-	verifier string
-	at       time.Time
+	browserToken string
+	nonce        string
+	verifier     string
+	at           time.Time
 }
 
 type bootstrapLoginRequest struct {
