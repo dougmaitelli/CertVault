@@ -127,6 +127,7 @@ for (const name of ["homelab-wildcard", "internal-gateway"]) {
   test(`open certificate details refresh after issuance for ${name}`, async ({
     page,
   }) => {
+    await page.clock.install();
     await login(page);
     await page.getByRole("heading", { name, exact: true }).click();
     const modal = page.locator(".modal");
@@ -150,6 +151,7 @@ for (const name of ["homelab-wildcard", "internal-gateway"]) {
         return updated.current_version?.id;
       })
       .not.toBe(initial.current_version?.id);
+    await page.clock.fastForward(30_000);
 
     await expect(
       modal.getByText(`Serial: ${updated.current_version!.serial}`, {
@@ -527,7 +529,10 @@ test("expired session leaves the console and supports signing in again", async (
   context,
 }) => {
   await login(page);
+  await navigate(page, "history");
+  await page.clock.install();
   await context.clearCookies();
+  await page.clock.fastForward(30_000);
 
   await expect(page.getByRole("alert")).toHaveText(
     "Your session expired. Sign in again.",
@@ -564,11 +569,13 @@ test("unauthorized page requests also expire the session", async ({ page }) => {
 test("certificate polling reports stale data and recovers automatically", async ({
   page,
 }) => {
+  await page.clock.install();
   await login(page);
   await page.route("**/api/v1/certificates", (route) =>
     route.fulfill({ status: 503, json: { detail: "Temporarily unavailable" } }),
   );
 
+  await page.clock.fastForward(30_000);
   await expect(page.locator("main > .error")).toContainText(
     "displayed data may be outdated",
   );
@@ -581,6 +588,7 @@ test("certificate polling reports stale data and recovers automatically", async 
   expect((await page.request.get("/api/v1/ready")).ok()).toBeTruthy();
 
   await page.unroute("**/api/v1/certificates");
+  await page.clock.fastForward(30_000);
   await expect(page.locator("main > .error")).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("Operational");
 });
@@ -626,19 +634,19 @@ test("ACME account polling failures recover independently of certificate polling
       json: { detail: "Account storage unavailable" },
     }),
   );
-  await page.clock.fastForward(30_000);
+  await navigate(page, "ACME accounts");
   await expect(page.locator("main > .error")).toContainText(
     "Unable to refresh ACME accounts",
   );
   await expect(page.getByRole("status")).toHaveText("Warning");
 
   const certificateRefresh = page.waitForResponse("**/api/v1/certificates");
-  await page.clock.fastForward(2_000);
+  await navigate(page, "certificates");
   expect((await certificateRefresh).ok()).toBeTruthy();
   await expect(page.getByRole("status")).toHaveText("Warning");
 
   await page.unroute("**/api/v1/acme-accounts");
-  await page.clock.fastForward(30_000);
+  await navigate(page, "ACME accounts");
   await expect(page.locator("main > .error")).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("Operational");
 });
@@ -752,4 +760,102 @@ test("deduplicated queued renewal clears when the same job finishes", async ({
     card.getByRole("button", { name: "Renew", exact: true }),
   ).toBeEnabled();
   await expect(card.getByText("Queued", { exact: true })).toHaveCount(0);
+});
+
+test("idle polling pauses off-page and does not overlap slow requests", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await login(page);
+  let calls = 0;
+  let release: (() => void) | undefined;
+  await page.route("**/api/v1/certificates", async (route) => {
+    calls++;
+    if (calls === 1)
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    await route.continue();
+  });
+  expect(calls).toBe(0);
+  await page.clock.fastForward(2_000);
+  expect(calls).toBe(0);
+  await page.clock.fastForward(28_000);
+  await expect.poll(() => calls).toBe(1);
+  await page.clock.fastForward(10_000);
+  expect(calls).toBe(1);
+  release!();
+  await expect(page.getByRole("status")).toHaveText("Operational");
+  await navigate(page, "history");
+  const previous = calls;
+  await page.clock.fastForward(60_000);
+  expect(calls).toBe(previous);
+  await navigate(page, "certificates");
+  await expect.poll(() => calls).toBe(previous + 1);
+});
+
+test("superseded certificate response cannot overwrite mutation refresh", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await login(page);
+  let calls = 0;
+  let release: (() => void) | undefined;
+  await page.route("**/api/v1/certificates", async (route) => {
+    calls++;
+    const response = await route.fetch();
+    const certificates = (await response.json()) as Certificate[];
+    if (calls === 1) {
+      certificates[0].domains = ["stale.example.com"];
+      if (certificates[0].current_version)
+        certificates[0].current_version.domains = ["stale.example.com"];
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    }
+    await route.fulfill({ response, json: certificates });
+  });
+  await page.clock.fastForward(30_000);
+  await expect.poll(() => calls).toBe(1);
+  await page
+    .getByRole("article")
+    .filter({
+      has: page.getByRole("heading", { name: "internal-gateway", exact: true }),
+    })
+    .getByRole("button", { name: "Renew", exact: true })
+    .click();
+  await expect.poll(() => calls).toBeGreaterThan(1);
+  release!();
+  await expect(page.getByText("stale.example.com")).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveText("Operational");
+});
+
+test("hidden console pauses polling and refreshes immediately on return", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await login(page);
+  let calls = 0;
+  await page.route("**/api/v1/certificates", async (route) => {
+    calls++;
+    await route.continue();
+  });
+  expect(calls).toBe(0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: true,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.clock.fastForward(60_000);
+  expect(calls).toBe(0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: false,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect.poll(() => calls).toBe(1);
 });

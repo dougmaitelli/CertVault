@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -128,10 +129,16 @@ func (r *APIKeyRepository) Authenticate(ctx context.Context, token, ip string) (
 
 	certificates := certificateNames(model)
 	now := time.Now().UTC()
-	_ = r.database.ORM().WithContext(ctx).Model(&model).Updates(map[string]any{
-		"last_used_at": now,
-		"last_used_ip": ip,
-	}).Error
+	// Usage is sampled once per minute. Authorization still reads current key
+	// state on every request, so revocation and expiry are never cached.
+	cutoff := now.Add(-time.Minute)
+	if model.LastUsedAt == nil || !model.LastUsedAt.After(cutoff) {
+		if err := r.database.ORM().WithContext(ctx).Model(&model).
+			Where("last_used_at IS NULL OR last_used_at <= ?", cutoff).
+			Updates(map[string]any{"last_used_at": now, "last_used_ip": ip}).Error; err != nil {
+			slog.Warn("update API key usage", "key_id", model.ID, "error", err)
+		}
+	}
 
 	return Principal{
 		KeyID:           model.ID,

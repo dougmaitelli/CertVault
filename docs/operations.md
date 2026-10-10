@@ -167,3 +167,17 @@ Executable hooks run directly without an implicit shell. They receive only `PATH
 
 - `/api/v1/health` reports process health and the running application version.
 - `/api/v1/ready` verifies that required infrastructure is available.
+
+## Console refresh and database load
+
+The console refreshes visible resources every 30 seconds, with certificate refreshes every two seconds while a known issuance job is queued or running. Certificate data is also loaded for the API-key certificate selector. Inactive pages do not continually refresh their resource lists. A lightweight session check accompanies the infrastructure refresh so authentication expiry is still detected on pages without certificate polling. Hidden tabs pause automatic refresh and refresh immediately when visible again. Requests time out after 15 seconds, polling waits for completion, and a mutation refresh cancels an older request for the same resource. Changes initiated elsewhere can take up to the idle refresh interval to appear on a visible page.
+
+Certificate listing uses three database queries: enabled certificates, latest jobs, and current versions. Version selection uses the existing certificate/version index; equal creation timestamps are resolved by descending version ID consistently with downloads. Already-loaded certificate rows supply association names. API-key authorization reads current permissions, expiry, and revocation on every request, but usage metadata is sampled at most once per minute per key. The displayed last-used time and IP describe the most recent sample, rather than every request.
+
+The SQLite connection pool remains at one connection. Reproduce the list benchmark from `backend` with:
+
+```sh
+go test ./database/repository -run '^$' -bench '^BenchmarkCertificateList$' -benchtime=100x
+```
+
+A local run on an AMD Ryzen 7 9700X with three versions and jobs per certificate measured approximately 0.27, 1.19, and 11.36 milliseconds per list operation for 10, 100, and 1,000 certificates with one client. Eight concurrent clients achieved approximately 104 list operations per second at 1,000 certificates (9.64 milliseconds per operation as aggregate throughput, not individual request latency). These measurements cover repository work with synthetic data, excluding HTTP, authentication, serialization, and browser rendering; use representative production histories and workloads before changing the connection strategy.

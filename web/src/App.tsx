@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router";
 import "./App.css";
 import { api, APIError, onAuthenticationExpired } from "./api/client";
@@ -16,6 +16,7 @@ import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { CertificatesPage } from "./pages/CertificatesPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { LoginPage } from "./pages/LoginPage";
+import { useSerialPolling } from "./hooks/useSerialPolling";
 import { appRoutes } from "./routing/routes";
 
 const statusRefreshInterval = 30_000;
@@ -91,6 +92,8 @@ type ConsoleProps = {
 };
 
 function Console({ session, onLogout }: ConsoleProps) {
+  const location = useLocation();
+  const requests = useRef(new Map<DataResource, AbortController>());
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [apiKeys, setAPIKeys] = useState<APIKey[]>([]);
   const [acmeAccounts, setACMEAccounts] = useState<ACMEAccount[]>([]);
@@ -109,80 +112,102 @@ function Console({ session, onLogout }: ConsoleProps) {
       setData: (data: T) => void,
       signal?: AbortSignal,
     ): Promise<void> => {
+      // A mutation or route refresh supersedes an older request for this resource.
+      requests.current.get(resource)?.abort();
+      const controller = new AbortController();
+      requests.current.set(resource, controller);
+      const requestSignal = AbortSignal.any([
+        controller.signal,
+        AbortSignal.timeout(15_000),
+        ...(signal ? [signal] : []),
+      ]);
       try {
-        const data = await api<T>(resource, { signal });
-        if (signal?.aborted) return;
+        const data = await api<T>(resource, { signal: requestSignal });
+        if (requestSignal.aborted) return;
         setData(data);
         if (resource === "certificates") setCertificatesLoaded(true);
         setDataErrors((current) => ({ ...current, [resource]: "" }));
       } catch (caught) {
-        if (signal?.aborted) return;
+        if (controller.signal.aborted || signal?.aborted) return;
         setDataErrors((current) => ({
           ...current,
           [resource]: `Unable to refresh ${resourceLabels[resource]}; displayed data may be outdated. ${String(caught)}`,
         }));
+      } finally {
+        if (requests.current.get(resource) === controller)
+          requests.current.delete(resource);
       }
     },
     [],
   );
 
-  const load = useCallback(
-    (signal?: AbortSignal): Promise<void> =>
-      Promise.all([
-        refreshResource("certificates", setCertificates, signal),
-        refreshResource("api-keys", setAPIKeys, signal),
-        refreshResource("acme-accounts", setACMEAccounts, signal),
-      ]).then(() => {}),
+  const refreshCertificates = useCallback(
+    (signal?: AbortSignal) =>
+      refreshResource("certificates", setCertificates, signal),
+    [refreshResource],
+  );
+  const refreshAPIKeys = useCallback(
+    (signal?: AbortSignal) => refreshResource("api-keys", setAPIKeys, signal),
+    [refreshResource],
+  );
+  const refreshAccounts = useCallback(
+    (signal?: AbortSignal) =>
+      refreshResource("acme-accounts", setACMEAccounts, signal),
     [refreshResource],
   );
 
   useEffect(() => {
-    const controller = new AbortController();
-    void load(controller.signal);
-    return () => controller.abort();
-  }, [load]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const checkInfrastructure = () => {
-      void Promise.all([
-        api<Health>("health", { signal: controller.signal }),
-        api("ready", { signal: controller.signal }),
-      ])
-        .then(([health]) => {
-          if (controller.signal.aborted) return;
-          setAppVersion(health.version);
-          setInfrastructureHealthy(true);
-        })
-        .catch(() => {
-          if (!controller.signal.aborted) setInfrastructureHealthy(false);
-        });
-      void refreshResource("acme-accounts", setACMEAccounts, controller.signal);
-    };
-
-    checkInfrastructure();
-    const interval = window.setInterval(
-      checkInfrastructure,
-      statusRefreshInterval,
-    );
+    const pending = requests.current;
     return () => {
-      controller.abort();
-      window.clearInterval(interval);
+      pending.forEach((controller) => controller.abort());
     };
-  }, [refreshResource]);
+  }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const refreshTasks = () => {
-      void refreshResource("certificates", setCertificates, controller.signal);
-    };
+  const checkInfrastructure = useCallback(async (signal: AbortSignal) => {
+    const requestSignal = AbortSignal.any([
+      signal,
+      AbortSignal.timeout(15_000),
+    ]);
+    try {
+      const [health] = await Promise.all([
+        api<Health>("health", { signal: requestSignal }),
+        api("ready", { signal: requestSignal }),
+        api<Session>("session", { signal: requestSignal }),
+      ]);
+      if (requestSignal.aborted) return;
+      setAppVersion(health.version);
+      setInfrastructureHealthy(true);
+    } catch {
+      if (!signal.aborted) setInfrastructureHealthy(false);
+    }
+  }, []);
+  useSerialPolling(checkInfrastructure, statusRefreshInterval);
 
-    const interval = window.setInterval(refreshTasks, taskRefreshInterval);
-    return () => {
-      controller.abort();
-      window.clearInterval(interval);
-    };
-  }, [refreshResource]);
+  const activeIssuance = certificates.some((certificate) =>
+    ["queued", "running"].includes(certificate.latest_job?.status ?? ""),
+  );
+  const needsCertificates = [
+    appRoutes.certificates.path,
+    appRoutes.apiKeys.path,
+  ].some((path) => path === location.pathname);
+  useSerialPolling(
+    refreshCertificates,
+    activeIssuance
+      ? taskRefreshInterval
+      : needsCertificates || !certificatesLoaded
+        ? statusRefreshInterval
+        : null,
+  );
+  useSerialPolling(
+    refreshAPIKeys,
+    location.pathname === appRoutes.apiKeys.path ? statusRefreshInterval : null,
+  );
+  useSerialPolling(
+    refreshAccounts,
+    location.pathname === appRoutes.acmeAccounts.path
+      ? statusRefreshInterval
+      : null,
+  );
 
   const error = Object.values(dataErrors).filter(Boolean).join(" ");
 
@@ -218,13 +243,21 @@ function Console({ session, onLogout }: ConsoleProps) {
         <Route
           path={appRoutes.certificates.path}
           element={
-            <CertificatesPage certificates={certificates} reload={load} />
+            <CertificatesPage
+              certificates={certificates}
+              reload={refreshCertificates}
+            />
           }
         />
         <Route path={appRoutes.history.path} element={<HistoryPage />} />
         <Route
           path={appRoutes.acmeAccounts.path}
-          element={<ACMEAccountsPage accounts={acmeAccounts} reload={load} />}
+          element={
+            <ACMEAccountsPage
+              accounts={acmeAccounts}
+              reload={refreshAccounts}
+            />
+          }
         />
         <Route path={appRoutes.auditLogs.path} element={<AuditLogsPage />} />
         <Route
@@ -233,7 +266,7 @@ function Console({ session, onLogout }: ConsoleProps) {
             <APIKeysPage
               apiKeys={apiKeys}
               certificates={certificates}
-              reload={load}
+              reload={refreshAPIKeys}
             />
           }
         />
