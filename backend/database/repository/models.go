@@ -18,16 +18,17 @@ type Certificate struct {
 }
 
 type Version struct {
-	ID                int64     `json:"id"`
-	CertificateName   string    `json:"certificate_name"`
-	Path              string    `json:"-"`
-	Serial            string    `json:"serial"`
-	Issuer            string    `json:"issuer"`
-	FingerprintSHA256 string    `json:"fingerprint_sha256"`
-	NotBefore         time.Time `json:"not_before"`
-	NotAfter          time.Time `json:"not_after"`
-	CreatedAt         time.Time `json:"created_at"`
-	Domains           []string  `json:"domains"`
+	KeyType           config.KeyType `json:"key_type,omitempty"`
+	ID                int64          `json:"id"`
+	CertificateName   string         `json:"certificate_name"`
+	Path              string         `json:"-"`
+	Serial            string         `json:"serial"`
+	Issuer            string         `json:"issuer"`
+	FingerprintSHA256 string         `json:"fingerprint_sha256"`
+	NotBefore         time.Time      `json:"not_before"`
+	NotAfter          time.Time      `json:"not_after"`
+	CreatedAt         time.Time      `json:"created_at"`
+	Domains           []string       `json:"domains"`
 }
 
 type Job struct {

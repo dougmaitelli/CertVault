@@ -44,7 +44,7 @@ func versionFromModel(model database.CertificateVersion) (Version, error) {
 	}
 
 	return Version{
-		ID: model.ID, CertificateName: model.Certificate.Name, Path: model.Path,
+		ID: model.ID, CertificateName: model.Certificate.Name, Path: model.Path, KeyType: config.KeyType(model.KeyType),
 		Serial: model.Serial, Issuer: model.Issuer, FingerprintSHA256: model.FingerprintSHA256,
 		NotBefore: model.NotBefore, NotAfter: model.NotAfter, CreatedAt: model.CreatedAt, Domains: domains,
 	}, nil

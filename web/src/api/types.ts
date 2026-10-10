@@ -1,4 +1,5 @@
 export type CertificateVersion = {
+  key_type?: string;
   id: number;
   not_before: string;
   not_after: string;

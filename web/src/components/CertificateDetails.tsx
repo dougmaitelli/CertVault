@@ -57,12 +57,22 @@ export function CertificateDetails({
     <Modal onClose={onClose}>
       <small>CERTIFICATE DETAILS</small>
       <h2>{certificate.name}</h2>
-      <h4>Subject alternative names</h4>
-      {certificate.domains.map((domain) => (
-        <code className="domain" key={domain}>
-          {domain}
-        </code>
-      ))}
+      <h4>
+        {certificate.current_version
+          ? "Issued subject alternative names"
+          : "Configured subject alternative names"}
+      </h4>
+      {(certificate.current_version?.domains ?? certificate.domains).map(
+        (domain) => (
+          <code className="domain" key={domain}>
+            {domain}
+          </code>
+        ),
+      )}
+      <h4>Configured subject alternative names</h4>
+      <p>{certificate.domains.join(", ")}</p>
+      <h4>Configured key</h4>
+      <p>{certificate.key_type.toUpperCase()}</p>
       <h4>Validity</h4>
       <p>
         {formatDate(certificate.current_version?.not_before)} —{" "}

@@ -235,6 +235,7 @@ func (r *CertificateRepository) AddVersion(ctx context.Context, version Version)
 
 		model := database.CertificateVersion{
 			CertificateID:     certificate.ID,
+			KeyType:           string(version.KeyType),
 			Path:              version.Path,
 			Domains:           domains,
 			Serial:            version.Serial,

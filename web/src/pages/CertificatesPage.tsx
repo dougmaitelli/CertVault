@@ -140,7 +140,9 @@ export function CertificatesPage({
               </StatusBadgeGroup>
             </div>
             <code className="certificate-domains">
-              {certificate.domains.join(", ")}
+              {(
+                certificate.current_version?.domains ?? certificate.domains
+              ).join(", ")}
             </code>
             <dl>
               <div>
@@ -153,8 +155,17 @@ export function CertificatesPage({
                 </dd>
               </div>
               <div>
-                <dt>Key</dt>
-                <dd>{certificate.key_type.toUpperCase()}</dd>
+                <dt>
+                  {certificate.current_version
+                    ? "Issued key"
+                    : "Configured key"}
+                </dt>
+                <dd>
+                  {certificate.current_version
+                    ? (certificate.current_version.key_type?.toUpperCase() ??
+                      "Unknown")
+                    : certificate.key_type.toUpperCase()}
+                </dd>
               </div>
             </dl>
             {certificate.last_error && (

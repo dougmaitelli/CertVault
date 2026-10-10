@@ -167,6 +167,16 @@ func (m *Manager) reconcile(ctx context.Context) {
 		}
 
 		due := c.CurrentVersion == nil || time.Until(c.CurrentVersion.NotAfter) < time.Duration(c.RenewBeforeSeconds)*time.Second
+		if !due {
+			drift, err := m.configurationDrift(c)
+			if err != nil {
+				m.log.Error("inspect issued certificate configuration", "certificate", c.Name, "error", err)
+				continue
+			}
+
+			due = drift
+		}
+
 		if due {
 			if _, _, err := m.Enqueue(ctx, c.Name, IssueKindScheduled); err != nil {
 				m.log.Error("enqueue scheduled issuance", "certificate", c.Name, "error", err)
@@ -415,6 +425,7 @@ func (m *Manager) save(name string, r *certificate.Resource) (repository.Version
 	sum := sha256.Sum256(cert.Raw)
 	v := repository.Version{
 		CertificateName:   name,
+		KeyType:           issuedKeyType(cert),
 		Path:              rel,
 		Serial:            cert.SerialNumber.String(),
 		Issuer:            cert.Issuer.String(),

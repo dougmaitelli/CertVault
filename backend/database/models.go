@@ -17,6 +17,7 @@ type Certificate struct {
 func (Certificate) TableName() string { return "certificates" }
 
 type CertificateVersion struct {
+	KeyType           string      `gorm:"not null;default:''"`
 	ID                int64       `gorm:"primaryKey;autoIncrement"`
 	CertificateID     int64       `gorm:"not null;index:idx_versions_cert,priority:1"`
 	Certificate       Certificate `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

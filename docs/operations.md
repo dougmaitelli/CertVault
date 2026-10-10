@@ -5,7 +5,7 @@ description: Manage renewal, audit retention, hooks, and health checks.
 
 ## Renewal
 
-CertVault checks for certificates due for renewal every six hours. `acme.automatic_issuance` controls automatic issuance globally, and each certificate may override it with `automatic_issuance`.
+CertVault checks at startup and every six hours for certificates due for renewal or whose issued SAN set or key type differs from configuration. SAN additions and removals trigger issuance; domain order and DNS letter case do not. Desired configuration does not change the current downloadable version: the previous version remains available until replacement issuance succeeds. The console distinguishes issued properties from configured properties. Older versions without key-type metadata are inspected from their stored public certificate. `acme.automatic_issuance` controls automatic issuance globally, and each certificate may override it with `automatic_issuance`.
 
 Only one issuance runs at a time because DNS-provider construction consumes process environment. A failed renewal leaves the previous certificate version untouched.
 
