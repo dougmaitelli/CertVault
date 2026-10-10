@@ -33,12 +33,16 @@ export function CertificatesPage({
     const latestJobID = certificate.latest_job?.id ?? 0;
     setRequestedRenewals((current) => ({
       ...current,
-      [name]: latestJobID,
+      [name]: latestJobID + 1,
     }));
     try {
-      await api(`certificates/${encodeURIComponent(name)}/renew`, {
-        method: "POST",
-      });
+      const job = await api<{ job_id: number }>(
+        `certificates/${encodeURIComponent(name)}/renew`,
+        {
+          method: "POST",
+        },
+      );
+      setRequestedRenewals((current) => ({ ...current, [name]: job.job_id }));
       await reload();
     } catch (error) {
       setRequestedRenewals((current) => {
@@ -56,10 +60,14 @@ export function CertificatesPage({
     const requestedRenewalCompleted =
       previousJobID !== undefined &&
       latestJob?.finished_at !== undefined &&
-      latestJob.id > previousJobID;
+      latestJob.id >= previousJobID;
     const requestedRenewalPending =
       previousJobID !== undefined && !requestedRenewalCompleted;
-    return requestedRenewalPending || latestJob?.status === "running";
+    return (
+      requestedRenewalPending ||
+      latestJob?.status === "running" ||
+      latestJob?.status === "queued"
+    );
   };
 
   return (
@@ -118,7 +126,15 @@ export function CertificatesPage({
               <h3>{certificate.name}</h3>
               <StatusBadgeGroup>
                 {taskRunning(certificate) && (
-                  <StatusBadge status="running" label="Running" active />
+                  <StatusBadge
+                    status="running"
+                    label={
+                      certificate.latest_job?.status === "queued"
+                        ? "Queued"
+                        : "Running"
+                    }
+                    active
+                  />
                 )}
                 <StatusBadge status={certificate.status} />
               </StatusBadgeGroup>
@@ -167,7 +183,11 @@ export function CertificatesPage({
                   void renew(certificate);
                 }}
               >
-                {taskRunning(certificate) ? "Running" : "Renew"}
+                {taskRunning(certificate)
+                  ? certificate.latest_job?.status === "queued"
+                    ? "Queued"
+                    : "Running"
+                  : "Renew"}
               </button>
             </div>
           </article>

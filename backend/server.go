@@ -72,9 +72,19 @@ func runServer(args []string, stdout, stderr io.Writer) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	if cfg.HasAutomaticIssuance() {
-		go manager.Run(ctx)
-	} else {
+	managerDone := make(chan struct{})
+	go func() {
+		defer close(managerDone)
+
+		manager.Run(ctx)
+	}()
+
+	defer func() {
+		cancel()
+		<-managerDone
+	}()
+
+	if !cfg.HasAutomaticIssuance() {
 		log.Info("automatic certificate issuance disabled")
 	}
 

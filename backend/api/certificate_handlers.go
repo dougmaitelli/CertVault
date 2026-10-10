@@ -1,12 +1,13 @@
 package api
 
 import (
-	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/certvault/certvault/audit"
+	"github.com/certvault/certvault/database/repository"
 	"github.com/certvault/certvault/service"
 )
 
@@ -64,18 +65,25 @@ func (a *API) renewCertificate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.PathValue("name")
-	if _, err := a.repos.Certificates.Get(r.Context(), name); err != nil {
-		respond(w, nil, err)
+
+	job, created, err := a.manager.Enqueue(r.Context(), name, service.IssueKindManual)
+	if err != nil {
+		if errors.Is(err, repository.ErrIssuanceQueueFull) {
+			w.Header().Set("Retry-After", "60")
+			problem(w, http.StatusTooManyRequests, "queue_full", "Issuance queue is full; retry later")
+		} else {
+			respond(w, nil, err)
+		}
+
 		return
 	}
 
-	go func() { _ = a.manager.Issue(context.Background(), name, service.IssueKindManual) }()
+	if created {
+		a.repos.Audits.Record(r.Context(), audit.Actor(id.Name), audit.ActionRenewalTrigger, name, fmt.Sprintf("job=%d", job.ID), a.remoteIP(r))
+	}
 
-	a.repos.Audits.Record(
-		r.Context(), audit.Actor(id.Name), audit.ActionRenewalTrigger,
-		name, "", a.remoteIP(r),
-	)
-	jsonResponse(w, http.StatusAccepted, map[string]string{"status": "queued"})
+	w.Header().Set("Location", fmt.Sprintf("/api/v1/jobs/%d", job.ID))
+	jsonResponse(w, http.StatusAccepted, map[string]any{"status": job.Status, "job_id": job.ID})
 }
 
 func (a *API) downloadCertificate(file string) http.HandlerFunc {

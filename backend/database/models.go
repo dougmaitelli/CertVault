@@ -34,10 +34,10 @@ func (CertificateVersion) TableName() string { return "certificate_versions" }
 
 type Job struct {
 	ID            int64       `gorm:"primaryKey;autoIncrement"`
-	CertificateID int64       `gorm:"not null;index"`
+	CertificateID int64       `gorm:"not null;index;index:idx_jobs_cert_status,priority:1"`
 	Certificate   Certificate `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Kind          string      `gorm:"not null"`
-	Status        string      `gorm:"not null"`
+	Status        string      `gorm:"not null;index:idx_jobs_status;index:idx_jobs_cert_status,priority:2"`
 	Error         string      `gorm:"not null;default:''"`
 	StartedAt     time.Time   `gorm:"not null"`
 	FinishedAt    *time.Time

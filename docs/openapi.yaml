@@ -75,7 +75,31 @@ paths:
     post:
       summary: Queue a renewal
       parameters: [{name: name, in: path, required: true, schema: {type: string}}]
-      responses: {"202": {description: Queued}}
+      responses:
+        "202":
+          description: Persisted job, or existing pending job for this certificate
+          headers: {Location: {schema: {type: string}, description: Job status URL}}
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job_id, status]
+                properties:
+                  job_id: {type: integer, format: int64}
+                  status: {type: string, enum: [queued, running]}
+        "404": {description: Missing, removed, or disabled certificate}
+        "429":
+          description: Queue capacity exhausted
+          headers: {Retry-After: {schema: {type: string}}}
+  /jobs/{id}:
+    get:
+      summary: Inspect a durable issuance job
+      parameters: [{name: id, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses:
+        "200": {description: Job status and outcome; requires administrator access or a read/renew scope for its certificate}
+        "400": {description: Invalid job ID}
+        "403": {description: Missing certificate permission}
+        "404": {description: Job not found}
   /acme-accounts:
     get:
       summary: List ACME accounts

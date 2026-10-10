@@ -84,12 +84,12 @@ itself; the separate lifecycle test verifies the original token's authentication
 Seeded visual certificate versions have metadata only; the download test issues
 a real locally signed certificate through mock ACME before downloading it.
 
-One worker and a fresh database per test prevent shared-state races. Retired
-databases remain open until shutdown so any finishing asynchronous renewal stays
-isolated from the next test. No scheduler, real CA, DNS provider, OIDC provider,
+One browser worker and a fresh database per test prevent shared-state races. The
+durable issuance worker is canceled and joined before each reset, and retired
+databases close at shutdown. Automatic issuance is disabled. No real CA, DNS provider, OIDC provider,
 notification service, or hook runs. Browser exceptions and unexpected external
 browser requests fail tests. API response interception is limited to explicit
-failure tests and the builder's displayed-token substitution described above.
+failure tests, the queued-job completion fixture, and the builder's displayed-token substitution described above.
 
 Screenshots wait for meaningful content and loaded fonts/images; Playwright
 finishes finite animations and disables infinite ones, with zero differing pixels allowed (using Playwright's default

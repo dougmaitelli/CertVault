@@ -47,6 +47,7 @@ func (a *API) routes() http.Handler {
 		)
 	}
 
+	apiMux.HandleFunc("GET /api/v1/jobs/{id}", a.getIssuanceJob)
 	apiMux.HandleFunc("GET /api/v1/jobs/history", requireAdministrator(a.jobHistory))
 	apiMux.HandleFunc("GET /api/v1/acme-accounts", requireAdministrator(a.listACMEAccounts))
 	apiMux.HandleFunc("DELETE /api/v1/acme-accounts/{id}", requireAdministrator(a.deleteACMEAccount))

@@ -115,3 +115,11 @@ curl -fsSL https://certvault.example/client/install.sh | \
   --reload-command 'systemctl restart pveproxy' \
   --schedule '17 3 * * *'
 ```
+
+## Durable renewal jobs
+
+`POST /api/v1/certificates/{name}/renew` validates the configured, enabled certificate before acceptance. A 202 response contains `job_id` and `status`, with a `Location` header pointing to `/api/v1/jobs/{id}`. Requests for a certificate already queued or running return its existing job ID. The shared manual/scheduled queue admits at most 64 queued or running jobs; additional distinct requests receive 429 with `Retry-After: 60`. Missing, removed, and disabled certificates return 404.
+
+Poll the job URL to observe `queued`, `running`, `succeeded`, or `failed`, including any failure message. Administrators can inspect all jobs; API keys need `renewals:trigger` or `certificates:read` and access to that job's certificate.
+
+One worker processes persisted jobs in admission order, including when automatic issuance is disabled. Queued jobs survive restart. Running jobs interrupted by restart become failed because issuance may already have completed at the CA; these certificates are excluded from automatic scheduling until an administrator inspects the outcome and submits another renewal. Run one CertVault server per database; multiple independent workers sharing a database are unsupported.

@@ -70,11 +70,26 @@ test("renewal persists and downloads real certificate and private key", async ({
   const card = page.getByRole("article").filter({
     has: page.getByRole("heading", { name: "internal-gateway", exact: true }),
   });
+  const admissionEvent = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/certificates/internal-gateway/renew") &&
+      response.request().method() === "POST",
+  );
   await card.getByRole("button", { name: "Renew", exact: true }).click();
+  const admission = await admissionEvent;
+  expect(admission.status()).toBe(202);
+  const accepted = (await admission.json()) as { job_id: number };
+  expect(accepted.job_id).toBeGreaterThan(0);
   await expect(card.getByText("valid", { exact: true })).toBeVisible();
   await expect(
     card.getByRole("button", { name: "Renew", exact: true }),
   ).toBeEnabled();
+
+  const completed = await page.request.get(`/api/v1/jobs/${accepted.job_id}`);
+  expect(completed.status()).toBe(200);
+  expect(((await completed.json()) as { status: string }).status).toBe(
+    "succeeded",
+  );
 
   await page.reload();
   await card.getByRole("heading").click();
@@ -690,4 +705,51 @@ test("API failure is visible and reload recovers", async ({ page }) => {
   await dialog.evaluate((element) => element.scrollTo(0, 0));
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.locator(".modal")).toHaveCount(0);
+});
+
+test("deduplicated queued renewal clears when the same job finishes", async ({
+  page,
+}) => {
+  let state: "idle" | "queued" | "succeeded" = "idle";
+  await page.route("**/api/v1/certificates", async (route) => {
+    const response = await route.fetch();
+    const certificates = (await response.json()) as Certificate[];
+    const certificate = certificates.find(
+      (item) => item.name === "internal-gateway",
+    )!;
+    certificate.latest_job = {
+      id: 777,
+      error: "",
+      certificate_name: certificate.name,
+      kind: "manual",
+      status: state === "queued" ? "queued" : "succeeded",
+      started_at: "2026-08-16T12:00:00Z",
+      ...(state === "queued" ? {} : { finished_at: "2026-08-16T12:01:00Z" }),
+    };
+    await route.fulfill({ response, json: certificates });
+  });
+  await page.route(
+    "**/api/v1/certificates/internal-gateway/renew",
+    async (route) => {
+      state = "queued";
+      await route.fulfill({
+        status: 202,
+        json: { job_id: 777, status: "queued" },
+      });
+    },
+  );
+  await login(page);
+  const card = page.getByRole("article").filter({
+    has: page.getByRole("heading", { name: "internal-gateway", exact: true }),
+  });
+  await card.getByRole("button", { name: "Renew", exact: true }).click();
+  await expect(card.locator(".status-badge-running")).toHaveText("Queued");
+  await expect(
+    card.getByRole("button", { name: "Queued", exact: true }),
+  ).toBeDisabled();
+  state = "succeeded";
+  await expect(
+    card.getByRole("button", { name: "Renew", exact: true }),
+  ).toBeEnabled();
+  await expect(card.getByText("Queued", { exact: true })).toHaveCount(0);
 });

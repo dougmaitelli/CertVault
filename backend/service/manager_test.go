@@ -20,7 +20,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestIssueRejectsUnknownCertificateBeforeCreatingLock(t *testing.T) {
+func TestIssueRejectsUnknownCertificate(t *testing.T) {
 	manager, err := NewManager(&config.Config{}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -28,10 +28,6 @@ func TestIssueRejectsUnknownCertificateBeforeCreatingLock(t *testing.T) {
 
 	if err = manager.Issue(context.Background(), "unknown", IssueKindManual); err == nil {
 		t.Fatal("expected unknown certificate error")
-	}
-
-	if _, exists := manager.locks.Load("unknown"); exists {
-		t.Fatal("unknown certificate created an issuance lock")
 	}
 }
 

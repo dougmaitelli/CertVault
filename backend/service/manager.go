@@ -30,6 +30,7 @@ import (
 	"github.com/go-acme/lego/v5/challenge/dns01"
 	"github.com/go-acme/lego/v5/lego"
 	"github.com/go-acme/lego/v5/registration"
+	"gorm.io/gorm"
 )
 
 type Manager struct {
@@ -37,7 +38,7 @@ type Manager struct {
 	repos   *repository.Repositories
 	log     *slog.Logger
 	notify  notifier
-	locks   sync.Map
+	wake    chan struct{}
 	issueMu sync.Mutex
 }
 
@@ -52,23 +53,100 @@ const (
 const pathEnvironmentVariable = "PATH"
 
 func NewManager(c *config.Config, repos *repository.Repositories, log *slog.Logger) (*Manager, error) {
-	return &Manager{cfg: c, repos: repos, log: log, notify: newAppriseNotifier(c.Notifications)}, nil
+	return &Manager{cfg: c, repos: repos, log: log, notify: newAppriseNotifier(c.Notifications), wake: make(chan struct{}, 1)}, nil
 }
 
 func (m *Manager) Run(ctx context.Context) {
+	poll := time.NewTicker(time.Second)
+	defer poll.Stop()
+
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		if err := m.repos.Jobs.RecoverInterrupted(ctx); err == nil {
+			break
+		} else {
+			m.log.Error("recover interrupted issuance jobs", "error", err)
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-poll.C:
+		}
+	}
+
 	m.reconcile(ctx)
 
 	tick := time.NewTicker(6 * time.Hour)
 	defer tick.Stop()
 
 	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		select {
+		case <-tick.C:
+			m.reconcile(ctx)
+		default:
+		}
+
+		job, err := m.repos.Jobs.Claim(ctx)
+		if err != nil {
+			m.log.Error("claim issuance job", "error", err)
+		}
+
+		if job != nil {
+			if err = m.issue(ctx, job.CertificateName, IssueKind(job.Kind), job.ID); err != nil {
+				m.log.Error("certificate issuance failed", "certificate", job.CertificateName, "job", job.ID, "error", err)
+			}
+
+			continue
+		}
+
 		select {
 		case <-ctx.Done():
 			return
 		case <-tick.C:
 			m.reconcile(ctx)
+		case <-poll.C:
+		case <-m.wake:
 		}
 	}
+}
+
+func (m *Manager) validateIssuance(name string, kind IssueKind) error {
+	switch kind {
+	case IssueKindInitial, IssueKindManual, IssueKindScheduled:
+	default:
+		return fmt.Errorf("unsupported issuance kind %q", kind)
+	}
+
+	def, ok := m.cfg.Certificate(name)
+	if !ok || (def.Enabled != nil && !*def.Enabled) {
+		return fmt.Errorf("certificate %q: %w", name, gorm.ErrRecordNotFound)
+	}
+
+	return nil
+}
+
+func (m *Manager) Enqueue(ctx context.Context, name string, kind IssueKind) (repository.Job, bool, error) {
+	if err := m.validateIssuance(name, kind); err != nil {
+		return repository.Job{}, false, err
+	}
+
+	job, created, err := m.repos.Jobs.Admit(ctx, name, string(kind))
+	if err == nil {
+		select {
+		case m.wake <- struct{}{}:
+		default:
+		}
+	}
+
+	return job, created, err
 }
 
 func (m *Manager) reconcile(ctx context.Context) {
@@ -84,54 +162,40 @@ func (m *Manager) reconcile(ctx context.Context) {
 			continue
 		}
 
+		if c.LatestJob != nil && strings.HasPrefix(c.LatestJob.Error, repository.InterruptedIssuanceError) {
+			continue
+		}
+
 		due := c.CurrentVersion == nil || time.Until(c.CurrentVersion.NotAfter) < time.Duration(c.RenewBeforeSeconds)*time.Second
 		if due {
-			go func(name string) {
-				if e := m.Issue(context.Background(), name, IssueKindScheduled); e != nil {
-					m.log.Error("certificate issuance failed", "certificate", name, "error", e)
-				}
-			}(c.Name)
+			if _, _, err := m.Enqueue(ctx, c.Name, IssueKindScheduled); err != nil {
+				m.log.Error("enqueue scheduled issuance", "certificate", c.Name, "error", err)
+			}
 		}
 	}
 }
 
-func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) (result error) {
-	var auditAction audit.Action
-
-	switch kind {
-	case IssueKindInitial:
-		auditAction = audit.ActionCertificateInitial
-	case IssueKindManual:
-		auditAction = audit.ActionCertificateManual
-	case IssueKindScheduled:
-		auditAction = audit.ActionCertificateScheduled
-	default:
-		return fmt.Errorf("unsupported issuance kind %q", kind)
+func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) error {
+	if err := m.validateIssuance(name, kind); err != nil {
+		return err
 	}
 
-	def, ok := m.cfg.Certificate(name)
-	if !ok || (def.Enabled != nil && !*def.Enabled) {
-		return errors.New("unknown or disabled certificate")
+	job, err := m.repos.Jobs.Start(ctx, name, string(kind))
+	if err != nil {
+		return err
 	}
 
-	lockAny, _ := m.locks.LoadOrStore(name, &sync.Mutex{})
+	return m.issue(ctx, name, kind, job)
+}
 
-	lock, ok := lockAny.(*sync.Mutex)
-	if !ok {
-		return errors.New("invalid certificate lock")
-	}
-
-	lock.Lock()
-	defer lock.Unlock()
-
-	job, e := m.repos.Jobs.Start(ctx, name, string(kind))
-	if e != nil {
-		return e
-	}
-
+func (m *Manager) issue(ctx context.Context, name string, kind IssueKind, job int64) (result error) {
 	var issuedVersion *repository.Version
 
 	defer func() {
+		if ctx.Err() != nil && result != nil {
+			result = fmt.Errorf("%s: %w", repository.InterruptedIssuanceError, result)
+		}
+
 		if err := m.repos.Jobs.Finish(context.Background(), job, result); err != nil {
 			m.log.Error("finish certificate issuance job", "certificate", name, "job", job, "error", err)
 			result = errors.Join(result, fmt.Errorf("finish issuance job: %w", err))
@@ -149,6 +213,27 @@ func (m *Manager) Issue(ctx context.Context, name string, kind IssueKind) (resul
 
 		m.notifyIssuance(name, kind, result)
 	}()
+
+	if err := m.validateIssuance(name, kind); err != nil {
+		return err
+	}
+
+	if _, err := m.repos.Certificates.Get(ctx, name); err != nil {
+		return err
+	}
+
+	def, _ := m.cfg.Certificate(name)
+
+	var auditAction audit.Action
+
+	switch kind {
+	case IssueKindInitial:
+		auditAction = audit.ActionCertificateInitial
+	case IssueKindManual:
+		auditAction = audit.ActionCertificateManual
+	case IssueKindScheduled:
+		auditAction = audit.ActionCertificateScheduled
+	}
 
 	resource, e := m.obtain(ctx, def)
 	if e != nil {

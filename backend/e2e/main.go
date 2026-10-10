@@ -102,14 +102,23 @@ func main() {
 	var mu sync.RWMutex
 	var handler http.Handler
 	var databases []*database.Database
+	var workerCancel context.CancelFunc
+	var workerDone chan struct{}
 	defer func() {
+		if workerCancel != nil {
+			workerCancel()
+			<-workerDone
+		}
 		for _, db := range databases {
 			must(db.Close())
 		}
 	}()
 	reset := func(empty bool) {
-		// Keep old databases alive until exit: an asynchronous renewal may still be
-		// finishing after its browser test. Each reset gets a separate data directory.
+		if workerCancel != nil {
+			workerCancel()
+			<-workerDone
+		}
+		// Each reset gets a separate data directory.
 		dir := filepath.Join(root, fmt.Sprint(len(databases)))
 		cfg := &config.Config{AppVersion: "e2e", DataDir: dir, MasterKey: make([]byte, 32),
 			Server: config.Server{PublicURL: "http://127.0.0.1:8099"},
@@ -132,6 +141,10 @@ func main() {
 		}
 		manager, err := service.NewManager(cfg, repos, slog.New(slog.NewTextHandler(io.Discard, nil)))
 		must(err)
+		workerCtx, cancel := context.WithCancel(context.Background())
+		workerCancel = cancel
+		workerDone = make(chan struct{})
+		go func() { defer close(workerDone); manager.Run(workerCtx) }()
 		handler, err = api.New(cfg, db, repos, manager)
 		must(err)
 	}
