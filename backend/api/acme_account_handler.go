@@ -14,6 +14,11 @@ func (a *API) listACMEAccounts(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (a *API) deleteACMEAccount(w http.ResponseWriter, r *http.Request) {
+	identity, ok := requestIdentity(w, r)
+	if !ok {
+		return
+	}
+
 	account, err := a.manager.DeleteAccount(r.PathValue("id"))
 	if err != nil {
 		switch {
@@ -30,13 +35,14 @@ func (a *API) deleteACMEAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.repos.Audits.Record(
+	_ = a.repos.Audits.Record(
 		r.Context(),
-		audit.ActorAdmin,
+		audit.Actor(identity.Name),
 		audit.ActionACMEAccountDelete,
 		account.DirectoryURL,
 		"",
 		a.remoteIP(r),
 	)
+
 	w.WriteHeader(http.StatusNoContent)
 }

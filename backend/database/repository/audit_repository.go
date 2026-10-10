@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -36,8 +38,14 @@ func (r *AuditRepository) Record(
 	resource string,
 	detail string,
 	ip string,
-) {
-	_ = r.database.ORM().WithContext(ctx).Create(&database.AuditEvent{
+) error {
+	return recordAudit(r.database.ORM().WithContext(ctx), actor, action, resource, detail, ip)
+}
+
+// recordAudit also serves transactional mutations; failures are observable even
+// for best-effort callers that deliberately do not fail their primary operation.
+func recordAudit(tx *gorm.DB, actor audit.Actor, action audit.Action, resource, detail, ip string) error {
+	err := tx.Create(&database.AuditEvent{
 		At:       time.Now().UTC(),
 		Actor:    string(actor),
 		Action:   string(action),
@@ -45,6 +53,26 @@ func (r *AuditRepository) Record(
 		Detail:   detail,
 		IP:       ip,
 	}).Error
+	if err != nil {
+		slog.Error("persist audit event", "actor", actor, "action", action, "resource", resource, "error", err)
+		return fmt.Errorf("persist audit event: %w", err)
+	}
+
+	return nil
+}
+
+// AuditMetadata requests an audit entry in the same transaction as a mutation.
+type AuditMetadata struct {
+	Actor audit.Actor
+	IP    string
+}
+
+func recordMutationAudit(tx *gorm.DB, metadata []AuditMetadata, action audit.Action, resource string) error {
+	if len(metadata) == 0 {
+		return nil
+	}
+
+	return recordAudit(tx, metadata[0].Actor, action, resource, "", metadata[0].IP)
 }
 
 func (r *AuditRepository) DeleteBefore(ctx context.Context, cutoff time.Time) (int64, error) {

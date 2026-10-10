@@ -15,6 +15,11 @@ func (a *API) listAPIKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) createAPIKey(w http.ResponseWriter, r *http.Request) {
+	identity, ok := requestIdentity(w, r)
+	if !ok {
+		return
+	}
+
 	var input createAPIKeyRequest
 	if err := decode(r, &input); err != nil {
 		problem(w, http.StatusBadRequest, "invalid_request", err.Error())
@@ -28,26 +33,27 @@ func (a *API) createAPIKey(w http.ResponseWriter, r *http.Request) {
 
 	key, token, err := a.repos.APIKeys.Create(
 		r.Context(), input.Name, input.Scopes, input.Certificates, input.ExpiresAt,
+		repository.AuditMetadata{Actor: audit.Actor(identity.Name), IP: a.remoteIP(r)},
 	)
 	if err != nil {
 		problem(w, http.StatusInternalServerError, "database_error", err.Error())
 		return
 	}
 
-	a.repos.Audits.Record(
-		r.Context(), audit.ActorAdmin, audit.ActionAPIKeyCreate,
-		key.Name, "", a.remoteIP(r),
-	)
 	jsonResponse(w, http.StatusCreated, map[string]any{"api_key": key, "token": token})
 }
 
 func (a *API) revokeAPIKey(w http.ResponseWriter, r *http.Request) {
+	identity, ok := requestIdentity(w, r)
+	if !ok {
+		return
+	}
+
 	id := r.PathValue("id")
-	name := ""
 
 	keyID, err := strconv.ParseInt(id, 10, 64)
 	if err == nil {
-		name, err = a.repos.APIKeys.Revoke(r.Context(), keyID)
+		_, err = a.repos.APIKeys.Revoke(r.Context(), keyID, repository.AuditMetadata{Actor: audit.Actor(identity.Name), IP: a.remoteIP(r)})
 	}
 
 	if err != nil {
@@ -55,20 +61,20 @@ func (a *API) revokeAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.repos.Audits.Record(
-		r.Context(), audit.ActorAdmin, audit.ActionAPIKeyRevoke,
-		name, "", a.remoteIP(r),
-	)
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *API) deleteAPIKey(w http.ResponseWriter, r *http.Request) {
+	identity, ok := requestIdentity(w, r)
+	if !ok {
+		return
+	}
+
 	id := r.PathValue("id")
-	name := ""
 
 	keyID, err := strconv.ParseInt(id, 10, 64)
 	if err == nil {
-		name, err = a.repos.APIKeys.Delete(r.Context(), keyID)
+		_, err = a.repos.APIKeys.Delete(r.Context(), keyID, repository.AuditMetadata{Actor: audit.Actor(identity.Name), IP: a.remoteIP(r)})
 	}
 
 	if err != nil {
@@ -82,9 +88,5 @@ func (a *API) deleteAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.repos.Audits.Record(
-		r.Context(), audit.ActorAdmin, audit.ActionAPIKeyDelete,
-		name, "", a.remoteIP(r),
-	)
 	w.WriteHeader(http.StatusNoContent)
 }

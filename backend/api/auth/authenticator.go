@@ -102,7 +102,7 @@ func (a *BrowserAuthenticator) BootstrapLogin(w http.ResponseWriter, r *http.Req
 		DisplayName:          "Bootstrap administrator",
 		AuthenticationMethod: authMethodBootstrap,
 	})
-	a.repos.Audits.Record(
+	_ = a.repos.Audits.Record(
 		r.Context(),
 		audit.ActorBootstrapAdmin,
 		audit.ActionAuthLogin,
@@ -110,6 +110,7 @@ func (a *BrowserAuthenticator) BootstrapLogin(w http.ResponseWriter, r *http.Req
 		authMethodBootstrap,
 		a.remoteIP(r),
 	)
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -232,7 +233,7 @@ func (a *BrowserAuthenticator) Callback(w http.ResponseWriter, r *http.Request) 
 		Picture:              claims.Picture,
 		AuthenticationMethod: authMethodOIDC,
 	})
-	a.repos.Audits.Record(
+	_ = a.repos.Audits.Record(
 		r.Context(), audit.Actor(actor), audit.ActionAuthLogin,
 		audit.ResourceUI, authMethodOIDC, a.remoteIP(r),
 	)

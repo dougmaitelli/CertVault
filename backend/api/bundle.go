@@ -113,7 +113,7 @@ func (a *API) downloadBundle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name+"-bundle.tar"))
 	_, _ = w.Write(contents)
 
-	a.repos.Audits.Record(r.Context(), audit.Actor(id.Name), audit.ActionCertificateDownload, name, strings.Join(files, ","), a.remoteIP(r))
+	_ = a.repos.Audits.Record(r.Context(), audit.Actor(id.Name), audit.ActionCertificateDownload, name, strings.Join(files, ","), a.remoteIP(r))
 }
 
 func (a *API) buildBundle(version *repository.Version, files []string) ([]byte, error) {

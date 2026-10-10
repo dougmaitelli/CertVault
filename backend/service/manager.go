@@ -261,7 +261,7 @@ func (m *Manager) issue(ctx context.Context, name string, kind IssueKind, job in
 
 	issuedVersion = &v
 
-	m.repos.Audits.Record(
+	_ = m.repos.Audits.Record(
 		ctx, audit.ActorSystem, auditAction, name, "", "",
 	)
 

@@ -52,6 +52,8 @@ func runServer(args []string, stdout, stderr io.Writer) error {
 		&slog.HandlerOptions{Level: cfg.Server.LogLevel.Level()},
 	))
 
+	slog.SetDefault(log)
+
 	db, err := database.Open(filepath.Join(cfg.DataDir, "certvault.db"))
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)

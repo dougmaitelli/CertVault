@@ -79,7 +79,7 @@ func (a *API) renewCertificate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if created {
-		a.repos.Audits.Record(r.Context(), audit.Actor(id.Name), audit.ActionRenewalTrigger, name, fmt.Sprintf("job=%d", job.ID), a.remoteIP(r))
+		_ = a.repos.Audits.Record(r.Context(), audit.Actor(id.Name), audit.ActionRenewalTrigger, name, fmt.Sprintf("job=%d", job.ID), a.remoteIP(r))
 	}
 
 	w.Header().Set("Location", fmt.Sprintf("/api/v1/jobs/%d", job.ID))
@@ -120,7 +120,7 @@ func (a *API) downloadCertificate(file string) http.HandlerFunc {
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name+"-"+file))
 		_, _ = w.Write(contents)
 
-		a.repos.Audits.Record(
+		_ = a.repos.Audits.Record(
 			r.Context(), audit.Actor(id.Name), audit.ActionCertificateDownload,
 			name, file, a.remoteIP(r),
 		)

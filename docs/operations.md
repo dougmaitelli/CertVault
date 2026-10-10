@@ -9,6 +9,12 @@ CertVault checks at startup and every six hours for certificates due for renewal
 
 Only one issuance runs at a time because DNS-provider construction consumes process environment. A failed renewal leaves the previous certificate version untouched.
 
+## Audit persistence
+
+API-key creation, revocation, and deletion through the console or CLI require an audit entry in the same SQLite transaction. If auditing fails, the mutation rolls back and the request or command fails; a newly created token is not returned. Console actions record the authenticated administrator's identity (OIDC email, or subject when email is absent); CLI actions use `local-cli`.
+
+Authentication, downloads, renewal admission, issuance completion, and ACME-account file deletion use best-effort auditing. An audit write failure does not undo these operations. Every failed audit write emits an error log with actor, action, resource, and database error. ACME-account deletion spans the filesystem and database and is not atomic with its audit record; the deletion can succeed even when audit persistence fails. Audit records and these logs do not contain API-key tokens or private keys.
+
 ## Audit retention
 
 Audit events are retained indefinitely by default. Enable automatic cleanup with:

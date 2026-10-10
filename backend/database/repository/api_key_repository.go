@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/certvault/certvault/audit"
 	"github.com/certvault/certvault/database"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -23,7 +24,7 @@ type APIKeyRepository struct {
 
 var ErrAPIKeyNotRevoked = errors.New("API key must be revoked before deletion")
 
-func (r *APIKeyRepository) Create(ctx context.Context, name string, scopes, certificates []string, expires *time.Time) (APIKey, string, error) {
+func (r *APIKeyRepository) Create(ctx context.Context, name string, scopes, certificates []string, expires *time.Time, auditMetadata ...AuditMetadata) (APIKey, string, error) {
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
 		return APIKey{}, "", err
@@ -79,7 +80,7 @@ func (r *APIKeyRepository) Create(ctx context.Context, name string, scopes, cert
 			}
 		}
 
-		return nil
+		return recordMutationAudit(tx, auditMetadata, audit.ActionAPIKeyCreate, model.Name)
 	}); err != nil {
 		return APIKey{}, "", err
 	}
@@ -212,7 +213,7 @@ func certificateNames(key database.APIKey) []string {
 	return names
 }
 
-func (r *APIKeyRepository) Revoke(ctx context.Context, id int64) (string, error) {
+func (r *APIKeyRepository) Revoke(ctx context.Context, id int64, auditMetadata ...AuditMetadata) (string, error) {
 	var key database.APIKey
 
 	err := r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -220,13 +221,17 @@ func (r *APIKeyRepository) Revoke(ctx context.Context, id int64) (string, error)
 			return err
 		}
 
-		return tx.Model(&key).Update("revoked", true).Error
+		if err := tx.Model(&key).Update("revoked", true).Error; err != nil {
+			return err
+		}
+
+		return recordMutationAudit(tx, auditMetadata, audit.ActionAPIKeyRevoke, key.Name)
 	})
 
 	return key.Name, err
 }
 
-func (r *APIKeyRepository) Delete(ctx context.Context, id int64) (string, error) {
+func (r *APIKeyRepository) Delete(ctx context.Context, id int64, auditMetadata ...AuditMetadata) (string, error) {
 	var key database.APIKey
 
 	err := r.database.ORM().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -243,7 +248,11 @@ func (r *APIKeyRepository) Delete(ctx context.Context, id int64) (string, error)
 			return err
 		}
 
-		return tx.Delete(&key).Error
+		if err := tx.Delete(&key).Error; err != nil {
+			return err
+		}
+
+		return recordMutationAudit(tx, auditMetadata, audit.ActionAPIKeyDelete, key.Name)
 	})
 
 	return key.Name, err
