@@ -34,19 +34,24 @@ test("login validation, session persistence and logout", async ({ page }) => {
 });
 
 for (const endpoint of ["/api/v1/session", "/auth/methods"]) {
-  test(`stalled startup request for ${endpoint} shows the sign-in form`, async ({
+  test(`stalled startup request for ${endpoint} shows a startup error`, async ({
     page,
   }) => {
     await page.route(`**${endpoint}`, () => {});
     await page.goto("/");
-    await expect(
-      page.getByLabel("Break-glass administrator token"),
-    ).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByRole("alert").first()).toContainText(
-      endpoint === "/api/v1/session"
-        ? "Unable to check your session"
-        : "Unable to load sign-in options",
-    );
+    if (endpoint === "/api/v1/session") {
+      await expect(
+        page.getByLabel("Break-glass administrator token"),
+      ).toBeVisible({ timeout: 25_000 });
+      await expect(page.getByRole("alert")).toContainText(
+        "Unable to check your session",
+      );
+    } else {
+      await expect(
+        page.getByText("Unable to load sign-in options.", { exact: false }),
+      ).toBeVisible({ timeout: 25_000 });
+      await expect(page.locator(".splash")).toHaveCount(0);
+    }
   });
 }
 

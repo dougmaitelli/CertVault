@@ -1,6 +1,13 @@
 name: UI Tests
 
 on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: Regenerate UI screenshot baselines for review
+        type: boolean
+        default: false
   pull_request:
     branches: [master]
   push:
@@ -21,7 +28,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Run in the canonical browser environment
+        if: ${{ !inputs.update_snapshots }}
         run: sh web/scripts/e2e-docker.sh
+      - name: Regenerate screenshot baselines in the canonical browser environment
+        if: ${{ inputs.update_snapshots }}
+        run: sh web/scripts/e2e-docker.sh --update-snapshots
+      - name: Upload regenerated baselines for review
+        if: ${{ inputs.update_snapshots && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-snapshot-baselines
+          path: web/e2e/snapshots/
+          retention-days: 14
       - name: Upload report, traces, and screenshot differences
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
