@@ -139,6 +139,31 @@ if grep -Fq "$old_server" "$job_script"; then
   exit 1
 fi
 
+# Reconfigure an installed job without supplying its API key.
+saved_token="$test_dir/home/.config/certvault/homelab-fullchain.crt-private.key.token"
+destination="$test_dir/output-reused"
+PATH="$test_dir/bin:$PATH" HOME="$test_dir/home" \
+  TEST_CRONTAB="$test_dir/crontab" MOCK_CURL_LOG="$test_dir/curl.log" \
+  CERTVAULT_API_KEY="" sh public/client/install.sh \
+    --reuse-key --server "$server" --certificate homelab \
+    --file fullchain.crt --file private.key --destination "$destination" \
+    --schedule "12 6 * * *"
+[ "$(cat "$saved_token")" = "replacement-token" ]
+cmp "$destination/private.key" "$test_dir/material/private.key"
+grep -Fq "12 6 * * *" "$test_dir/crontab"
+[ "$(grep -c '# certvault:homelab-fullchain.crt-private.key' "$test_dir/crontab")" = "1" ]
+
+# Reuse must fail without prompting or creating a job when no token exists.
+if PATH="$test_dir/bin:$PATH" HOME="$test_dir/home" \
+  TEST_CRONTAB="$test_dir/crontab" MOCK_CURL_LOG="$test_dir/curl.log" \
+  CERTVAULT_API_KEY="must-not-be-used" sh public/client/install.sh \
+    --reuse-key --server "$server" --certificate missing \
+    --file fullchain.crt --destination "$test_dir/missing"; then
+  printf 'Missing saved API key was accepted\n' >&2
+  exit 1
+fi
+[ ! -e "$test_dir/missing" ]
+
 mapped_destination="$test_dir/proxmox"
 reload_log="$test_dir/reloads.log"
 PATH="$test_dir/bin:$PATH" \
@@ -232,3 +257,36 @@ cmp "$mapped_destination/pveproxy-ssl.key" "$test_dir/material/private.key"
 PATH="$test_dir/bin:$PATH" MOCK_CURL_LOG="$test_dir/curl.log" MOCK_BUNDLE="$test_dir/new.tar" MOCK_VERSION=new MOCK_CHMOD_UNSUPPORTED_DIR="$mapped_destination" "$mapped_job_script"
 cmp "$mapped_destination/pveproxy-ssl.pem" "$test_dir/mismatch/fullchain.crt"
 cmp "$mapped_destination/pveproxy-ssl.key" "$test_dir/mismatch/private.key"
+
+# Updating scripts alone preserves every job, credential, validator, and cron entry.
+cp -R "$test_dir/home/.config/certvault" "$test_dir/config-before"
+cp "$test_dir/crontab" "$test_dir/cron-before"
+cp "$mapped_job_script" "$test_dir/job-before"
+cp "$mapped_destination/pveproxy-ssl.pem" "$test_dir/certificate-before"
+cp "$reload_log" "$test_dir/reloads-before"
+printf '#!/bin/sh\nexit 99\n' >"$test_dir/home/.local/libexec/certvault-sync"
+PATH="$test_dir/bin:$PATH" HOME="$test_dir/home" \
+  TEST_CRONTAB="$test_dir/crontab" MOCK_CURL_LOG="$test_dir/curl.log" \
+  CERTVAULT_API_KEY="" sh public/client/install.sh \
+    --update-client-only --server "$server"
+diff -r "$test_dir/config-before" "$test_dir/home/.config/certvault"
+cmp "$test_dir/crontab" "$test_dir/cron-before"
+cmp "$mapped_job_script" "$test_dir/job-before"
+cmp "$mapped_destination/pveproxy-ssl.pem" "$test_dir/certificate-before"
+cmp "$reload_log" "$test_dir/reloads-before"
+diff -B public/client/sync.sh "$test_dir/home/.local/libexec/certvault-sync"
+PATH="$test_dir/bin:$PATH" MOCK_CURL_LOG="$test_dir/curl.log" \
+  MOCK_BUNDLE="$test_dir/new.tar" MOCK_VERSION=new \
+  MOCK_CHMOD_UNSUPPORTED_DIR="$mapped_destination" "$mapped_job_script"
+cmp "$reload_log" "$test_dir/reloads-before"
+
+if HOME="$test_dir/home" sh public/client/install.sh --update-client-only \
+  --server "$server" --schedule "0 0 * * *"; then
+  printf 'Script-only update accepted job settings\n' >&2
+  exit 1
+fi
+if HOME="$test_dir/not-installed" sh public/client/install.sh \
+  --update-client-only --server "$server"; then
+  printf 'Script-only update accepted a missing installation\n' >&2
+  exit 1
+fi

@@ -36,7 +36,9 @@ export function App() {
 
   useEffect(() => {
     const controller = new AbortController();
-    api<Session>("session", { signal: controller.signal })
+    api<Session>("session", {
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
+    })
       .then((loaded) => {
         if (!controller.signal.aborted) setSession(loaded);
       })

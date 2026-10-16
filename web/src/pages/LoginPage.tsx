@@ -14,14 +14,25 @@ export function LoginPage({ onAuthenticated, notice }: LoginPageProps) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    void fetch("/auth/methods")
+    const controller = new AbortController();
+    void fetch("/auth/methods", {
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
+    })
       .then((response) => {
         if (!response.ok)
           throw new Error("Unable to load authentication methods");
         return response.json() as Promise<AuthenticationMethods>;
       })
-      .then(setMethods)
-      .catch((caught) => setError(String(caught)));
+      .then((loaded) => {
+        if (!controller.signal.aborted) setMethods(loaded);
+      })
+      .catch((caught) => {
+        if (!controller.signal.aborted)
+          setError(
+            `Unable to load sign-in options. Check that the CertVault backend is running, then reload. ${String(caught)}`,
+          );
+      });
+    return () => controller.abort();
   }, []);
 
   async function submit(event: FormEvent) {

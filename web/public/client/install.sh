@@ -10,6 +10,9 @@ destination=""
 schedule="$default_schedule"
 reload_command=""
 auto_update=0
+reuse_key=0
+update_client_only=0
+job_options=0
 
 usage() {
   cat <<'EOF'
@@ -17,14 +20,19 @@ Install a recurring CertVault certificate download.
 
 Usage:
   install.sh --server URL --certificate NAME --destination DIRECTORY [OPTIONS]
+  install.sh --update-client-only --server URL
 
 The API token is read from CERTVAULT_API_KEY or prompted for securely.
 
 Options:
+  --update-client-only    Update installed client scripts, preserving all job settings.
+                          Run as the same user as the original installation.
   --file ARTIFACT[=OUTPUT]
                           Download an artifact, optionally renaming it. Repeatable.
   --auto-update           Check for signed client updates during the same cron job.
                           Requires an HTTPS server URL.
+  --reuse-key             Reuse the saved API key for this certificate and file set.
+                          Run as the same user as the original installation.
   --schedule CRON        Cron schedule. Defaults to "17 3 * * *".
   --reload-command CMD   Shell command to run after a new bundle is deployed.
 
@@ -37,6 +45,10 @@ EOF
 # complete set below so duplicate artifacts and output names can be rejected.
 while [ "$#" -gt 0 ]; do
   case "$1" in
+    --server|--update-client-only|--help|-h) ;;
+    *) job_options=1 ;;
+  esac
+  case "$1" in
     --server) server=${2-}; shift 2 ;;
     --certificate) certificate=${2-}; shift 2 ;;
     --file)
@@ -48,11 +60,26 @@ while [ "$#" -gt 0 ]; do
     --schedule) schedule=${2-}; shift 2 ;;
     --reload-command) reload_command=${2-}; shift 2 ;;
     --auto-update) auto_update=1; shift ;;
+    --reuse-key) reuse_key=1; shift ;;
+    --update-client-only) update_client_only=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
 done
 
+config_dir=${CERTVAULT_CLIENT_CONFIG_DIR:-"$HOME/.config/certvault"}
+script_dir=${CERTVAULT_CLIENT_SCRIPT_DIR:-"$HOME/.local/libexec"}
+sync_script="$script_dir/certvault-sync"
+if [ "$update_client_only" -eq 1 ]; then
+  if [ -z "$server" ] || [ "$job_options" -ne 0 ]; then
+    printf 'Use --update-client-only with --server only; job settings cannot be changed in this mode\n' >&2
+    exit 2
+  fi
+  if [ ! -f "$sync_script" ]; then
+    printf 'No installed CertVault client found for this user: %s\n' "$sync_script" >&2
+    exit 2
+  fi
+else
 if [ -z "$server" ] || [ -z "$certificate" ] || [ -z "$destination" ]; then
   usage >&2
   exit 2
@@ -126,9 +153,24 @@ if [ "$#" -ne 5 ]; then
   exit 2
 fi
 
+# Resolve the existing job before reading credentials.
+job=$(printf '%s-%s' "$certificate" "$artifacts" | tr -c 'A-Za-z0-9._-' '-')
+token_file="$config_dir/$job.token"
+
 # Prefer a token supplied by automation, falling back to a non-echoing terminal
 # prompt for an interactive installation.
 token=${CERTVAULT_API_KEY-}
+if [ "$reuse_key" -eq 1 ]; then
+  if [ ! -s "$token_file" ] || [ ! -r "$token_file" ]; then
+    printf 'No saved API key for this certificate and file set: %s\n' "$token_file" >&2
+    exit 2
+  fi
+  token=$(cat "$token_file")
+  if [ -z "$token" ]; then
+    printf 'Saved API key is empty: %s\n' "$token_file" >&2
+    exit 2
+  fi
+fi
 if [ -z "$token" ]; then
   if [ ! -r /dev/tty ]; then
     printf 'Set CERTVAULT_API_KEY when no interactive terminal is available\n' >&2
@@ -147,19 +189,16 @@ fi
 
 # The artifact set identifies a job. Reinstalling the same set intentionally
 # replaces its destination, token, schedule, mappings, and reload command.
-job=$(printf '%s-%s' "$certificate" "$artifacts" | tr -c 'A-Za-z0-9._-' '-')
-config_dir=${CERTVAULT_CLIENT_CONFIG_DIR:-"$HOME/.config/certvault"}
-script_dir=${CERTVAULT_CLIENT_SCRIPT_DIR:-"$HOME/.local/libexec"}
-token_file="$config_dir/$job.token"
 etag_dir="$config_dir/$job.etags"
-sync_script="$script_dir/certvault-sync"
 job_script="$script_dir/certvault-$job"
 
 install -d -m 700 "$config_dir" "$script_dir" "$etag_dir"
 if [ ! -d "$destination" ]; then
   install -d -m 755 "$destination"
 fi
-printf '%s\n' "$token" >"$token_file"
+if [ "$reuse_key" -eq 0 ]; then
+  printf '%s\n' "$token" >"$token_file"
+fi
 chmod 600 "$token_file"
 
 # Requires Linux utilities: curl, tar, OpenSSL, flock, and mv with -T.
@@ -170,6 +209,7 @@ for file in certificate.crt chain.crt fullchain.crt private.key; do
   rm -f "$etag_dir/$file"
 done
 rm -f "$etag_dir/bundle"
+fi
 
 sync_temporary=$(mktemp "$script_dir/.certvault-sync.XXXXXX")
 cat >"$sync_temporary" <<'EOF'
@@ -334,6 +374,22 @@ fi
 EOF
 chmod 700 "$sync_temporary"
 mv -f "$sync_temporary" "$sync_script"
+
+if [ "$update_client_only" -eq 1 ]; then
+  # Signed installations retain their pinned key and existing job wrappers.
+  origin_id=$(printf '%s' "${server%/}" | openssl dgst -sha256 | awk '{print $NF}')
+  client_dir="$script_dir/certvault-clients/$origin_id"
+  update_config="$config_dir/client-updates/$origin_id"
+  if [ -L "$client_dir/current" ]; then
+    exec 8>"$client_dir/update.lock"
+    flock -x 8
+    printf '0\n' >"$update_config/next-check"
+    exec 8>&-
+    "$client_dir/current/update.sh" "$client_dir" "$update_config" "$server"
+  fi
+  printf 'Updated CertVault client scripts; existing job settings preserved\n'
+  exit 0
+fi
 
 shell_quote() {
   printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"

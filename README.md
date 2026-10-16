@@ -196,6 +196,12 @@ Downloads include an `ETag`, so clients may use `If-None-Match`. A client key ne
 
 The API Keys page can also generate a command that installs an automatic download job through `/client/install.sh`. The installer requires a Linux or Unix-like client with `curl`, `crontab`, and `install`. It stores the API key in a mode `0600` file, downloads through an atomic temporary directory, installs the selected cron schedule, and immediately performs the first download. Run the generated command again to replace an existing job for the same certificate files, including its token, server, schedule, and destination, instead of creating a duplicate. The default bundle installs `fullchain.crt` and `private.key` together into a certificate-specific destination directory. Artifact output names can be customized for services that require fixed filenames, and an optional reload command runs when files change. The client stores each file's `ETag` and uses conditional requests on scheduled runs; unchanged files return `304 Not Modified`, are not rewritten, and do not create certificate-download audit events.
 
+Expand **Install command** on the API Keys page at any time to build a client command. After creating a key, the builder opens and includes that key in the command. Otherwise it defaults to `--reuse-key`.
+
+To update the client scripts without remembering the original settings, check **Update only** in the builder. Its command uses `--update-client-only --server URL` and requires no API key or job options. Run it as the original installation user (the generated command uses `sudo`). It preserves all job wrappers, keys, cron schedules, destinations, file mappings, reload commands, and download validators, and does not run a sync. Installations with automatic updates also perform an immediate signed update check for that server using their existing pinned public key. Custom installations should retain their `CERTVAULT_CLIENT_CONFIG_DIR` and `CERTVAULT_CLIENT_SCRIPT_DIR` overrides.
+
+When reusing a saved key, run the command on the original client as the same user, selecting the same certificate and file set. The installer reads the saved local token and redeploys the job with the chosen destination, output names, schedule, and reload command. No token is included in the generated command. Reuse fails if the matching token file is missing; it does not prompt for a replacement key.
+
 ## Configuration
 
 Global values can be overridden with:

@@ -30,7 +30,7 @@ const schedules = [
 type APIUsageHelperProps = {
   certificates: Certificate[];
   scopes: string[];
-  token: string;
+  token?: string;
 };
 
 export function APIUsageHelper({
@@ -61,6 +61,8 @@ export function APIUsageHelper({
   const [reloadCommand, setReloadCommand] = useState("");
   const [schedule, setSchedule] = useState<string>(schedules[0].value);
   const [copied, setCopied] = useState(false);
+  const [updateOnly, setUpdateOnly] = useState(false);
+  const canInstall = certificates.length > 0 && availableFileOptions.length > 0;
   const copyFeedbackTimeout = useRef<number | null>(null);
 
   useEffect(
@@ -74,7 +76,17 @@ export function APIUsageHelper({
 
   const command = useMemo(() => {
     const installer = `${window.location.origin}/client/install.sh`;
-    const executor = `sudo env CERTVAULT_API_KEY=${shellQuote(token)} sh`;
+    if (updateOnly) {
+      return [
+        `curl -fsSL ${shellQuote(installer)}`,
+        "| sudo sh -s --",
+        "--update-client-only",
+        `--server ${shellQuote(window.location.origin)}`,
+      ].join(" \\\n  ");
+    }
+    const executor = token
+      ? `sudo env CERTVAULT_API_KEY=${shellQuote(token)} sh`
+      : "sudo sh";
     const fileArguments = files
       .split(",")
       .filter(Boolean)
@@ -88,6 +100,7 @@ export function APIUsageHelper({
       `| ${executor} -s --`,
       `--server ${shellQuote(window.location.origin)}`,
       `--certificate ${shellQuote(certificate)}`,
+      ...(!token ? ["--reuse-key"] : []),
       ...(autoUpdate ? ["--auto-update"] : []),
       ...fileArguments,
       `--destination ${shellQuote(destination)}`,
@@ -105,6 +118,7 @@ export function APIUsageHelper({
     reloadCommand,
     schedule,
     token,
+    updateOnly,
   ]);
 
   function selectCertificate(nextCertificate: string) {
@@ -133,104 +147,133 @@ export function APIUsageHelper({
     <section className="api-usage-helper">
       <div className="api-usage-heading">
         <div>
-          <h2>Automatic download</h2>
+          <h2>{updateOnly ? "Update client only" : "Automatic download"}</h2>
           <p>
-            Run this on the client to install or update a recurring sync job.
+            {updateOnly
+              ? "Run this on the original client as the same user to update its scripts. All jobs keep their saved keys, schedules, destinations, file mappings, and reload commands."
+              : "Run this on the client to install or update a recurring sync job."}
+            {!updateOnly &&
+              !token &&
+              " Reuses the API key saved on that client. Run as the same user and select the same certificate and file set as the original installation."}
           </p>
         </div>
-        <div className="api-usage-options">
-          <label>
-            Certificate
-            <select
-              value={certificate}
-              onChange={(event) => selectCertificate(event.target.value)}
-            >
-              {certificates.map((item) => (
-                <option key={item.name} value={item.name}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Files
-            <select
-              value={files}
-              onChange={(event) => setFiles(event.target.value)}
-            >
-              {availableFileOptions.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Schedule
-            <select
-              value={schedule}
-              onChange={(event) => setSchedule(event.target.value)}
-            >
-              {schedules.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </div>
-      <label className="api-usage-output">
-        Destination folder on client
-        <input
-          value={destination}
-          onChange={(event) => setDestination(event.target.value)}
-          required
-        />
-      </label>
-      <div className="api-usage-deployment">
-        {files
-          .split(",")
-          .filter(Boolean)
-          .map((file) => (
-            <label className="api-usage-output" key={file}>
-              Output name for {file}
-              <input
-                value={outputNames[file] ?? file}
-                onChange={(event) =>
-                  setOutputNames((current) => ({
-                    ...current,
-                    [file]: event.target.value,
-                  }))
-                }
-                pattern="[A-Za-z0-9._-]+"
-                required
-              />
+        {!updateOnly && (
+          <div className="api-usage-options">
+            <label>
+              Certificate
+              <select
+                value={certificate}
+                onChange={(event) => selectCertificate(event.target.value)}
+              >
+                {certificates.map((item) => (
+                  <option key={item.name} value={item.name}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
             </label>
-          ))}
-        <label className="api-usage-output">
-          Command after files change (optional)
-          <input
-            value={reloadCommand}
-            onChange={(event) => setReloadCommand(event.target.value)}
-            placeholder="systemctl restart pveproxy"
-          />
-        </label>
+            <label>
+              Files
+              <select
+                value={files}
+                onChange={(event) => setFiles(event.target.value)}
+              >
+                {availableFileOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Schedule
+              <select
+                value={schedule}
+                onChange={(event) => setSchedule(event.target.value)}
+              >
+                {schedules.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
       </div>
       <label className="api-usage-auto-update">
         <input
           type="checkbox"
-          checked={autoUpdate}
-          disabled={window.location.protocol !== "https:"}
-          onChange={(event) => setAutoUpdate(event.target.checked)}
+          checked={updateOnly}
+          onChange={(event) => {
+            setUpdateOnly(event.target.checked);
+            setCopied(false);
+          }}
         />
-        Automatically update the client (requires HTTPS)
+        Update only
       </label>
+      {!updateOnly && !canInstall && (
+        <p>
+          Select update only to update an existing client. Installing a job
+          requires an accessible certificate and download permissions.
+        </p>
+      )}
+      {!updateOnly && (
+        <>
+          <label className="api-usage-output">
+            Destination folder on client
+            <input
+              value={destination}
+              onChange={(event) => setDestination(event.target.value)}
+              required
+            />
+          </label>
+          <div className="api-usage-deployment">
+            {files
+              .split(",")
+              .filter(Boolean)
+              .map((file) => (
+                <label className="api-usage-output" key={file}>
+                  Output name for {file}
+                  <input
+                    value={outputNames[file] ?? file}
+                    onChange={(event) =>
+                      setOutputNames((current) => ({
+                        ...current,
+                        [file]: event.target.value,
+                      }))
+                    }
+                    pattern="[A-Za-z0-9._-]+"
+                    required
+                  />
+                </label>
+              ))}
+            <label className="api-usage-output">
+              Command after files change (optional)
+              <input
+                value={reloadCommand}
+                onChange={(event) => setReloadCommand(event.target.value)}
+                placeholder="systemctl restart pveproxy"
+              />
+            </label>
+          </div>
+          <label className="api-usage-auto-update">
+            <input
+              type="checkbox"
+              checked={autoUpdate}
+              disabled={window.location.protocol !== "https:"}
+              onChange={(event) => setAutoUpdate(event.target.checked)}
+            />
+            Automatically update the client (requires HTTPS)
+          </label>
+        </>
+      )}
       <div className="api-command">
         <code>{command}</code>
         <button
           className={`action-button ${copied ? "copied" : ""}`}
           onClick={() => void copyCommand()}
+          disabled={!updateOnly && !canInstall}
           aria-live="polite"
         >
           {copied ? "Copied!" : "Copy command"}

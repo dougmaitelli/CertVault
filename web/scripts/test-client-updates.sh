@@ -191,11 +191,37 @@ printf '0\n' >"$update_config/next-check"
 [ "$(find "$client_dir" -maxdepth 1 -type d -name 'version-*' | wc -l)" -eq 2 ]
 [ "$(find "$client_dir" -maxdepth 1 -type d -name '.update.*' | wc -l)" -eq 0 ]
 # Replacing the server key never replaces the installed pin automatically.
+cp "$first" "$test_dir/first-before"
+cp "$second" "$test_dir/second-before"
+cp "$TEST_CRONTAB" "$test_dir/cron-before"
+cp "$update_config/public.pem" "$test_dir/update-pin-before"
+release "$test_dir/manual" manual
+export MOCK_UPDATE_SOURCE="$test_dir/manual"
+sh public/client/install.sh --update-client-only --server https://certvault.example
+cmp "$first" "$test_dir/first-before"
+cmp "$second" "$test_dir/second-before"
+cmp "$TEST_CRONTAB" "$test_dir/cron-before"
+cmp "$update_config/public.pem" "$test_dir/update-pin-before"
+# The update does not run a job, but both jobs use the new client on their next run.
+[ "$(tail -n 1 "$CLIENT_EXEC_LOG")" = three ]
+"$first"
+"$second"
+[ "$(tail -n 1 "$CLIENT_EXEC_LOG")" = manual ]
+
+# Restore the previous release for the pin-rotation checks below.
+export MOCK_UPDATE_SOURCE="$test_dir/three"
+sh public/client/install.sh --update-client-only --server https://certvault.example
+"$first"
 cp "$update_config/public.pem" "$test_dir/pin-before"
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out "$test_dir/signing.pem" >/dev/null 2>&1
 openssl pkey -in "$test_dir/signing.pem" -pubout -out "$test_dir/public.pem" >/dev/null 2>&1
 release "$test_dir/rotated" rotated
 export MOCK_UPDATE_SOURCE="$test_dir/rotated"
+if sh public/client/install.sh --update-client-only --server https://certvault.example; then
+  printf 'Manual update accepted a release signed by a different key\n' >&2
+  exit 1
+fi
+cmp "$test_dir/pin-before" "$update_config/public.pem"
 install_job second
 cmp "$test_dir/pin-before" "$update_config/public.pem"
 [ "$(tail -n 1 "$CLIENT_EXEC_LOG")" = three ]

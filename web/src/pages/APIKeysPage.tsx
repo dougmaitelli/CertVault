@@ -27,9 +27,11 @@ export function APIKeysPage({
 }: APIKeysPageProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createdKey, setCreatedKey] = useState<APIKeyCreationResponse>();
+  const [builderOpen, setBuilderOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingKeyAction>();
   const copyFeedbackTimeout = useRef<number | null>(null);
+  const commandKey = createdKey?.api_key;
 
   useEffect(
     () => () => {
@@ -95,22 +97,26 @@ export function APIKeysPage({
           </button>
         </div>
       )}
-      {createdKey &&
-        certificates.length > 0 &&
-        createdKey.api_key.scopes.some((scope) =>
-          ["certificates:read", "private_keys:read"].includes(scope),
-        ) && (
-          <APIUsageHelper
-            key={createdKey.api_key.id}
-            certificates={certificates.filter(
-              (certificate) =>
-                createdKey.api_key.certificates.includes("*") ||
-                createdKey.api_key.certificates.includes(certificate.name),
-            )}
-            scopes={createdKey.api_key.scopes}
-            token={createdKey.token}
-          />
-        )}
+      <details
+        className="install-command-builder"
+        open={builderOpen}
+        onToggle={(event) => setBuilderOpen(event.currentTarget.open)}
+      >
+        <summary>Install command</summary>
+        <APIUsageHelper
+          key={`${commandKey?.id ?? "reuse"}:${certificates.map((certificate) => certificate.name).join(",")}`}
+          certificates={certificates.filter(
+            (certificate) =>
+              !commandKey ||
+              commandKey.certificates.includes("*") ||
+              commandKey.certificates.includes(certificate.name),
+          )}
+          scopes={
+            commandKey?.scopes ?? ["certificates:read", "private_keys:read"]
+          }
+          token={createdKey?.token}
+        />
+      </details>
       <div className="table api-key-table">
         <table>
           <thead>
@@ -167,6 +173,7 @@ export function APIKeysPage({
           onClose={() => setShowCreateDialog(false)}
           onCreated={async (result) => {
             setCreatedKey(result);
+            setBuilderOpen(true);
             setShowCreateDialog(false);
             await reload();
           }}

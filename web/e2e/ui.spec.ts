@@ -33,6 +33,23 @@ test("login validation, session persistence and logout", async ({ page }) => {
   expect((await page.request.get("/api/v1/session")).status()).toBe(401);
 });
 
+for (const endpoint of ["/api/v1/session", "/auth/methods"]) {
+  test(`stalled startup request for ${endpoint} shows the sign-in form`, async ({
+    page,
+  }) => {
+    await page.route(`**${endpoint}`, () => {});
+    await page.goto("/");
+    await expect(
+      page.getByLabel("Break-glass administrator token"),
+    ).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByRole("alert").first()).toContainText(
+      endpoint === "/api/v1/session"
+        ? "Unable to check your session"
+        : "Unable to load sign-in options",
+    );
+  });
+}
+
 test("certificate list, grid, version history and pending state", async ({
   page,
 }) => {
@@ -381,6 +398,29 @@ test("install command builder defaults, customization and copying", async ({
   await expect(command).toContainText(
     `--destination '/srv/client'"'"'s certs'`,
   );
+
+  await page.reload();
+  await expect(helper).not.toBeVisible();
+  await page.getByText("Install command", { exact: true }).click();
+  await expect(command).toContainText("--reuse-key");
+  await expect(command).toContainText("| sudo sh -s --");
+  await expect(command).not.toContainText("CERTVAULT_API_KEY=");
+  await helper.getByLabel("Destination folder on client").fill("/srv/redeploy");
+  await expect(command).toContainText("--destination '/srv/redeploy'");
+  await helper
+    .getByRole("checkbox", { name: "Update only", exact: true })
+    .check();
+  await expect(command).toContainText("--update-client-only");
+  await expect(command).not.toContainText("--certificate");
+  await expect(command).not.toContainText("--schedule");
+  await expect(command).not.toContainText("--reload-command");
+  await expect(command).not.toContainText("CERTVAULT_API_KEY");
+  await expect(helper.getByRole("combobox")).toHaveCount(0);
+  await helper
+    .getByRole("checkbox", { name: "Update only", exact: true })
+    .uncheck();
+  await expect(command).toContainText("--reuse-key");
+  await expect(command).toContainText("--destination '/srv/redeploy'");
 });
 
 test("ACME accounts protect current account and delete old registration", async ({
