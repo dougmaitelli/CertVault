@@ -2,17 +2,14 @@ name: UI Tests
 
 on:
   workflow_call:
-  pull_request:
-    branches: [master]
-  push:
-    branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: ui-tests-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 jobs:
   visual:
