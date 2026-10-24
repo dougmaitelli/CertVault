@@ -1,5 +1,5 @@
 ARG PLAYWRIGHT_VERSION
-FROM golang:1.27.0-bookworm AS go
+FROM golang:1.27.2-bookworm AS go
 FROM node:26.7.0-bookworm-slim AS node
 FROM mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-noble
 COPY --from=go /usr/local/go /usr/local/go
