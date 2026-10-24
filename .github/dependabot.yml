@@ -12,10 +12,28 @@ updates:
           - react-dom
           - "@types/react"
           - "@types/react-dom"
-      playwright:
+      vite:
         patterns:
-          - playwright
-          - "@playwright/test"
+          - vite
+          - "@vitejs/*"
+      eslint:
+        patterns:
+          - eslint
+          - "@eslint/*"
+          - "eslint-plugin-*"
+          - typescript-eslint
+    labels: [dependencies]
+
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      playwright:
+        patterns: [playwright, "@playwright/test"]
+      eslint:
+        patterns: [eslint, "@eslint/*", typescript-eslint]
     labels: [dependencies]
 
   - package-ecosystem: npm
@@ -23,6 +41,9 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    groups:
+      astro:
+        patterns: [astro, "@astrojs/*"]
     labels: [dependencies]
 
   - package-ecosystem: gomod
@@ -40,6 +61,12 @@ updates:
 
   - package-ecosystem: docker
     directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+
+  - package-ecosystem: docker
+    directory: /e2e
     schedule:
       interval: weekly
     labels: [dependencies, docker]

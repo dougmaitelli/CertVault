@@ -5,7 +5,7 @@ process.env.NO_PROXY = [process.env.NO_PROXY, "127.0.0.1", "localhost"]
   .join(",");
 
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: ".",
   testMatch: "**/*.spec.ts",
   // The server has one isolated database; reset it before each test.
   workers: 1,
@@ -22,7 +22,7 @@ export default defineConfig({
       maxDiffPixels: 0,
     },
   },
-  snapshotPathTemplate: "{testDir}/snapshots/{projectName}/{arg}{ext}",
+  snapshotPathTemplate: "{testDir}/../screenshots/{arg}{ext}",
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: "http://127.0.0.1:8099",

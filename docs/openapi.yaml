@@ -16,10 +16,10 @@ components:
         status: { type: integer }
         code: { type: string }
         detail: { type: string }
-security: [{apiKey: []}]
+security: [{ apiKey: [] }]
 paths:
   /client/update/key.pem:
-    servers: [{url: /}]
+    servers: [{ url: / }]
     get:
       security: []
       summary: Public client update signing key pinned during HTTPS installation
@@ -28,10 +28,10 @@ paths:
           description: PEM-encoded public key
           content:
             application/x-pem-file:
-              schema: {type: string}
-        "503": {description: Client update assets or signing key unavailable}
+              schema: { type: string }
+        "503": { description: Client update assets or signing key unavailable }
   /client/update/manifest:
-    servers: [{url: /}]
+    servers: [{ url: / }]
     get:
       security: []
       summary: Signed protocol-1 client update manifest
@@ -40,10 +40,10 @@ paths:
           description: Four lines containing protocol, SHA-256 revision, archive size, and base64 signature; the signature covers the first three lines including their newlines
           content:
             text/plain:
-              schema: {type: string}
-        "503": {description: Client update assets or signing key unavailable}
+              schema: { type: string }
+        "503": { description: Client update assets or signing key unavailable }
   /client/update/{revision}.tar:
-    servers: [{url: /}]
+    servers: [{ url: / }]
     get:
       security: []
       summary: Immutable client code archive identified by its SHA-256
@@ -51,15 +51,18 @@ paths:
         - name: revision
           in: path
           required: true
-          schema: {type: string, pattern: '^[0-9a-f]{64}$'}
+          schema: { type: string, pattern: "^[0-9a-f]{64}$" }
       responses:
         "200":
           description: Tar archive containing launcher.sh, sync.sh, and update.sh
           content:
             application/x-tar:
-              schema: {type: string, format: binary}
-        "404": {description: Requested revision is not supplied by this server release}
-        "503": {description: Client update assets or signing key unavailable}
+              schema: { type: string, format: binary }
+        "404":
+          {
+            description: Requested revision is not supplied by this server release,
+          }
+        "503": { description: Client update assets or signing key unavailable }
   /health:
     get:
       security: []
@@ -72,86 +75,130 @@ paths:
                 type: object
                 required: [status, version]
                 properties:
-                  status: {type: string, const: ok}
-                  version: {type: string}
+                  status: { type: string, const: ok }
+                  version: { type: string }
   /certificates:
     get:
       summary: List certificates visible to the caller
-      responses: {"200": {description: Certificate list}, "401": {description: Unauthorized}}
+      responses:
+        {
+          "200": { description: Certificate list },
+          "401": { description: Unauthorized },
+        }
   /certificates/{name}:
     get:
       summary: Inspect a certificate
-      parameters: [{name: name, in: path, required: true, schema: {type: string}}]
-      responses: {"200": {description: Certificate metadata}, "404": {description: Not found}}
+      parameters:
+        [{ name: name, in: path, required: true, schema: { type: string } }]
+      responses:
+        {
+          "200": { description: Certificate metadata },
+          "404": { description: Not found },
+        }
   /certificates/{name}/fullchain.crt:
     get:
       summary: Download the current full chain
-      parameters: [{name: name, in: path, required: true, schema: {type: string}}]
-      responses: {"200": {description: PEM full chain}}
+      parameters:
+        [{ name: name, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: PEM full chain } }
   /certificates/{name}/bundle.tar:
     get:
       summary: Download selected artifacts from one certificate version
       parameters:
-        - {name: name, in: path, required: true, schema: {type: string}}
+        - { name: name, in: path, required: true, schema: { type: string } }
         - name: files
           in: query
           required: true
           description: Comma-separated unique artifacts. Each requires its corresponding read scope.
-          schema: {type: string, example: "fullchain.crt,private.key"}
-        - {name: If-None-Match, in: header, schema: {type: string}}
+          schema: { type: string, example: "fullchain.crt,private.key" }
+        - { name: If-None-Match, in: header, schema: { type: string } }
       responses:
         "200":
           description: Version-consistent tar bundle
-          headers: {ETag: {schema: {type: string}, description: Version and artifact-set validator}}
-          content: {application/x-tar: {schema: {type: string, format: binary}}}
-        "304": {description: Bundle unchanged}
-        "400": {description: Invalid or duplicate artifacts}
-        "403": {description: Missing scope or certificate permission}
-        "404": {description: Certificate disabled or no current version}
+          headers:
+            {
+              ETag:
+                {
+                  schema: { type: string },
+                  description: Version and artifact-set validator,
+                },
+            }
+          content:
+            { application/x-tar: { schema: { type: string, format: binary } } }
+        "304": { description: Bundle unchanged }
+        "400": { description: Invalid or duplicate artifacts }
+        "403": { description: Missing scope or certificate permission }
+        "404": { description: Certificate disabled or no current version }
   /certificates/{name}/private.key:
     get:
       summary: Download the decrypted current private key
-      parameters: [{name: name, in: path, required: true, schema: {type: string}}]
-      responses: {"200": {description: PEM private key}, "403": {description: Missing private_keys:read}}
+      parameters:
+        [{ name: name, in: path, required: true, schema: { type: string } }]
+      responses:
+        {
+          "200": { description: PEM private key },
+          "403": { description: Missing private_keys:read },
+        }
   /certificates/{name}/renew:
     post:
       summary: Queue a renewal
-      parameters: [{name: name, in: path, required: true, schema: {type: string}}]
+      parameters:
+        [{ name: name, in: path, required: true, schema: { type: string } }]
       responses:
         "202":
           description: Persisted job, or existing pending job for this certificate
-          headers: {Location: {schema: {type: string}, description: Job status URL}}
+          headers:
+            {
+              Location:
+                { schema: { type: string }, description: Job status URL },
+            }
           content:
             application/json:
               schema:
                 type: object
                 required: [job_id, status]
                 properties:
-                  job_id: {type: integer, format: int64}
-                  status: {type: string, enum: [queued, running]}
-        "404": {description: Missing, removed, or disabled certificate}
+                  job_id: { type: integer, format: int64 }
+                  status: { type: string, enum: [queued, running] }
+        "404": { description: Missing, removed, or disabled certificate }
         "429":
           description: Queue capacity exhausted
-          headers: {Retry-After: {schema: {type: string}}}
+          headers: { Retry-After: { schema: { type: string } } }
   /jobs/{id}:
     get:
       summary: Inspect a durable issuance job
-      parameters: [{name: id, in: path, required: true, schema: {type: integer, format: int64}}]
+      parameters:
+        [
+          {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: integer, format: int64 },
+          },
+        ]
       responses:
-        "200": {description: Job status and outcome; requires administrator access or a read/renew scope for its certificate}
-        "400": {description: Invalid job ID}
-        "403": {description: Missing certificate permission}
-        "404": {description: Job not found}
+        "200":
+          {
+            description: Job status and outcome; requires administrator access or a read/renew scope for its certificate,
+          }
+        "400": { description: Invalid job ID }
+        "403": { description: Missing certificate permission }
+        "404": { description: Job not found }
   /acme-accounts:
     get:
       summary: List ACME accounts
-      responses: {"200": {description: ACME account list}, "403": {description: Administrator access required}}
+      responses:
+        {
+          "200": { description: ACME account list },
+          "403": { description: Administrator access required },
+        }
   /acme-accounts/{id}:
     delete:
       summary: Delete a non-current ACME account
-      parameters: [{name: id, in: path, required: true, schema: {type: string}}]
+      parameters:
+        [{ name: id, in: path, required: true, schema: { type: string } }]
       responses:
-        "204": {description: Deleted}
-        "403": {description: Administrator access required}
-        "404": {description: ACME account not found}
-        "409": {description: Current ACME accounts cannot be deleted}
+        "204": { description: Deleted }
+        "403": { description: Administrator access required }
+        "404": { description: ACME account not found }
+        "409": { description: Current ACME accounts cannot be deleted }

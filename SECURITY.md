@@ -4,10 +4,10 @@
 
 CertVault is currently maintained on the latest release line. Security fixes are applied to the latest release and to `master`; older releases may not receive backports.
 
-| Version | Supported |
-| --- | --- |
-| Latest release | Yes |
-| `master` | Yes |
+| Version        | Supported             |
+| -------------- | --------------------- |
+| Latest release | Yes                   |
+| `master`       | Yes                   |
 | Older releases | No guaranteed support |
 
 ## Reporting a vulnerability

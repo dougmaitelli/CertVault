@@ -9,6 +9,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/* \
     && npm install --global pnpm@11.24.0
-WORKDIR /work/web
+WORKDIR /work/e2e
 ENV CI=true
-CMD ["sh", "-c", "pnpm install --frozen-lockfile && pnpm typecheck:e2e && pnpm test:e2e"]
+CMD ["sh", "-c", "pnpm install --frozen-lockfile && pnpm check && pnpm test"]

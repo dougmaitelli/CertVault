@@ -11,13 +11,13 @@ harness behind the `e2e` build tag; its reset endpoint is absent from production
 # From the repository root: canonical Linux environment, also used by CI
 make test-e2e-docker
 
-# From web/: select an individual test
-pnpm test:e2e:docker --grep 'API key'
+# From e2e/: select an individual test
+pnpm test:docker --grep 'API key'
 
 # Local debugging: Go, Node and installed Chromium are required
 pnpm exec playwright install chromium
-pnpm test:e2e
-pnpm test:e2e:ui
+pnpm test
+pnpm test:ui
 pnpm exec playwright show-report
 ```
 
@@ -28,9 +28,13 @@ must be free; startup fails if another process owns it. The harness ignores
 application configuration and secrets from the environment, uses a temporary
 data directory, and removes it on graceful shutdown.
 
-CI runs `UI integration and screenshots` on every PR and push to master. Its
+On Linux hosts without Docker bridge networking, set
+`CERTVAULT_E2E_NETWORK=host` for both image building and test execution.
+
+CI runs `UI integration and screenshots` for application, browser, shared tooling,
+and screenshot changes, plus release tags and manual validation. Its
 `ui-test-report` artifact includes the HTML report, expected/actual/diff images,
-traces, and failure videos. Configure that job as a required branch check to
+traces, and failure videos. Configure `CI result` as the required branch check to
 block merges on failures.
 
 ## Intentional visual changes
@@ -39,14 +43,14 @@ block merges on failures.
 2. Update only affected baselines in the canonical container:
 
    ```sh
-   pnpm test:e2e:docker --update-snapshots --grep 'certificate list'
+   pnpm test:docker --update-snapshots --grep 'certificate list'
    ```
 
-3. Review the PNG changes under `web/e2e/snapshots/` and include them with the UI
+3. Review the PNG changes under root `screenshots/` and include them with the UI
    change. Run again without the update flag before committing.
 
-Normal runs never create or update baselines. The direct `test:e2e:update`
-command is for use within the canonical environment. Both Playwright dependencies
+Normal runs never create or update baselines. `make screenshots` regenerates the
+same images through the specs in Docker. Both Playwright dependencies
 must use the same exact version. Dependabot groups them in one update, and the
 Docker runner derives the browser image version from that pin. When upgrading,
 review any rendering differences before updating affected baselines. Local
@@ -94,5 +98,5 @@ failure tests, the queued-job completion fixture, and the builder's displayed-to
 Screenshots wait for meaningful content and loaded fonts/images; Playwright
 finishes finite animations and disables infinite ones, with zero differing pixels allowed (using Playwright's default
 per-pixel color threshold). They do not replace assertions or cover other
-browsers, mobile layouts, or real external integrations. The existing
-`make screenshots` command remains a separate documentation screenshot tool.
+browsers, mobile layouts, or real external integrations. Documentation references
+the same root screenshot files used for visual regression.

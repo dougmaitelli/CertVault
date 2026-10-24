@@ -39,7 +39,7 @@ CertVault is a self-hosted ACME certificate controller for homelabs. It obtains 
 </tr>
 <tr>
 <td colspan="2">
-<a href="screenshots/installation-command.png"><img src="screenshots/installation-command.png" alt="Installation command builder"></a>
+<a href="screenshots/installation-command-default.png"><img src="screenshots/installation-command-default.png" alt="Installation command builder"></a>
 <p><em>Installation command builder — configure certificate files, destination, sync schedule, and a post-update reload command.</em></p>
 </td>
 </tr>
@@ -206,31 +206,31 @@ When reusing a saved key, run the command on the original client as the same use
 
 Global values can be overridden with:
 
-| Variable | Purpose |
-|---|---|
-| `CERTVAULT_CONFIG` | YAML path; defaults to `/config/config.yaml` |
-| `CERTVAULT_DATA_DIR` | Persistent data directory |
-| `CERTVAULT_LISTEN` | HTTP listen address |
-| `CERTVAULT_PUBLIC_URL` | Browser-visible HTTPS origin |
-| `CERTVAULT_UI_ENABLED` | Enable or disable the web console and browser authentication routes |
-| `CERTVAULT_LOG_LEVEL` | Logging level |
-| `CERTVAULT_ACME_EMAIL` | ACME account email |
-| `CERTVAULT_ACME_DIRECTORY_URL` | ACME directory override |
-| `CERTVAULT_ACME_DNS_RESOLVERS` | Comma-separated recursive resolvers used for DNS-01 checks; defaults to `1.1.1.1:53,1.0.0.1:53` |
-| `CERTVAULT_MASTER_KEY` | Base64-encoded 32-byte encryption key |
-| `CERTVAULT_MASTER_KEY_FILE` | Path to a file containing the Base64-encoded encryption key |
-| `CERTVAULT_SESSION_DURATION` | Browser session lifetime; defaults to `8h` |
-| `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN` | Break-glass UI token |
-| `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` | Path to a file containing the break-glass UI token |
-| `CERTVAULT_OIDC_ISSUER_URL` | OIDC issuer used for provider discovery |
-| `CERTVAULT_OIDC_CLIENT_ID` | OIDC client identifier |
-| `CERTVAULT_OIDC_CLIENT_SECRET` | OIDC client secret |
-| `CERTVAULT_OIDC_CLIENT_SECRET_FILE` | Path to a file containing the OIDC client secret |
-| `CERTVAULT_OIDC_SCOPES` | Comma-separated OIDC scopes; must include `openid` |
-| `CERTVAULT_OIDC_ALLOWED_GROUPS` | Comma-separated administrator group allowlist |
-| `CERTVAULT_APPRISE_URL` | Apprise REST notification endpoint |
-| `CERTVAULT_APPRISE_URLS` | Comma-separated inline Apprise delivery URLs |
-| `CERTVAULT_APPRISE_TAGS` | Comma-separated Apprise routing tags |
+| Variable                               | Purpose                                                                                         |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `CERTVAULT_CONFIG`                     | YAML path; defaults to `/config/config.yaml`                                                    |
+| `CERTVAULT_DATA_DIR`                   | Persistent data directory                                                                       |
+| `CERTVAULT_LISTEN`                     | HTTP listen address                                                                             |
+| `CERTVAULT_PUBLIC_URL`                 | Browser-visible HTTPS origin                                                                    |
+| `CERTVAULT_UI_ENABLED`                 | Enable or disable the web console and browser authentication routes                             |
+| `CERTVAULT_LOG_LEVEL`                  | Logging level                                                                                   |
+| `CERTVAULT_ACME_EMAIL`                 | ACME account email                                                                              |
+| `CERTVAULT_ACME_DIRECTORY_URL`         | ACME directory override                                                                         |
+| `CERTVAULT_ACME_DNS_RESOLVERS`         | Comma-separated recursive resolvers used for DNS-01 checks; defaults to `1.1.1.1:53,1.0.0.1:53` |
+| `CERTVAULT_MASTER_KEY`                 | Base64-encoded 32-byte encryption key                                                           |
+| `CERTVAULT_MASTER_KEY_FILE`            | Path to a file containing the Base64-encoded encryption key                                     |
+| `CERTVAULT_SESSION_DURATION`           | Browser session lifetime; defaults to `8h`                                                      |
+| `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN`      | Break-glass UI token                                                                            |
+| `CERTVAULT_BOOTSTRAP_ADMIN_TOKEN_FILE` | Path to a file containing the break-glass UI token                                              |
+| `CERTVAULT_OIDC_ISSUER_URL`            | OIDC issuer used for provider discovery                                                         |
+| `CERTVAULT_OIDC_CLIENT_ID`             | OIDC client identifier                                                                          |
+| `CERTVAULT_OIDC_CLIENT_SECRET`         | OIDC client secret                                                                              |
+| `CERTVAULT_OIDC_CLIENT_SECRET_FILE`    | Path to a file containing the OIDC client secret                                                |
+| `CERTVAULT_OIDC_SCOPES`                | Comma-separated OIDC scopes; must include `openid`                                              |
+| `CERTVAULT_OIDC_ALLOWED_GROUPS`        | Comma-separated administrator group allowlist                                                   |
+| `CERTVAULT_APPRISE_URL`                | Apprise REST notification endpoint                                                              |
+| `CERTVAULT_APPRISE_URLS`               | Comma-separated inline Apprise delivery URLs                                                    |
+| `CERTVAULT_APPRISE_TAGS`               | Comma-separated Apprise routing tags                                                            |
 
 Some values may end in `_FILE`. CertVault reads that file and supplies its contents to the provider without retaining the value.
 
@@ -270,33 +270,8 @@ By default, audit entries record the direct network peer and ignore forwarded ad
 
 ## Development
 
-To run the UI and API locally without configuring DNS or issuing certificates:
-
-```sh
-make dev
-```
-
-Open `http://localhost:8081` and use `certvault-dev-admin` as the bootstrap token. Development data and generated secrets are stored under the ignored `.cache/dev` directory. The development configuration enables the mock ACME issuer, so the configured certificates can be issued and renewed from the UI without making ACME or DNS-provider requests. These locally signed certificates are untrusted and intended only for testing CertVault's workflows.
-
-The main quality commands are:
-
-```sh
-make format        # gofmt and Prettier
-make format-check  # verify formatting without changing files
-make vet           # go vet
-make lint          # golangci-lint and ESLint
-make test          # Go tests and frontend type checking
-make build         # backend binary and frontend production bundle
-make check         # run every non-mutating verification above
-```
-
-Frontend commands can also be run independently from `web/` with `pnpm run format`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test`, `pnpm run build`, or `pnpm run check`.
-
-Regenerate the README screenshots from deterministic mocked API data with `make screenshots`. This requires Playwright's Chromium browser (`cd web && pnpm exec playwright install chromium`). To use Playwright's prebuilt browser container instead, run `make screenshots-docker` with Docker available.
-
-Browser integration and visual regression coverage runs with `make test-e2e-docker`.
-See [the browser test guide](web/e2e/README.md) for coverage, debugging, and baseline updates.
-
+See [Contributing](CONTRIBUTING.md) for local development and quality checks,
+and the [browser test guide](e2e/README.md) for integration testing.
 The API outline is in [`docs/openapi.yaml`](docs/openapi.yaml).
 
 ## License

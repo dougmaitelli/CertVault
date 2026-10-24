@@ -8,7 +8,7 @@ export GOLANGCI_LINT_CACHE
 	format format-backend format-frontend format-check \
 	format-check-backend format-check-frontend lint lint-backend lint-frontend \
 	vet check tools clean docker config-check dev \
-	docs-install docs-dev docs-check docs-build docs-preview
+	docs-install docs-dev docs-check docs-build docs-preview format-shared format-check-shared
 
 DEV_DIR := $(CURDIR)/.cache/dev
 DEV_CONFIG := $(CURDIR)/config/config.dev.yaml
@@ -18,6 +18,7 @@ DEV_ADMIN_TOKEN := $(DEV_DIR)/admin-token
 build: build-backend build-frontend
 
 dependencies: dependencies-backend dependencies-frontend
+	pnpm --dir e2e install --frozen-lockfile
 
 dependencies-backend:
 	cd backend && go mod download
@@ -39,7 +40,10 @@ test-backend:
 test-frontend:
 	cd web && pnpm run test
 
-format: format-backend format-frontend
+format: format-backend format-frontend format-shared
+
+format-shared:
+	cd web && pnpm exec prettier --write '../*.{md,yaml,yml}' '../.github/**/*.{yml,yaml}' '../config/*.{yml,yaml}' '../{docs,e2e}/**/*.{md,mdx,mjs,ts,css,json,yaml,yml}' --ignore-path ../.prettierignore
 
 format-backend:
 	gofmt -w backend
@@ -47,7 +51,10 @@ format-backend:
 format-frontend:
 	cd web && pnpm run format
 
-format-check: format-check-backend format-check-frontend
+format-check: format-check-backend format-check-frontend format-check-shared
+
+format-check-shared:
+	cd web && pnpm exec prettier --check '../*.{md,yaml,yml}' '../.github/**/*.{yml,yaml}' '../config/*.{yml,yaml}' '../{docs,e2e}/**/*.{md,mdx,mjs,ts,css,json,yaml,yml}' --ignore-path ../.prettierignore
 
 format-check-backend:
 	test -z "$$(gofmt -l backend)"
@@ -81,16 +88,16 @@ clean:
 	rm -rf .cache
 
 screenshots:
-	cd web && pnpm run screenshots
+	pnpm --dir e2e screenshots
 
 screenshots-docker:
-	cd web && pnpm run screenshots:docker
+	pnpm --dir e2e screenshots
 
 docker:
 	docker compose build
 
 docs-install:
-	pnpm --dir docs install
+	pnpm --dir docs install --frozen-lockfile
 
 docs-dev:
 	@echo "CertVault docs: http://localhost:4321/CertVault/"
@@ -125,7 +132,8 @@ dev: dependencies
 		pnpm run dev
 
 test-e2e:
-	cd web && pnpm run typecheck:e2e && pnpm run test:e2e
+	pnpm --dir e2e check
+	pnpm --dir e2e test
 
 test-e2e-docker:
-	cd web && pnpm run test:e2e:docker
+	sh e2e/scripts/docker.sh

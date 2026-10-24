@@ -14,8 +14,8 @@ Thank you for helping improve CertVault. Bug reports, documentation, tests, and 
 
 Requirements:
 
-- Go 1.25.10 or the version declared by `backend/go.mod`
-- Node.js 24 or newer with pnpm 11.20.0
+- Go at the version declared by `backend/go.mod`
+- Node.js 26 with pnpm 11.24.0
 - OpenSSL for generation of local development secrets
 - Docker for container builds and the canonical browser test environment
 
@@ -57,9 +57,9 @@ make test-e2e-docker
 ```
 
 Review intentional baseline changes using the workflow in
-[web/e2e/README.md](web/e2e/README.md). CI uploads browser reports, traces,
+[e2e/README.md](e2e/README.md). CI uploads browser reports, traces,
 and screenshot differences. `make screenshots` and `make screenshots-docker`
-remain available for documentation screenshots.
+regenerate the same root images used by documentation and visual regression.
 
 ## Pull requests
 

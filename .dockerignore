@@ -3,6 +3,10 @@
 .codex
 web/node_modules
 web/dist
+e2e
+docs/node_modules
+docs/dist
+docs/.astro
 .pnpm-store
 data
 secrets

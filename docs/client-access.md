@@ -7,11 +7,11 @@ API keys let clients fetch certificate material without administrator access.
 
 ## Scopes
 
-| Scope | Allows |
-|---|---|
+| Scope               | Allows                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------- |
 | `certificates:read` | Certificate metadata, versions, `certificate.crt`, `chain.crt`, and `fullchain.crt` |
-| `private_keys:read` | `private.key` downloads |
-| `renewals:trigger` | Manual renewal requests |
+| `private_keys:read` | `private.key` downloads                                                             |
+| `renewals:trigger`  | Manual renewal requests                                                             |
 
 Every key also has a certificate allowlist. Selecting “Any certificate” includes certificates added later.
 

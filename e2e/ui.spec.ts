@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { X509Certificate, createPrivateKey } from "node:crypto";
-import type { APIKeyCreationResponse, Certificate } from "../src/api/types";
+import type { APIKeyCreationResponse, Certificate } from "../web/src/api/types";
 import { expect, login, navigate, screenshot, test } from "./fixtures";
 
 test("login validation, session persistence and logout", async ({ page }) => {
