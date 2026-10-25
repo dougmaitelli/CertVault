@@ -7,8 +7,8 @@ export GOLANGCI_LINT_CACHE
 	build build-backend build-frontend test test-backend test-frontend test-e2e test-e2e-docker \
 	format format-backend format-frontend format-check \
 	format-check-backend format-check-frontend lint lint-backend lint-frontend \
-	vet check tools clean docker config-check dev \
-	docs-install docs-dev docs-check docs-build docs-preview format-shared format-check-shared
+	vet check check-app tools clean docker config-check dev \
+	docs-install docs-dev docs-check docs-build docs-preview format-shared format-check-shared format-check-docs
 
 DEV_DIR := $(CURDIR)/.cache/dev
 DEV_CONFIG := $(CURDIR)/config/config.dev.yaml
@@ -51,10 +51,13 @@ format-backend:
 format-frontend:
 	cd web && pnpm run format
 
-format-check: format-check-backend format-check-frontend format-check-shared
+format-check: format-check-backend format-check-frontend format-check-shared format-check-docs
 
 format-check-shared:
-	cd web && pnpm exec prettier --check '../*.{md,yaml,yml}' '../.github/**/*.{yml,yaml}' '../config/*.{yml,yaml}' '../{docs,e2e}/**/*.{md,mdx,mjs,ts,css,json,yaml,yml}' --ignore-path ../.prettierignore
+	cd web && pnpm exec prettier --check '../*.{yaml,yml}' '../.github/**/*.{yml,yaml}' '../config/*.{yml,yaml}' '../e2e/**/*.{md,mdx,mjs,ts,css,json,yaml,yml}' --ignore-path ../.prettierignore
+
+format-check-docs:
+	cd web && pnpm exec prettier --check '../*.md' '../docs/**/*.{md,mdx,mjs,ts,css,json,yaml,yml}' --ignore-path ../.prettierignore
 
 format-check-backend:
 	test -z "$$(gofmt -l backend)"
@@ -73,7 +76,9 @@ lint-frontend:
 vet:
 	cd backend && go vet ./...
 
-check: format-check vet lint test build
+check: check-app format-check-docs
+
+check-app: format-check-backend format-check-frontend format-check-shared vet lint test build
 
 tools: $(GOLANGCI_LINT)
 

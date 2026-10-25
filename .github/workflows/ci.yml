@@ -45,7 +45,7 @@ jobs:
             shared:
               - '{Makefile,.golangci.yml,.prettierignore,.github/workflows/ci.yml}'
             docs:
-              - '{docs/**,screenshots/**,assets/**,Makefile,.prettierignore,.github/workflows/{ci,pages}.yml}'
+              - '{docs/**,*.md,screenshots/**,assets/**,Makefile,.prettierignore,web/package.json,web/pnpm-lock.yaml,.github/workflows/{ci,pages}.yml}'
 
       - name: Validate release tag
         if: github.ref_type == 'tag'
@@ -85,7 +85,7 @@ jobs:
 
       - run: make dependencies-backend dependencies-frontend
 
-      - run: make check
+      - run: make check-app
 
   ui:
     name: Browser tests

@@ -41,6 +41,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
         working-directory: docs
 
+      - run: make dependencies-frontend format-check-docs
+
       - run: pnpm check
         working-directory: docs
 
