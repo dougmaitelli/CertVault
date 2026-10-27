@@ -373,6 +373,50 @@ test("install command builder defaults, customization and copying", async ({
   );
   await screenshot(page, "installation-command-customized.png", helper);
 
+  await helper.getByLabel("Installation preset").selectOption("proxmox-ve");
+  await expect(command).toContainText(
+    "--file 'fullchain.crt=pveproxy-ssl.pem'",
+  );
+  await expect(command).toContainText("--file 'private.key=pveproxy-ssl.key'");
+  await expect(command).toContainText("--destination '/etc/pve/local'");
+  await expect(command).toContainText("--schedule '17 3 * * *'");
+  await expect(command).toContainText(
+    "--reload-command 'systemctl restart pveproxy'",
+  );
+  await expect(command).toContainText(
+    `| env CERTVAULT_API_KEY='${displayToken}' sh`,
+  );
+  await expect(command).not.toContainText("sudo");
+  await screenshot(page, "installation-command-proxmox.png", helper);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(helper.getByLabel("Installation preset")).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await helper.getByLabel("Installation preset").selectOption("");
+  await helper
+    .getByLabel("Installation preset")
+    .selectOption("proxmox-backup-server");
+  await expect(command).toContainText("--file 'fullchain.crt=proxy.pem'");
+  await expect(command).toContainText("--file 'private.key=proxy.key'");
+  await expect(command).toContainText("--destination '/etc/proxmox-backup'");
+  await expect(command).toContainText("--schedule '17 3 * * *'");
+  await expect(command).toContainText(
+    "--reload-command 'chown root:backup /etc/proxmox-backup/proxy.pem /etc/proxmox-backup/proxy.key && chmod 640 /etc/proxmox-backup/proxy.pem /etc/proxmox-backup/proxy.key && systemctl reload proxmox-backup-proxy'",
+  );
+  await expect(command).not.toContainText("sudo");
+  await screenshot(page, "installation-command-proxmox-backup.png", helper);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await helper.getByLabel("Installation preset").selectOption("");
+  await expect(command).toContainText("--file 'fullchain.crt'");
+  await expect(command).not.toContainText("--reload-command");
+  await expect(command).toContainText("sudo env");
+
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await expect(
     helper.getByLabel("Automatically update the client (requires HTTPS)"),
@@ -420,6 +464,8 @@ test("install command builder defaults, customization and copying", async ({
   await expect(command).not.toContainText("--schedule");
   await expect(command).not.toContainText("--reload-command");
   await expect(command).not.toContainText("CERTVAULT_API_KEY");
+  await helper.getByLabel("Use sudo (disable when running as root)").uncheck();
+  await expect(command).toContainText("| sh -s --");
   await expect(helper.getByRole("combobox")).toHaveCount(0);
   await helper
     .getByRole("checkbox", { name: "Update only", exact: true })

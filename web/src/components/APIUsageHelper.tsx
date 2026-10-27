@@ -27,6 +27,42 @@ const schedules = [
   { value: "17 3 * * 0", label: "Sunday at 03:17" },
 ] as const;
 
+const installationPresets = [
+  {
+    id: "proxmox-ve",
+    label: "Proxmox VE",
+    description:
+      "Run on each Proxmox VE node as root. These settings use the custom certificate files and restart pveproxy after files change. You can edit the settings below.",
+    files: "fullchain.crt,private.key",
+    destination: "/etc/pve/local",
+    outputNames: {
+      ...defaultOutputNames,
+      "fullchain.crt": "pveproxy-ssl.pem",
+      "private.key": "pveproxy-ssl.key",
+    },
+    schedule: schedules[0].value,
+    reloadCommand: "systemctl restart pveproxy",
+    useSudo: false,
+  },
+  {
+    id: "proxmox-backup-server",
+    label: "Proxmox Backup Server",
+    description:
+      "Run on the backup server as root. The command sets root:backup ownership and mode 0640 before reloading proxmox-backup-proxy. Keep the paths in the command aligned with any destination or filename edits. Clients that pin the certificate fingerprint need their fingerprint updated when the certificate changes.",
+    files: "fullchain.crt,private.key",
+    destination: "/etc/proxmox-backup",
+    outputNames: {
+      ...defaultOutputNames,
+      "fullchain.crt": "proxy.pem",
+      "private.key": "proxy.key",
+    },
+    schedule: schedules[0].value,
+    reloadCommand:
+      "chown root:backup /etc/proxmox-backup/proxy.pem /etc/proxmox-backup/proxy.key && chmod 640 /etc/proxmox-backup/proxy.pem /etc/proxmox-backup/proxy.key && systemctl reload proxmox-backup-proxy",
+    useSudo: false,
+  },
+] as const;
+
 type APIUsageHelperProps = {
   certificates: Certificate[];
   scopes: string[];
@@ -62,6 +98,9 @@ export function APIUsageHelper({
   const [schedule, setSchedule] = useState<string>(schedules[0].value);
   const [copied, setCopied] = useState(false);
   const [updateOnly, setUpdateOnly] = useState(false);
+  const [preset, setPreset] = useState("");
+  const selectedPreset = installationPresets.find((item) => item.id === preset);
+  const [useSudo, setUseSudo] = useState(true);
   const canInstall = certificates.length > 0 && availableFileOptions.length > 0;
   const copyFeedbackTimeout = useRef<number | null>(null);
 
@@ -79,14 +118,12 @@ export function APIUsageHelper({
     if (updateOnly) {
       return [
         `curl -fsSL ${shellQuote(installer)}`,
-        "| sudo sh -s --",
+        `| ${useSudo ? "sudo " : ""}sh -s --`,
         "--update-client-only",
         `--server ${shellQuote(window.location.origin)}`,
       ].join(" \\\n  ");
     }
-    const executor = token
-      ? `sudo env CERTVAULT_API_KEY=${shellQuote(token)} sh`
-      : "sudo sh";
+    const executor = `${useSudo ? "sudo " : ""}${token ? `env CERTVAULT_API_KEY=${shellQuote(token)} ` : ""}sh`;
     const fileArguments = files
       .split(",")
       .filter(Boolean)
@@ -119,7 +156,20 @@ export function APIUsageHelper({
     schedule,
     token,
     updateOnly,
+    useSudo,
   ]);
+
+  function selectPreset(id: string) {
+    const selected = installationPresets.find((item) => item.id === id);
+    setPreset(id);
+    setFiles(selected?.files ?? availableFileOptions.at(0)?.value ?? "");
+    setDestination(selected?.destination ?? defaultDestination(certificate));
+    setOutputNames(selected?.outputNames ?? defaultOutputNames);
+    setSchedule(selected?.schedule ?? schedules[0].value);
+    setReloadCommand(selected?.reloadCommand ?? "");
+    setUseSudo(selected?.useSudo ?? true);
+    setCopied(false);
+  }
 
   function selectCertificate(nextCertificate: string) {
     const previousDefault = defaultDestination(certificate);
@@ -221,6 +271,29 @@ export function APIUsageHelper({
       {!updateOnly && (
         <>
           <label className="api-usage-output">
+            Installation preset
+            <select
+              value={preset}
+              onChange={(event) => selectPreset(event.target.value)}
+            >
+              <option value="">Custom</option>
+              {installationPresets.map((item) => (
+                <option
+                  key={item.id}
+                  value={item.id}
+                  disabled={
+                    !availableFileOptions.some(
+                      (option) => option.value === item.files,
+                    )
+                  }
+                >
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedPreset && <p>{selectedPreset.description}</p>}
+          <label className="api-usage-output">
             Destination folder on client
             <input
               value={destination}
@@ -268,6 +341,14 @@ export function APIUsageHelper({
           </label>
         </>
       )}
+      <label className="api-usage-auto-update">
+        <input
+          type="checkbox"
+          checked={useSudo}
+          onChange={(event) => setUseSudo(event.target.checked)}
+        />
+        Use sudo (disable when running as root)
+      </label>
       <div className="api-command">
         <code>{command}</code>
         <button

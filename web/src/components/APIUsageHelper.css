@@ -53,7 +53,8 @@
   font-size: 0.72rem;
 }
 
-.api-usage-output input {
+.api-usage-output input,
+.api-usage-output select {
   padding: 8px 10px;
   font-size: 0.8rem;
 }
