@@ -3,10 +3,15 @@ GOLANGCI_LINT := $(CURDIR)/.bin/golangci-lint
 GOLANGCI_LINT_CACHE := $(CURDIR)/.cache/golangci-lint
 export GOLANGCI_LINT_CACHE
 
+SHFMT_VERSION := v3.14.1
+SHFMT := $(CURDIR)/.bin/shfmt
+SHFMT_FLAGS := -ln posix -i 2 -ci
+SHELL_SOURCES := $(wildcard web/client/*.sh web/scripts/*.sh)
+
 .PHONY: dependencies dependencies-backend dependencies-frontend screenshots screenshots-docker \
 	build build-backend build-frontend test test-backend test-frontend test-e2e test-e2e-docker \
-	format format-backend format-frontend format-check \
-	format-check-backend format-check-frontend lint lint-backend lint-frontend \
+	format format-backend format-frontend format-shell format-check \
+	format-check-backend format-check-frontend format-check-shell lint lint-backend lint-frontend \
 	vet check check-app tools clean docker config-check dev \
 	docs-install docs-dev docs-check docs-build docs-preview format-shared format-check-shared format-check-docs
 
@@ -40,7 +45,7 @@ test-backend:
 test-frontend:
 	cd web && pnpm run test
 
-format: format-backend format-frontend format-shared
+format: format-backend format-frontend format-shared format-shell
 
 format-shared:
 	cd web && pnpm exec prettier --write '../*.{md,yaml,yml}' '../.github/**/*.{yml,yaml}' '../config/*.{yml,yaml}' '../{docs,e2e}/**/*.{md,mdx,mjs,ts,css,json,yaml,yml}' --ignore-path ../.prettierignore
@@ -51,7 +56,10 @@ format-backend:
 format-frontend:
 	cd web && pnpm run format
 
-format-check: format-check-backend format-check-frontend format-check-shared format-check-docs
+format-shell: $(SHFMT)
+	$(SHFMT) $(SHFMT_FLAGS) -w $(SHELL_SOURCES)
+
+format-check: format-check-backend format-check-frontend format-check-shared format-check-docs format-check-shell
 
 format-check-shared:
 	cd web && pnpm exec prettier --check '../*.{yaml,yml}' '../.github/**/*.{yml,yaml}' '../config/*.{yml,yaml}' '../e2e/**/*.{md,mdx,mjs,ts,css,json,yaml,yml}' --ignore-path ../.prettierignore
@@ -64,6 +72,9 @@ format-check-backend:
 
 format-check-frontend:
 	cd web && pnpm run format:check
+
+format-check-shell: $(SHFMT)
+	$(SHFMT) $(SHFMT_FLAGS) -d $(SHELL_SOURCES)
 
 lint: lint-backend lint-frontend
 
@@ -78,13 +89,17 @@ vet:
 
 check: check-app format-check-docs
 
-check-app: format-check-backend format-check-frontend format-check-shared vet lint test build
+check-app: format-check-backend format-check-frontend format-check-shared format-check-shell vet lint test build
 
-tools: $(GOLANGCI_LINT)
+tools: $(GOLANGCI_LINT) $(SHFMT)
 
 $(GOLANGCI_LINT):
 	mkdir -p $(dir $(GOLANGCI_LINT))
 	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(dir $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION)
+
+$(SHFMT):
+	mkdir -p $(dir $(SHFMT))
+	GOBIN=$(dir $(SHFMT)) go install mvdan.cc/sh/v3/cmd/shfmt@$(SHFMT_VERSION)
 
 clean:
 	cd backend && go clean

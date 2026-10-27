@@ -33,7 +33,7 @@ func clientUpdateFixture(t *testing.T) *config.Config {
 	}
 
 	for _, file := range []string{"launcher.sh", "sync.sh", "update.sh"} {
-		source, err := os.ReadFile(filepath.Join("..", "..", "web", "public", "client", file))
+		source, err := os.ReadFile(filepath.Join("..", "..", "web", "client", file))
 		if err != nil {
 			t.Fatal(err)
 		}

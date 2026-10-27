@@ -1,6 +1,6 @@
 /web/node_modules/
 /web/dist/
-/web/public/client/install.sh
+/web/public/client/
 /web/*.tsbuildinfo
 /docs/node_modules/
 /docs/dist/

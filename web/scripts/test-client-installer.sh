@@ -94,12 +94,12 @@ run_installer() {
     MOCK_CURL_LOG="$test_dir/curl.log" \
     CERTVAULT_API_KEY="$token" \
     sh public/client/install.sh \
-      --server "$server" \
-      --certificate "homelab" \
-      --file "fullchain.crt" \
-      --file "private.key" \
-      --destination "$destination" \
-      --schedule "$schedule"
+    --server "$server" \
+    --certificate "homelab" \
+    --file "fullchain.crt" \
+    --file "private.key" \
+    --destination "$destination" \
+    --schedule "$schedule"
 }
 
 run_installer
@@ -145,9 +145,9 @@ destination="$test_dir/output-reused"
 PATH="$test_dir/bin:$PATH" HOME="$test_dir/home" \
   TEST_CRONTAB="$test_dir/crontab" MOCK_CURL_LOG="$test_dir/curl.log" \
   CERTVAULT_API_KEY="" sh public/client/install.sh \
-    --reuse-key --server "$server" --certificate homelab \
-    --file fullchain.crt --file private.key --destination "$destination" \
-    --schedule "12 6 * * *"
+  --reuse-key --server "$server" --certificate homelab \
+  --file fullchain.crt --file private.key --destination "$destination" \
+  --schedule "12 6 * * *"
 [ "$(cat "$saved_token")" = "replacement-token" ]
 cmp "$destination/private.key" "$test_dir/material/private.key"
 grep -Fq "12 6 * * *" "$test_dir/crontab"
@@ -157,8 +157,8 @@ grep -Fq "12 6 * * *" "$test_dir/crontab"
 if PATH="$test_dir/bin:$PATH" HOME="$test_dir/home" \
   TEST_CRONTAB="$test_dir/crontab" MOCK_CURL_LOG="$test_dir/curl.log" \
   CERTVAULT_API_KEY="must-not-be-used" sh public/client/install.sh \
-    --reuse-key --server "$server" --certificate missing \
-    --file fullchain.crt --destination "$test_dir/missing"; then
+  --reuse-key --server "$server" --certificate missing \
+  --file fullchain.crt --destination "$test_dir/missing"; then
   printf 'Missing saved API key was accepted\n' >&2
   exit 1
 fi
@@ -173,13 +173,13 @@ PATH="$test_dir/bin:$PATH" \
   MOCK_CHMOD_UNSUPPORTED_DIR="$mapped_destination" \
   CERTVAULT_API_KEY="$token" \
   sh public/client/install.sh \
-    --server "$server" \
-    --certificate "proxmox" \
-    --file "fullchain.crt=pveproxy-ssl.pem" \
-    --file "private.key=pveproxy-ssl.key" \
-    --destination "$mapped_destination" \
-    --reload-command "printf 'reloaded\\n' >> '$reload_log'" \
-    --schedule "$schedule"
+  --server "$server" \
+  --certificate "proxmox" \
+  --file "fullchain.crt=pveproxy-ssl.pem" \
+  --file "private.key=pveproxy-ssl.key" \
+  --destination "$mapped_destination" \
+  --reload-command "printf 'reloaded\\n' >> '$reload_log'" \
+  --schedule "$schedule"
 
 mapped_job_script="$test_dir/home/.local/libexec/certvault-proxmox-fullchain.crt-private.key"
 cmp "$mapped_destination/pveproxy-ssl.pem" "$test_dir/material/fullchain.crt"
@@ -202,7 +202,7 @@ for run in 1 2; do
 done
 wait "$first_pid"
 wait "$second_pid"
-[ "$(wc -l <"$reload_log")" -eq "$((previous_reloads+1))" ]
+[ "$(wc -l <"$reload_log")" -eq "$((previous_reloads + 1))" ]
 
 # A mismatched key must leave deployed files and the validator untouched.
 mkdir "$test_dir/mismatch"
@@ -268,13 +268,13 @@ printf '#!/bin/sh\nexit 99\n' >"$test_dir/home/.local/libexec/certvault-sync"
 PATH="$test_dir/bin:$PATH" HOME="$test_dir/home" \
   TEST_CRONTAB="$test_dir/crontab" MOCK_CURL_LOG="$test_dir/curl.log" \
   CERTVAULT_API_KEY="" sh public/client/install.sh \
-    --update-client-only --server "$server"
+  --update-client-only --server "$server"
 diff -r "$test_dir/config-before" "$test_dir/home/.config/certvault"
 cmp "$test_dir/crontab" "$test_dir/cron-before"
 cmp "$mapped_job_script" "$test_dir/job-before"
 cmp "$mapped_destination/pveproxy-ssl.pem" "$test_dir/certificate-before"
 cmp "$reload_log" "$test_dir/reloads-before"
-diff -B public/client/sync.sh "$test_dir/home/.local/libexec/certvault-sync"
+diff -B client/sync.sh "$test_dir/home/.local/libexec/certvault-sync"
 PATH="$test_dir/bin:$PATH" MOCK_CURL_LOG="$test_dir/curl.log" \
   MOCK_BUNDLE="$test_dir/new.tar" MOCK_VERSION=new \
   MOCK_CHMOD_UNSUPPORTED_DIR="$mapped_destination" "$mapped_job_script"

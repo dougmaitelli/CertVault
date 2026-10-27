@@ -34,7 +34,7 @@ Open `http://localhost:8081` and authenticate with `certvault-dev-admin`. Develo
 - `web/src/` contains the React console, organized into pages, reusable components, and dialogs.
 - `config/` contains complete example and development YAML configurations.
 - `docs/openapi.yaml` describes the machine-facing API.
-- `web/public/client/install.sh` installs recurring certificate downloads on client machines.
+- `web/client/` contains the installer template and runtime scripts. The web build generates `web/public/client/` for installation and signed updates.
 
 Keep HTTP handlers thin, put ACME and certificate behavior in services, and isolate database access in the model-specific repositories. Reusable UI behavior belongs in components or dialogs rather than individual pages.
 
@@ -46,7 +46,9 @@ Run the full validation suite before opening a pull request:
 make check
 ```
 
-This verifies Go and frontend formatting, runs `go vet`, golangci-lint, ESLint, backend and frontend tests, type-checks the UI, and builds both production layers. Use `make format` and the relevant lint-fix command before manually correcting formatting issues.
+This verifies Go, frontend, and shell formatting, runs `go vet`, golangci-lint, ESLint, backend and frontend tests, type-checks the UI, and builds both production layers. Use `make format` and the relevant lint-fix command before manually correcting formatting issues.
+
+`make format-shell` formats `web/client/*.sh` and `web/scripts/*.sh` with shfmt using two-space indentation and POSIX shell syntax. `make format-check-shell` checks the same files without changing them. These commands install the pinned formatter into `.bin/` automatically; generated client assets are excluded.
 
 New behavior should include tests at the closest useful layer. Security-sensitive behavior must be enforced by the backend even when the UI also prevents an invalid action.
 

@@ -13,11 +13,11 @@ release() {
   label=$2
   protocol=${3:-1}
   mkdir -p "$directory/files"
-  cp public/client/launcher.sh public/client/update.sh "$directory/files/"
+  cp client/launcher.sh client/update.sh "$directory/files/"
   {
-    head -n 3 public/client/sync.sh
+    head -n 3 client/sync.sh
     printf 'printf "%%s\\n" "%s" >>"$CLIENT_EXEC_LOG"\n' "$label"
-    tail -n +4 public/client/sync.sh
+    tail -n +4 client/sync.sh
   } >"$directory/files/sync.sh"
   chmod 700 "$directory/files/"*.sh
   sign_release "$directory" "$protocol"
@@ -136,7 +136,7 @@ wait "$first_pid"
 wait "$second_pid"
 unset MOCK_UPDATE_DELAY
 [ "$(tail -n 2 "$CLIENT_EXEC_LOG" | grep -c '^two$')" -eq 2 ]
-[ "$(grep -c '/client/update/.*\.tar' "$MOCK_CURL_LOG")" -eq "$((before+1))" ]
+[ "$(grep -c '/client/update/.*\.tar' "$MOCK_CURL_LOG")" -eq "$((before + 1))" ]
 [ -L "$client_dir/previous" ]
 [ "$(find "$client_dir" -maxdepth 1 -type d -name 'version-*' | wc -l)" -eq 2 ]
 # Corrupt, partial, unsigned, and unavailable updates preserve the working client.
@@ -152,7 +152,7 @@ for failure in offline signature partial digest interrupt; do
   # Failure backoff is shared and does not cause every certificate job to retry.
   requests=$(wc -l <"$MOCK_CURL_LOG")
   "$second"
-  [ "$(wc -l <"$MOCK_CURL_LOG")" -eq "$((requests+1))" ]
+  [ "$(wc -l <"$MOCK_CURL_LOG")" -eq "$((requests + 1))" ]
 done
 unset MOCK_UPDATE_FAILURE
 release "$test_dir/unsupported" incompatible 2
@@ -240,7 +240,10 @@ cmp "$test_dir/pin-before" "$update_config/public.pem"
 sh public/client/install.sh --server https://certvault.example --certificate second \
   --file fullchain.crt --file private.key --destination "$test_dir/second"
 [ "$(grep -c '# certvault:' "$TEST_CRONTAB")" -eq 2 ]
-if grep -q 'launcher.sh' "$second"; then printf 'Opt-out retained auto-update\n' >&2; exit 1; fi
+if grep -q 'launcher.sh' "$second"; then
+  printf 'Opt-out retained auto-update\n' >&2
+  exit 1
+fi
 if sh public/client/install.sh --server http://certvault.example --certificate rejected \
   --file fullchain.crt --destination "$test_dir/rejected" --auto-update; then
   printf 'Auto-update accepted an insecure origin\n' >&2
