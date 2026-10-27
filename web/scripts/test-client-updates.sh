@@ -197,7 +197,18 @@ cp "$TEST_CRONTAB" "$test_dir/cron-before"
 cp "$update_config/public.pem" "$test_dir/update-pin-before"
 release "$test_dir/manual" manual
 export MOCK_UPDATE_SOURCE="$test_dir/manual"
-sh public/client/install.sh --update-client-only --server https://certvault.example
+manual_revision=$(sed -n '2s/^sha256 //p' "$test_dir/manual/manifest")
+manual_output=$(sh public/client/install.sh --update-client-only --server https://certvault.example)
+printf '%s\n' "$manual_output" | grep -Fx "Updated CertVault client to $manual_revision"
+if printf '%s\n' "$manual_output" | grep -q 'already up to date'; then
+  printf 'Manual update incorrectly reported an unchanged revision\n' >&2
+  exit 1
+fi
+# Repeating a manual update reports the installed revision without downloading it again.
+requests_before=$(grep -c '/client/update/.*\.tar$' "$MOCK_CURL_LOG")
+manual_output=$(sh public/client/install.sh --update-client-only --server https://certvault.example)
+printf '%s\n' "$manual_output" | grep -Fx "CertVault client is already up to date at $manual_revision"
+[ "$(grep -c '/client/update/.*\.tar$' "$MOCK_CURL_LOG")" -eq "$requests_before" ]
 cmp "$first" "$test_dir/first-before"
 cmp "$second" "$test_dir/second-before"
 cmp "$TEST_CRONTAB" "$test_dir/cron-before"

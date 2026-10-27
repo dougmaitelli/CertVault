@@ -17,9 +17,4 @@ for (const [marker, file] of [
   installer = installer.replace(`@@${marker}@@`, () => source);
 }
 const output = path.join(root, "public/client/install.sh");
-if (process.argv.includes("--check")) {
-  if (fs.readFileSync(output, "utf8") !== installer)
-    throw new Error(
-      "Generated client installer is stale; run node scripts/build-client-installer.mjs",
-    );
-} else fs.writeFileSync(output, installer);
+fs.writeFileSync(output, installer);

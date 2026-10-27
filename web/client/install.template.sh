@@ -225,11 +225,16 @@ if [ "$update_client_only" -eq 1 ]; then
   client_dir="$script_dir/certvault-clients/$origin_id"
   update_config="$config_dir/client-updates/$origin_id"
   if [ -L "$client_dir/current" ]; then
+    previous_revision=$(cat "$client_dir/current/revision" 2>/dev/null || true)
     exec 8>"$client_dir/update.lock"
     flock -x 8
     printf '0\n' >"$update_config/next-check"
     exec 8>&-
     "$client_dir/current/update.sh" "$client_dir" "$update_config" "$server"
+    installed_revision=$(cat "$client_dir/current/revision")
+    if [ "$previous_revision" = "$installed_revision" ]; then
+      printf 'CertVault client is already up to date at %s\n' "$installed_revision"
+    fi
   fi
   printf 'Updated CertVault client scripts; existing job settings preserved\n'
   exit 0
