@@ -90,7 +90,9 @@ jobs:
   ui:
     name: Browser tests
     needs: changes
-    if: needs.changes.outputs.browser == 'true'
+    if: >-
+      needs.changes.outputs.browser == 'true' &&
+      (github.event_name != 'push' || github.ref_type == 'tag')
     uses: ./.github/workflows/ui-tests.yml
 
   docker:
@@ -101,6 +103,7 @@ jobs:
       always() && github.event_name == 'push' &&
       needs.changes.result == 'success' &&
       !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') &&
+      (github.ref_type != 'tag' || needs.ui.result == 'success') &&
       needs.changes.outputs.app == 'true'
     permissions:
       contents: write
